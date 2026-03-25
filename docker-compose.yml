@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - ./target:/app/target
+    command: cargo build --release --target wasm32-unknown-unknown
+
+  production:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: axionvera-network:latest
+    container_name: axionvera-network-prod
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    environment:
+      - NODE_ENV=production
+    networks:
+      - axionvera-net
+
+  security-scan:
+    image: aquasec/trivy:latest
+    container_name: axionvera-security-scan
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./reports:/reports
+    command: >
+      image --format json --output /reports/security-report.json
+      --severity HIGH,CRITICAL axionvera-network:latest
+    depends_on:
+      - production
+    networks:
+      - axionvera-net
+
+networks:
+  axionvera-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

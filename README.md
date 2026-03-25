@@ -1,6 +1,6 @@
 # Axionvera Network
 
-Axionvera Network is a Soroban (Stellar) smart-contract vault and reward distribution protocol.
+Axionvera Network is a Soroban (Stellar) smart-contract vault and reward distribution protocol with a comprehensive production-ready network infrastructure.
 
 Users can:
 - Deposit tokens into a vault
@@ -8,14 +8,68 @@ Users can:
 - Withdraw funds
 - Receive proportional reward distributions (via `distribute_rewards` + `claim_rewards`)
 
+## 🚀 Production Infrastructure Features
+
+### ✅ Issue #311 - Multi-Stage Distroless Docker Production Image
+- **Multi-stage build** with dedicated compilation and execution stages
+- **Distroless base image** (`gcr.io/distroless/cc-debian12`) for minimal attack surface
+- **Non-root user execution** for security compliance
+- **Automated security scanning** with Trivy integration
+- **Optimized image size** with only essential components
+
+### ✅ Issue #312 - Terraform Cloud Infrastructure (AWS)
+- **Secure VPC architecture** with public/private subnets
+- **NAT Gateways** for private subnet internet access
+- **Application Load Balancer** with health checks
+- **Auto Scaling Group** for high availability
+- **Security Groups** with strict traffic restrictions
+- **CloudWatch monitoring** and alerting
+- **S3 logging** with encryption
+
+### ✅ Issue #310 - Graceful Shutdown Protocol
+- **Signal handling** for SIGTERM, SIGINT, and SIGQUIT
+- **Grace period** for active operations to complete
+- **Connection pool cleanup** with timeout handling
+- **Database connection management** with proper shutdown
+- **Health check endpoints** for monitoring
+
+### ✅ Issue #309 - Centralized Error Propagation
+- **Custom error types** with comprehensive categorization
+- **Error middleware** with circuit breaker pattern
+- **Contextual error tracking** with request IDs
+- **Error statistics** and monitoring
+- **Internal error logging** without external exposure
+- **Retry logic** for transient failures
+
 This repository is structured like a real open-source project intended for contribution programs: modular contract code, clear extension points, tests, scripts, and contribution templates.
 
 ## Repository Layout
 
-- [contracts/vault-contract](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/contracts/vault-contract) — Soroban vault contract (Rust)
-- [scripts](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/scripts) — TypeScript scripts (CLI-driven deploy/initialize)
-- [tests](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/tests) — TypeScript test scaffold
-- [docs](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/docs) — Architecture and contract specification
+- [contracts/vault-contract](contracts/vault-contract) — Soroban vault contract (Rust)
+- [network-node](network-node) — Production network node service with error handling
+- [terraform](terraform) — AWS infrastructure as code
+- [scripts](scripts) — Deployment and security scanning scripts
+- [tests](tests) — TypeScript test scaffold
+- [docs](docs) — Architecture and contract specification
+
+### New Components Added
+
+- **network-node/**: Rust-based network node with:
+  - Centralized error handling middleware
+  - Graceful shutdown protocol
+  - Database connection pooling
+  - HTTP server with health endpoints
+  - Circuit breaker pattern implementation
+
+- **terraform/**: Complete AWS infrastructure with:
+  - Secure VPC with public/private subnets
+  - Auto Scaling Groups and Load Balancers
+  - Security Groups with restrictive rules
+  - CloudWatch monitoring and alerting
+  - S3 logging with encryption
+
+- **Dockerfile**: Multi-stage distroless build for production
+- **docker-compose.yml**: Development orchestration with security scanning
 
 ## Architecture (High Level)
 
@@ -36,68 +90,168 @@ More detail:
 - `wasm32-unknown-unknown` target
 - Soroban CLI (`soroban`)
 - Node.js (18+ recommended)
+- Docker (20.10+)
+- Terraform (1.5+)
+- AWS CLI configured
 
-## Setup
+## Quick Start
 
+### 1. Build Contract
 ```bash
 rustup target add wasm32-unknown-unknown
 npm install
-```
-
-## Build (Contract)
-
-```bash
 npm run build:contracts
 ```
 
-This produces:
-- `target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm`
+### 2. Build Network Node
+```bash
+cd network-node
+cargo build --release
+```
 
-## Run Tests
+### 3. Docker Build & Security Scan
+```bash
+docker build -t axionvera-network:latest .
+./scripts/security-scan.sh
+```
 
-Rust unit tests (recommended, fast, runs locally):
+### 4. Deploy Infrastructure
+```bash
+./scripts/deploy-infrastructure.sh
+```
+
+### 5. Run Network Node
+```bash
+# Development
+cd network-node
+cargo run
+
+# Production
+docker run -d \
+  --name axionvera-network \
+  -p 8080:8080 \
+  -e DATABASE_URL="postgresql://..." \
+  axionvera-network:latest
+```
+
+## API Endpoints
+
+The network node provides the following endpoints:
+
+- `GET /health` - Health check
+- `GET /ready` - Readiness probe  
+- `GET /metrics` - Prometheus metrics
+- `GET /error-stats` - Error statistics
+- `GET /circuit-breaker-status` - Circuit breaker status
 
 ```bash
+# Health check
+curl http://localhost:8080/health
+
+# Error statistics
+curl http://localhost:8080/error-stats
+
+# Circuit breaker status
+curl http://localhost:8080/circuit-breaker-status
+```
+
+## Security Features
+
+### Docker Security
+- **Distroless image** with minimal packages
+- **Non-root execution** by default
+- **Read-only filesystem** where possible
+- **Security scanning** with Trivy
+- **Capability dropping** for unnecessary privileges
+
+### AWS Security
+- **VPC isolation** with private subnets
+- **Security groups** with restrictive rules
+- **IAM roles** with least privilege
+- **Encryption at rest** and in transit
+- **VPC flow logs** for monitoring
+
+### Application Security
+- **Input validation** with comprehensive error types
+- **Error sanitization** - no stack traces in responses
+- **Circuit breaker** to prevent cascade failures
+- **Rate limiting** and connection management
+- **Audit logging** for all operations
+
+## Graceful Shutdown
+
+The network node implements comprehensive graceful shutdown:
+
+1. **Signal Interception**: Catches SIGTERM, SIGINT, SIGQUIT
+2. **Connection Draining**: Stops accepting new requests immediately
+3. **Grace Period**: Waits for active operations (default 10s)
+4. **Resource Cleanup**: Closes database connections properly
+5. **Process Exit**: Clean termination with status codes
+
+```bash
+# Test graceful shutdown
+docker kill -s SIGTERM axionvera-network
+```
+
+## Testing
+
+### Contract Tests
+```bash
+# Rust unit tests
 npm run test:rust
-```
 
-TypeScript tests (scaffold; integration tests are skipped unless enabled):
-
-```bash
+# TypeScript tests
 npm test
-```
 
-Enable integration tests only when you have a working Soroban environment:
-
-```bash
+# Integration tests (requires Soroban environment)
 SOROBAN_INTEGRATION=1 npm test
 ```
 
-## Deploy & Initialize
-
-These scripts use the Soroban CLI under the hood.
-
-Deploy:
-
+### Network Node Tests
 ```bash
-npm run build:contracts
-SOROBAN_NETWORK=testnet SOROBAN_SOURCE=default npm run deploy
+cd network-node
+cargo test
 ```
 
-Initialize (example):
+### Security Tests
+```bash
+# Docker security scan
+./scripts/security-scan.sh
+
+# Terraform validation
+cd terraform
+terraform validate
+```
+
+## Environment Variables
 
 ```bash
-export VAULT_CONTRACT_ID="<DEPLOY_OUTPUT_CONTRACT_ID>"
-export VAULT_ADMIN="<G...ADDRESS>"
-export VAULT_DEPOSIT_TOKEN="<TOKEN_CONTRACT_ID>"
-export VAULT_REWARD_TOKEN="<TOKEN_CONTRACT_ID>"
-SOROBAN_NETWORK=testnet SOROBAN_SOURCE=default npm run initialize
+# Network Node Configuration
+BIND_ADDRESS=0.0.0.0:8080
+DATABASE_URL=postgresql://user:pass@localhost/db
+SHUTDOWN_GRACE_PERIOD=10
+LOG_LEVEL=info
+
+# Terraform Variables
+TF_VAR_aws_region=us-east-1
+TF_VAR_environment=production
+TF_VAR_ssh_allowed_ips=["203.0.113.0/24"]
 ```
 
 ## Contributing
 
-- Read [CONTRIBUTING.md](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/CONTRIBUTING.md)
-- See [docs/contributing-guide.md](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/docs/contributing-guide.md) for contribution areas and standards
+- Read [CONTRIBUTING.md](CONTRIBUTING.md)
+- See [docs/contributing-guide.md](docs/contributing-guide.md) for contribution areas and standards
+- All new features must include tests and security considerations
+
+## Implementation Status
+
+- [x] **Issue #311**: Multi-Stage Distroless Docker Production Image
+- [x] **Issue #312**: Terraform Cloud Infrastructure (AWS)  
+- [x] **Issue #310**: Graceful Shutdown Protocol
+- [x] **Issue #309**: Centralized Error Propagation
+
+All four issues have been successfully implemented with production-ready solutions that address security, reliability, and operational concerns.
 
 ## Security
 
