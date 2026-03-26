@@ -10,6 +10,7 @@ use crate::config::NetworkConfig;
 use crate::database::ConnectionPool;
 use crate::enhanced_server::EnhancedHttpServer;
 use crate::error_middleware::{ErrorMiddleware, ErrorMiddlewareConfig};
+use crate::metrics::MetricsCollector;
 
 pub mod error;
 pub mod config;
@@ -18,6 +19,7 @@ pub mod server;
 pub mod shutdown;
 pub mod error_middleware;
 pub mod enhanced_server;
+pub mod metrics;
 
 /// Main network node application
 pub struct NetworkNode {
@@ -26,6 +28,7 @@ pub struct NetworkNode {
     http_server: EnhancedHttpServer,
     shutdown_handler: shutdown::ShutdownHandler,
     error_middleware: Arc<ErrorMiddleware>,
+    metrics_collector: Arc<MetricsCollector>,
 }
 
 impl NetworkNode {
@@ -36,13 +39,16 @@ impl NetworkNode {
         // Initialize error middleware
         let error_middleware = Arc::new(ErrorMiddleware::new(ErrorMiddlewareConfig::default()));
 
+        // Initialize metrics collector
+        let metrics_collector = Arc::new(MetricsCollector::new());
+
         // Initialize database connection pool
         let connection_pool = Arc::new(RwLock::new(
             ConnectionPool::new(&config.database_url).await?
         ));
 
         // Initialize enhanced HTTP server
-        let http_server = EnhancedHttpServer::new(config.clone(), connection_pool.clone(), error_middleware.clone());
+        let http_server = EnhancedHttpServer::new(config.clone(), connection_pool.clone(), error_middleware.clone(), metrics_collector.clone());
 
         // Initialize shutdown handler
         let shutdown_handler = shutdown::ShutdownHandler::new(config.shutdown_grace_period);
@@ -53,6 +59,7 @@ impl NetworkNode {
             http_server,
             shutdown_handler,
             error_middleware,
+            metrics_collector,
         })
     }
 

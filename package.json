@@ -6,17 +6,22 @@
     "build:contracts": "cargo build -p axionvera-vault-contract --target wasm32-unknown-unknown --release",
     "test:rust": "cargo test -p axionvera-vault-contract",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:clean": "docker system prune -f && vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "deploy": "tsx scripts/deploy.ts",
     "initialize": "tsx scripts/initialize.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.6",
+    "@testcontainers/postgresql": "^10.18.0",
+    "testcontainers": "^10.18.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.9"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.3.0"
+    "@stellar/stellar-sdk": "^13.3.0",
+    "node-fetch": "^3.3.2"
   }
 }
