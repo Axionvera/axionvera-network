@@ -17,12 +17,14 @@ use crate::error::{NetworkError, Result, ContextualError, ErrorContext};
 use crate::config::NetworkConfig;
 use crate::database::ConnectionPool;
 use crate::error_middleware::ErrorMiddleware;
+use crate::metrics::MetricsCollector;
 
 /// Enhanced HTTP server with error middleware
 pub struct EnhancedHttpServer {
     config: NetworkConfig,
     connection_pool: Arc<RwLock<ConnectionPool>>,
     error_middleware: Arc<ErrorMiddleware>,
+    metrics_collector: Arc<MetricsCollector>,
     is_accepting_connections: Arc<RwLock<bool>>,
     active_connections: Arc<RwLock<usize>>,
     shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
@@ -34,13 +36,15 @@ impl EnhancedHttpServer {
         config: NetworkConfig,
         connection_pool: Arc<RwLock<ConnectionPool>>,
         error_middleware: Arc<ErrorMiddleware>,
+        metrics_collector: Arc<MetricsCollector>,
     ) -> Self {
         Self {
             config,
             connection_pool,
             error_middleware,
+            metrics_collector,
             is_accepting_connections: Arc::new(RwLock::new(true)),
-            active_connections: Arc<RwLock::new(0)),
+            active_connections: Arc::new(RwLock::new(0)),
             shutdown_tx: None,
         }
     }
@@ -54,6 +58,7 @@ impl EnhancedHttpServer {
         let active_connections = self.active_connections.clone();
         let connection_pool = self.connection_pool.clone();
         let error_middleware = self.error_middleware.clone();
+        let metrics_collector = self.metrics_collector.clone();
 
         // Create shutdown channel
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
@@ -66,6 +71,8 @@ impl EnhancedHttpServer {
             .route("/metrics", axum::routing::get(metrics_endpoint))
             .route("/error-stats", axum::routing::get(error_stats))
             .route("/circuit-breaker-status", axum::routing::get(circuit_breaker_status))
+            .route("/health/liveness", axum::routing::get(health_liveness))
+            .route("/health/readiness", axum::routing::get(health_readiness))
             .layer(
                 middleware::from_fn_with_state(
                     error_middleware.clone(),
@@ -90,6 +97,7 @@ impl EnhancedHttpServer {
                 error_middleware,
                 is_accepting,
                 active_connections,
+                metrics_collector,
             });
 
         // Parse bind address
@@ -172,6 +180,7 @@ struct AppState {
     error_middleware: Arc<ErrorMiddleware>,
     is_accepting: Arc<RwLock<bool>>,
     active_connections: Arc<RwLock<usize>>,
+    metrics_collector: Arc<MetricsCollector>,
 }
 
 /// Error handler middleware
@@ -269,6 +278,51 @@ async fn health_check() -> impl IntoResponse {
     }))
 }
 
+/// Liveness probe - returns 200 OK if the service is running
+async fn health_liveness() -> impl IntoResponse {
+    // Simple liveness check - just confirms the binary is running
+    (StatusCode::OK, Json(json!({
+        "status": "alive",
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+    })))
+}
+
+/// Readiness probe - returns 200 OK only when fully ready to accept traffic
+async fn health_readiness(State(state): State<AppState>) -> impl IntoResponse {
+    let pool = state.connection_pool.read().await;
+    
+    // Check database connectivity (lightweight check)
+    let database_ready = pool.health_check().await.unwrap_or(false);
+    
+    // Check if we're accepting connections
+    let accepting_connections = *state.is_accepting.read().await;
+    
+    if database_ready && accepting_connections {
+        (StatusCode::OK, Json(json!({
+            "status": "ready",
+            "database": "connected",
+            "accepting_connections": true,
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        })))
+    } else {
+        let mut details = Vec::new();
+        if !database_ready {
+            details.push("database not connected");
+        }
+        if !accepting_connections {
+            details.push("not accepting connections");
+        }
+        
+        (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
+            "status": "not ready",
+            "reasons": details,
+            "database": if database_ready { "connected" } else { "disconnected" },
+            "accepting_connections": accepting_connections,
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        })))
+    }
+}
+
 /// Ready check endpoint
 async fn ready_check(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
     let pool = state.connection_pool.read().await;
@@ -288,16 +342,19 @@ async fn ready_check(State(state): State<AppState>) -> Result<impl IntoResponse,
     })))
 }
 
-/// Metrics endpoint
-async fn metrics_endpoint() -> impl IntoResponse {
-    // In a real implementation, this would return Prometheus metrics
-    Json(json!({
-        "metrics": {
-            "http_requests_total": 1000,
-            "http_request_duration_seconds": 0.1,
-            "active_connections": 5,
-        }
-    }))
+/// Metrics endpoint - Prometheus format
+async fn metrics_endpoint(State(state): State<AppState>) -> impl IntoResponse {
+    // Update metrics
+    state.metrics_collector.increment_requests();
+    
+    // Get Prometheus-formatted metrics
+    let metrics = state.metrics_collector.get_prometheus_metrics();
+    
+    (
+        StatusCode::OK,
+        [("content-type", "text/plain; version=0.0.4")],
+        metrics,
+    )
 }
 
 /// Error statistics endpoint
