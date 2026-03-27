@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TracingExporter {
+    Otlp,
+    Jaeger,
+    XRay,
+    None,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetworkConfig {
     pub bind_address: String,
     pub grpc_bind_address: String,
@@ -15,6 +23,12 @@ pub struct NetworkConfig {
     pub tls_key_path: Option<String>,
     pub enable_gateway: bool,
     pub enable_reflection: bool,
+    pub node_id: String,
+    pub otlp_endpoint: Option<String>,
+    pub jaeger_endpoint: Option<String>,
+    pub xray_endpoint: Option<String>,
+    pub tracing_enabled: bool,
+    pub tracing_exporter: TracingExporter,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,6 +76,23 @@ impl NetworkConfig {
 
         let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
+        let node_id = std::env::var("NODE_ID").unwrap_or_else(|_| {
+            format!("node-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("unknown"))
+        });
+
+        let tracing_enabled = std::env::var("TRACING_ENABLED")
+            .unwrap_or_else(|_| "true".to_string())
+            .parse()
+            .unwrap_or(true);
+
+        let tracing_exporter_str = std::env::var("TRACING_EXPORTER").unwrap_or_else(|_| "otlp".to_string());
+        let tracing_exporter = match tracing_exporter_str.to_lowercase().as_str() {
+            "jaeger" => TracingExporter::Jaeger,
+            "xray" => TracingExporter::XRay,
+            "none" => TracingExporter::None,
+            _ => TracingExporter::Otlp,
+        };
+
         Ok(Self {
             bind_address,
             grpc_bind_address: std::env::var("GRPC_BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0:50051".to_string()),
@@ -75,6 +106,12 @@ impl NetworkConfig {
             tls_key_path: std::env::var("TLS_KEY_PATH").ok(),
             enable_gateway: std::env::var("ENABLE_GATEWAY").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
             enable_reflection: std::env::var("ENABLE_REFLECTION").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
+            node_id,
+            otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
+            jaeger_endpoint: std::env::var("JAEGER_ENDPOINT").ok(),
+            xray_endpoint: std::env::var("XRAY_ENDPOINT").ok(),
+            tracing_enabled,
+            tracing_exporter,
         })
     }
 }

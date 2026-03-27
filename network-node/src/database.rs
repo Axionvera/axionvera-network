@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot, RwLock};
 use tokio::time::timeout;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn, instrument};
 
 use crate::config::DatabaseConfig;
 use crate::error::{DatabaseError, NetworkError, Result};
@@ -26,6 +26,7 @@ struct DatabaseConnection {
 
 impl ConnectionPool {
     /// Create a new connection pool
+    #[instrument(fields(database_url = %database_url, max_connections = %config.max_connections))]
     pub async fn new(database_url: &str) -> Result<Self> {
         let config = DatabaseConfig::from_url(database_url)?;
 
@@ -48,6 +49,7 @@ impl ConnectionPool {
     }
 
     /// Initialize minimum number of connections
+    #[instrument(skip(self), fields(min_connections = %self.config.min_connections))]
     async fn initialize_min_connections(&self) -> Result<()> {
         let mut connections = self.connections.write().await;
 
@@ -64,8 +66,10 @@ impl ConnectionPool {
     }
 
     /// Create a new database connection
+    #[instrument(skip(self), fields(connection_id, pool_size = %self.connections.read().await.len()))]
     async fn create_connection(&self, id: usize) -> Result<DatabaseConnection> {
         let connection_id = format!("conn_{}_{}", id, uuid::Uuid::new_v4());
+        tracing::Span::current().record("connection_id", &tracing::field::display(&connection_id));
 
         // In a real implementation, this would establish an actual database connection
         // For now, we simulate connection creation
@@ -82,6 +86,7 @@ impl ConnectionPool {
     }
 
     /// Get a connection from the pool
+    #[instrument(skip(self), fields(active_connections = %self.active_connections.read().await, total_connections = %self.connections.read().await.len()))]
     pub async fn get_connection(&self) -> Result<ConnectionHandle> {
         let mut connections = self.connections.write().await;
 
@@ -95,6 +100,7 @@ impl ConnectionPool {
                 // Increment active connections counter
                 *self.active_connections.write().await += 1;
 
+                debug!("Reusing existing connection: {}", conn.id);
                 return Ok(ConnectionHandle {
                     connection_id: conn.id.clone(),
                     pool: self.clone(),
@@ -111,6 +117,7 @@ impl ConnectionPool {
             // Increment active connections counter
             *self.active_connections.write().await += 1;
 
+            debug!("Created new connection: {}", connection_id);
             return Ok(ConnectionHandle {
                 connection_id,
                 pool: self.clone(),
@@ -118,6 +125,7 @@ impl ConnectionPool {
         }
 
         // Pool exhausted
+        error!("Database connection pool exhausted");
         Err(NetworkError::Database(DatabaseError::PoolExhausted))
     }
 
@@ -226,7 +234,10 @@ pub struct ConnectionHandle {
 
 impl ConnectionHandle {
     /// Execute a query (simulated)
+    #[instrument(skip(self), fields(connection_id = %self.connection_id, query_hash = %format!("{:x}", sha2::Sha256::digest(query.as_bytes()))))]
     pub async fn execute_query(&self, query: &str) -> Result<String> {
+        let start_time = std::time::Instant::now();
+        
         info!(
             "Executing query on connection {}: {}",
             self.connection_id, query
@@ -235,6 +246,9 @@ impl ConnectionHandle {
         // In a real implementation, this would execute an actual database query
         // For now, we simulate query execution
         tokio::time::sleep(Duration::from_millis(10)).await;
+        
+        let duration = start_time.elapsed();
+        debug!("Query executed in {:?} on connection {}", duration, self.connection_id);
 
         Ok(format!(
             "Query executed on connection {}",

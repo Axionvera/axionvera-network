@@ -31,6 +31,9 @@ pub enum NetworkError {
 
     #[error("Internal error: {0}")]
     Internal(String),
+
+    #[error("Cryptographic error: {0}")]
+    Crypto(String),
 }
 
 #[derive(Error, Debug)]
@@ -83,6 +86,7 @@ impl NetworkError {
             NetworkError::ShutdownTimeout => false,
             NetworkError::Cancelled => false,
             NetworkError::Internal(_) => false,
+            NetworkError::Crypto(_) => false,
         }
     }
 
@@ -99,6 +103,7 @@ impl NetworkError {
             NetworkError::ShutdownTimeout => "SHUTDOWN_TIMEOUT",
             NetworkError::Cancelled => "CANCELLED",
             NetworkError::Internal(_) => "INTERNAL_ERROR",
+            NetworkError::Crypto(_) => "CRYPTO_ERROR",
         }
     }
 
@@ -115,6 +120,7 @@ impl NetworkError {
             NetworkError::ShutdownTimeout => 503,
             NetworkError::Cancelled => 503,
             NetworkError::Internal(_) => 500,
+            NetworkError::Crypto(_) => 400,
         }
     }
 }
