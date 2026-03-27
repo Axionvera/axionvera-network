@@ -10,7 +10,10 @@
     "test:integration:clean": "docker system prune -f && vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "deploy": "tsx scripts/deploy.ts",
-    "initialize": "tsx scripts/initialize.ts"
+    "initialize": "tsx scripts/initialize.ts",
+    "audit:rust": "cargo audit --deny warnings",
+    "audit:npm": "npm audit --audit-level=high",
+    "audit": "npm run audit:rust && npm run audit:npm"
   },
   "devDependencies": {
     "@types/node": "^22.10.6",
