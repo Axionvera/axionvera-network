@@ -1,0 +1,15 @@
+[package]
+name = "fuzz"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libfuzzer-sys = "0.4"
+libc = "0.2"
+arbitrary = "1.0"
+serde_json = "1.0"
+axionvera_network_node = { path = "../network-node" }
+
+[lib]
+proc-macro = false
+crate-type = ["cdylib"]
