@@ -1,9 +1,10 @@
 use crate::error::Result;
+use crate::telemetry::{extract_traceparent_grpc, inject_traceparent_grpc};
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, warn, instrument, Span};
 
 pub type NodeId = [u8; 32];
 
@@ -100,12 +101,20 @@ impl P2PManager {
     }
 
     /// Background worker to maintain routing table
+    #[instrument(skip(self), fields(node_id = %hex::encode(self.local_id)))]
     pub async fn start_maintenance(&self) {
         let routing_table = self.routing_table.clone();
+        let local_id = self.local_id;
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
             loop {
                 interval.tick().await;
+                let span = tracing::info_span!(
+                    "kademlia_maintenance",
+                    node_id = %hex::encode(local_id),
+                    timestamp = %chrono::Utc::now()
+                );
+                let _enter = span.enter();
                 info!("Performing Kademlia maintenance: Pinging peers...");
                 // In real implementation:
                 // 1. Get all nodes
@@ -116,6 +125,7 @@ impl P2PManager {
     }
 
     /// Bootstrap the node from a single seed identity
+    #[instrument(skip(self), fields(node_id = %hex::encode(self.local_id), seed_address = %seed_address))]
     pub async fn bootstrap(&self, seed_address: SocketAddr) -> Result<()> {
         info!("Bootstrapping from seed peer: {}", seed_address);
         // 1. Update routing table with seed
@@ -124,6 +134,7 @@ impl P2PManager {
     }
 
     /// Handle PING RPC
+    #[instrument(skip(self), fields(node_id = %hex::encode(self.local_id), peer_id = %from.id, peer_address = %from.address))]
     pub fn handle_ping(&self, from: PeerInfo) -> Result<()> {
         debug!("Received PING from {:?}", from.address);
         // Update routing table
@@ -131,8 +142,17 @@ impl P2PManager {
     }
 
     /// Connect to a peer
+    #[instrument(skip(self), fields(node_id = %hex::encode(self.local_id), peer_address = %address, peer_id = %peer_id))]
     pub async fn connect_to_peer(&self, address: SocketAddr, peer_id: String) -> Result<String> {
         info!("Connecting to peer {} at {}", peer_id, address);
+        
+        let span = tracing::info_span!(
+            "peer_connection",
+            peer_id = %peer_id,
+            peer_address = %address,
+            node_id = %hex::encode(self.local_id)
+        );
+        let _enter = span.enter();
         
         let peer_info = PeerInfo {
             id: peer_id.clone(),
@@ -179,6 +199,7 @@ impl P2PManager {
     }
 
     /// Broadcast message to peers
+    #[instrument(skip(self, payload), fields(node_id = %hex::encode(self.local_id), message_type = message_type, payload_size = payload.len(), target_peers_count = target_peers.len(), ttl = ttl))]
     pub async fn broadcast_message(
         &self,
         message_type: i32,
@@ -186,6 +207,16 @@ impl P2PManager {
         target_peers: &[String],
         ttl: u64,
     ) -> Result<(u64, Vec<String>)> {
+        let span = tracing::info_span!(
+            "message_broadcast",
+            message_type = message_type,
+            payload_size = payload.len(),
+            target_peers_count = target_peers.len(),
+            ttl = ttl,
+            node_id = %hex::encode(self.local_id)
+        );
+        let _enter = span.enter();
+        
         info!("Broadcasting message type {} to {} peers", message_type, target_peers.len());
         
         let connected_peers = self.connected_peers.read().await;
@@ -195,18 +226,25 @@ impl P2PManager {
         if target_peers.is_empty() {
             // Broadcast to all connected peers
             recipients_count = connected_peers.len();
+            debug!("Broadcasting to all {} connected peers", recipients_count);
         } else {
             // Broadcast to specific peers
             for peer_id in target_peers {
                 if connected_peers.contains_key(peer_id) {
                     recipients_count += 1;
+                    debug!("Peer {} is connected, will receive broadcast", peer_id);
                 } else {
                     failed_peers.push(peer_id.clone());
+                    warn!("Peer {} is not connected, broadcast will fail", peer_id);
                 }
             }
         }
 
         info!("Message broadcasted to {} recipients", recipients_count);
+        if !failed_peers.is_empty() {
+            warn!("Failed to broadcast to {} peers: {:?}", failed_peers.len(), failed_peers);
+        }
+        
         Ok((recipients_count, failed_peers))
     }
 }

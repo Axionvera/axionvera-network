@@ -13,6 +13,8 @@ use crate::error_middleware::{ErrorMiddleware, ErrorMiddlewareConfig};
 use crate::metrics::MetricsCollector;
 
 pub mod config;
+pub mod consensus;
+pub mod crypto;
 pub mod database;
 pub mod enhanced_server;
 pub mod error;
@@ -20,9 +22,11 @@ pub mod error_middleware;
 pub mod grpc;
 pub mod metrics;
 pub mod p2p;
+pub mod profiling;
 pub mod server;
 pub mod shutdown;
 pub mod state_trie;
+pub mod telemetry;
 
 /// Main network node application
 pub struct NetworkNode {
