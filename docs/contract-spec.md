@@ -11,6 +11,7 @@ One-time initialization that sets:
 
 Security:
 - Fails with `AlreadyInitialized` if called twice.
+- Fails with `InvalidTokenConfiguration` if `deposit_token == reward_token`.
 - Requires `admin` authorization.
 
 Emits:
@@ -25,9 +26,11 @@ Transfers `amount` of `deposit_token` from `from` to the contract and increases 
 Validations:
 - `amount > 0`
 - Requires `from` authorization
+- Fails with `InsufficientBalance` if `from` does not hold enough `deposit_token`
 
 Accounting:
 - Accrues any pending rewards for `from` before changing their balance.
+- Rejects invalid transfers before mutating user reward snapshots or vault balances.
 
 Emits:
 - `deposit`
@@ -42,9 +45,11 @@ Validations:
 - `amount > 0`
 - Requires `to` authorization
 - Fails with `InsufficientBalance` if `amount > balance(to)`
+- Fails with `InsufficientContractBalance` if the vault cannot cover the token transfer
 
 Accounting:
 - Accrues any pending rewards for `to` before changing their balance.
+- Final state is only written after token transfer pre-checks succeed.
 
 Emits:
 - `withdraw`
@@ -59,6 +64,7 @@ Validations:
 - `amount > 0`
 - Requires `admin` authorization
 - Fails with `NoDeposits` if `total_deposits == 0`
+- Fails with `InsufficientBalance` if `admin` does not hold enough `reward_token`
 
 Emits:
 - `distrib`
@@ -71,6 +77,7 @@ Accrues pending rewards for `user`, transfers the claimable amount of `reward_to
 
 Validations:
 - Requires `user` authorization
+- Fails with `InsufficientContractBalance` if the vault reward pool is underfunded
 
 Emits:
 - `claim` (only when amount > 0)
@@ -87,4 +94,11 @@ Emits:
 
 ## Errors
 
-See [errors.rs](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/contracts/vault-contract/src/errors.rs).
+- `AlreadyInitialized`: vault initialization can only happen once.
+- `NotInitialized`: the vault must be initialized before use.
+- `InvalidAmount`: token amounts must be greater than zero.
+- `InsufficientBalance`: the caller-facing token balance is lower than the requested amount.
+- `NoDeposits`: rewards cannot be distributed while `total_deposits == 0`.
+- `InvalidTokenConfiguration`: deposit and reward token addresses must be different.
+- `InsufficientContractBalance`: the vault does not hold enough tokens to complete the transfer.
+- `MathOverflow`: arithmetic overflow or underflow was detected while updating accounting.
