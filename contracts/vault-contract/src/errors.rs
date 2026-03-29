@@ -224,4 +224,8 @@ impl From<AuthorizationError> for VaultError {
             AuthorizationError::Unauthorized => Self::Unauthorized,
         }
     }
+    InvalidConfiguration = 8,
+    ReentrancyDetected = 9,
+    InvalidState = 10,
+    ZeroRewardIncrement = 11,
 }

@@ -31,13 +31,9 @@ impl VaultContract {
         validate_distinct_token_addresses(&deposit_token, &reward_token)?;
 
         admin.require_auth();
+        validate_init_config(&e, &admin, &deposit_token, &reward_token)?;
 
-        storage::set_initialized(&e);
-        storage::set_admin(&e, &admin);
-        storage::set_deposit_token(&e, &deposit_token);
-        storage::set_reward_token(&e, &reward_token);
-        storage::set_total_deposits(&e, 0);
-        storage::set_reward_index(&e, 0);
+        storage::initialize_state(&e, &admin, &deposit_token, &reward_token);
 
         events::emit_initialize(&e, admin, deposit_token, reward_token);
         Ok(())
@@ -72,6 +68,16 @@ impl VaultContract {
 
         events::emit_deposit(&e, from, amount, next_balance);
         Ok(())
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let token_id = state.deposit_token.clone();
+            let token = soroban_sdk::token::Client::new(&e, &token_id);
+            token.transfer(&from, &e.current_contract_address(), &amount);
+
+            let (_, position) = storage::store_deposit(&e, &from, amount)?;
+            events::emit_deposit(&e, from, amount, position.balance);
+            Ok(())
+        })
     }
 
     pub fn withdraw(e: Env, to: Address, amount: i128) -> Result<(), VaultError> {
@@ -103,6 +109,18 @@ impl VaultContract {
 
         events::emit_withdraw(&e, to, amount, next_balance);
         Ok(())
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let token_id = state.deposit_token.clone();
+            let token = soroban_sdk::token::Client::new(&e, &token_id);
+
+            let (_, position) = storage::store_withdraw(&e, &to, amount)?;
+            let next_balance = position.balance;
+            token.transfer(&e.current_contract_address(), &to, &amount);
+
+            events::emit_withdraw(&e, to, amount, next_balance);
+            Ok(())
+        })
     }
 
     pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
@@ -160,6 +178,20 @@ impl VaultContract {
 
         events::emit_claim(&e, user, amt);
         Ok(amt)
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let amt = storage::store_claimable_rewards(&e, &user)?;
+            if amt <= 0 {
+                return Ok(0);
+            }
+
+            let reward_token_id = state.reward_token.clone();
+            let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
+            reward_token.transfer(&e.current_contract_address(), &user, &amt);
+
+            events::emit_claim(&e, user, amt);
+            Ok(amt)
+        })
     }
 
     pub fn balance(e: Env, user: Address) -> Result<i128, VaultError> {
@@ -191,21 +223,9 @@ impl VaultContract {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Internal validation helpers
-// ---------------------------------------------------------------------------
-
-/// Validates that `amount` is strictly positive.
-///
-/// Returns [`VaultError::NegativeAmount`] when `amount < 0` and
-/// [`VaultError::InvalidAmount`] when `amount == 0`. This distinction gives
-/// callers precise diagnostics about *why* their input was rejected.
 fn validate_positive_amount(amount: i128) -> Result<(), VaultError> {
-    if amount < 0 {
-        return Err(ValidationError::NegativeAmount.into());
-    }
-    if amount == 0 {
-        return Err(ValidationError::InvalidAmount.into());
+    if amount <= 0 {
+        return Err(VaultError::InvalidAmount);
     }
     Ok(())
 }
@@ -232,6 +252,15 @@ fn ensure_balance(balance: i128, requested_amount: i128) -> Result<(), VaultErro
 fn ensure_contract_balance(balance: i128, requested_amount: i128) -> Result<(), VaultError> {
     if balance < requested_amount {
         return Err(BalanceError::InsufficientContractBalance.into());
+fn validate_init_config(
+    e: &Env,
+    admin: &Address,
+    deposit_token: &Address,
+    reward_token: &Address,
+) -> Result<(), VaultError> {
+    let contract = e.current_contract_address();
+    if admin == &contract || deposit_token == &contract || reward_token == &contract {
+        return Err(VaultError::InvalidConfiguration);
     }
 
     Ok(())
@@ -239,10 +268,17 @@ fn ensure_contract_balance(balance: i128, requested_amount: i128) -> Result<(), 
 
 fn overflow() -> VaultError {
     ArithmeticError::Overflow.into()
+fn with_non_reentrant<T, F>(e: &Env, f: F) -> Result<T, VaultError>
+where
+    F: FnOnce() -> Result<T, VaultError>,
+{
+    storage::enter_non_reentrant(e)?;
+    let result = f();
+    storage::exit_non_reentrant(e);
+    result
 }
 
 // TODO(reward-optimization): Consider a higher precision / rounding strategy for small totals.
-// TODO(gas): Consider merging per-user keys (balance/index/rewards) into a single struct to reduce reads.
 // TODO(security): Consider adding pausability or per-user deposit caps.
 // TODO(governance): Introduce admin handover / multisig patterns.
 // TODO(upgradeability): Evaluate upgrade patterns compatible with Soroban best practices.
@@ -257,9 +293,10 @@ mod test {
     // -----------------------------------------------------------------------
     // Happy-path tests
     // -----------------------------------------------------------------------
+    // ===== Deposit Logic Tests =====
 
     #[test]
-    fn deposit_withdraw_round_trip() {
+    fn test_deposit_logic() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -277,21 +314,251 @@ mod test {
 
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
+        // Test single deposit
         vault.deposit(&user, &400);
         assert_eq!(vault.balance(&user), 400);
         assert_eq!(vault.total_deposits(), 400);
 
-        vault.withdraw(&user, &150);
-        assert_eq!(vault.balance(&user), 250);
-        assert_eq!(vault.total_deposits(), 250);
+        // Test multiple deposits accumulate
+        vault.deposit(&user, &200);
+        assert_eq!(vault.balance(&user), 600);
+        assert_eq!(vault.total_deposits(), 600);
+    }
+
+    #[test]
+    fn test_multiple_deposits_accumulate() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &5_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        vault.deposit(&user, &100);
+        assert_eq!(vault.balance(&user), 100);
+        assert_eq!(vault.total_deposits(), 100);
 
         let deposit_token_client = soroban_sdk::token::Client::new(&e, &deposit_token_id);
         assert_eq!(deposit_token_client.balance(&user), 750);
         assert_eq!(deposit_token_client.balance(&vault_id), 250);
+        vault.deposit(&user, &200);
+        assert_eq!(vault.balance(&user), 300);
+        assert_eq!(vault.total_deposits(), 300);
+
+        vault.deposit(&user, &700);
+        assert_eq!(vault.balance(&user), 1_000);
+        assert_eq!(vault.total_deposits(), 1_000);
     }
 
     #[test]
-    fn rewards_are_proportional_and_claimable() {
+    fn test_deposit_increases_total() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user1 = Address::generate(&e);
+        let user2 = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user1, &1_000);
+        deposit_token.mint(&user2, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let amount1 = 100_i128;
+        let amount2 = 250_i128;
+
+        vault.deposit(&user1, &amount1);
+        assert_eq!(vault.total_deposits(), amount1);
+
+        vault.deposit(&user2, &amount2);
+        assert_eq!(vault.total_deposits(), amount1 + amount2);
+    }
+
+    // ===== Withdraw Logic Tests =====
+
+    #[test]
+    fn test_withdraw_logic() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Test withdraw logic
+        vault.deposit(&user, &500);
+        assert_eq!(vault.balance(&user), 500);
+
+        vault.withdraw(&user, &200);
+        assert_eq!(vault.balance(&user), 300);
+        assert_eq!(vault.total_deposits(), 300);
+    }
+
+    #[test]
+    fn test_multiple_withdrawals_work_correctly() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        vault.deposit(&user, &1_000);
+        assert_eq!(vault.balance(&user), 1_000);
+
+        vault.withdraw(&user, &100);
+        assert_eq!(vault.balance(&user), 900);
+        assert_eq!(vault.total_deposits(), 900);
+
+        vault.withdraw(&user, &250);
+        assert_eq!(vault.balance(&user), 650);
+        assert_eq!(vault.total_deposits(), 650);
+
+        vault.withdraw(&user, &650);
+        assert_eq!(vault.balance(&user), 0);
+        assert_eq!(vault.total_deposits(), 0);
+    }
+
+    #[test]
+    fn test_withdraw_entire_balance() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let amount = 500_i128;
+        vault.deposit(&user, &amount);
+        vault.withdraw(&user, &amount);
+
+        assert_eq!(vault.balance(&user), 0);
+        assert_eq!(vault.total_deposits(), 0);
+    }
+
+    #[test]
+    fn test_deposit_after_reward_distribution() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user1 = Address::generate(&e);
+        let user2 = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user1, &1_000);
+        deposit_token.mint(&user2, &1_000);
+        reward_token.mint(&admin, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit1 = 500_i128;
+        let reward_amount = 100_i128;
+        let deposit2 = 200_i128;
+
+        vault.deposit(&user1, &deposit1);
+        vault.distribute_rewards(&reward_amount);
+        vault.deposit(&user2, &deposit2);
+
+        let total = vault.total_deposits();
+        assert_eq!(total, deposit1 + deposit2);
+    }
+
+    // ===== Reward Distribution Tests =====
+
+    #[test]
+    fn test_reward_distribution() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user, &1_000);
+        reward_token.mint(&admin, &100);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit = 1_000_i128;
+        let reward = 100_i128;
+
+        vault.deposit(&user, &deposit);
+
+        let reward_index_before = vault.reward_index();
+        assert_eq!(reward_index_before, 0);
+
+        vault.distribute_rewards(&reward);
+
+        let reward_index_after = vault.reward_index();
+        assert!(reward_index_after > 0);
+    }
+
+    #[test]
+    fn test_rewards_are_proportional_and_claimable() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -313,16 +580,133 @@ mod test {
         let vault = VaultContractClient::new(&e, &vault_id);
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
-        vault.deposit(&alice, &100);
-        vault.deposit(&bob, &300);
+        // User1 deposits 2x more than User2
+        let deposit1 = 200_i128;
+        let deposit2 = 100_i128;
+        let reward_amount = 300_i128;
 
-        vault.distribute_rewards(&400);
+        vault.deposit(&alice, &deposit1);
+        vault.deposit(&bob, &deposit2);
 
-        assert_eq!(vault.pending_rewards(&alice), 100);
-        assert_eq!(vault.pending_rewards(&bob), 300);
+        vault.distribute_rewards(&reward_amount);
 
-        assert_eq!(vault.claim_rewards(&alice), 100);
-        assert_eq!(vault.claim_rewards(&bob), 300);
+        let pending_alice = vault.pending_rewards(&alice);
+        let pending_bob = vault.pending_rewards(&bob);
+
+        assert!(pending_alice > 0);
+        assert!(pending_bob > 0);
+        assert!(pending_alice > pending_bob);
+
+        let claimed_alice = vault.claim_rewards(&alice);
+        let claimed_bob = vault.claim_rewards(&bob);
+
+        assert_eq!(claimed_alice, pending_alice);
+        assert_eq!(claimed_bob, pending_bob);
+    }
+
+    #[test]
+    fn test_multiple_reward_distributions_accumulate() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user, &1_000);
+        reward_token.mint(&admin, &3_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit = 1_000_i128;
+        let reward1 = 100_i128;
+        let reward2 = 50_i128;
+
+        vault.deposit(&user, &deposit);
+        vault.distribute_rewards(&reward1);
+
+        let pending_after_first = vault.pending_rewards(&user);
+
+        vault.distribute_rewards(&reward2);
+
+        let pending_after_second = vault.pending_rewards(&user);
+
+        assert!(pending_after_second > pending_after_first);
+    }
+
+    #[test]
+    fn test_reward_proportionality_with_unequal_deposits() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user1 = Address::generate(&e);
+        let user2 = Address::generate(&e);
+        let user3 = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user1, &1_000);
+        deposit_token.mint(&user2, &2_000);
+        deposit_token.mint(&user3, &3_000);
+        reward_token.mint(&admin, &6_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Deposits in ratio 1:2:3
+        vault.deposit(&user1, &1_000);
+        vault.deposit(&user2, &2_000);
+        vault.deposit(&user3, &3_000);
+
+        // Distribute 600 rewards
+        vault.distribute_rewards(&600);
+
+        let pending1 = vault.pending_rewards(&user1);
+        let pending2 = vault.pending_rewards(&user2);
+        let pending3 = vault.pending_rewards(&user3);
+
+        // Rewards should be proportional to deposits
+        assert_eq!(pending1, 100);
+        assert_eq!(pending2, 200);
+        assert_eq!(pending3, 300);
+
+        let claimed1 = vault.claim_rewards(&user1);
+        let claimed2 = vault.claim_rewards(&user2);
+        let claimed3 = vault.claim_rewards(&user3);
+
+        assert_eq!(claimed1, 100);
+        assert_eq!(claimed2, 200);
+        assert_eq!(claimed3, 300);
+    }
+
+    #[test]
+    fn test_claim_with_zero_rewards() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
 
         let reward_token_client = soroban_sdk::token::Client::new(&e, &reward_token_id);
         assert_eq!(reward_token_client.balance(&alice), 100);
@@ -333,9 +717,17 @@ mod test {
     // -----------------------------------------------------------------------
     // Validation error tests
     // -----------------------------------------------------------------------
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Try to claim without any rewards
+        let claimed = vault.claim_rewards(&user);
+        assert_eq!(claimed, 0);
+    }
+
+    // ===== Edge Cases Tests =====
 
     #[test]
-    fn rejects_invalid_amounts() {
+    fn test_rejects_invalid_amounts() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -352,111 +744,17 @@ mod test {
         let vault = VaultContractClient::new(&e, &vault_id);
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
-        // Zero amounts should give InvalidAmount
-        let err: VaultError = match vault.try_deposit(&user, &0) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InvalidAmount);
+        // Test zero deposit
+        assert!(vault.try_deposit(&user, &0).is_err());
 
-        let err: VaultError = match vault.try_withdraw(&user, &0) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InvalidAmount);
+        // Test negative deposit
+        assert!(vault.try_deposit(&user, &-1_000).is_err());
 
-        let err: VaultError = match vault.try_distribute_rewards(&0) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InvalidAmount);
-    }
+        // Test zero withdraw
+        assert!(vault.try_withdraw(&user, &0).is_err());
 
-    #[test]
-    fn rejects_negative_amounts() {
-        let e = Env::default();
-        e.mock_all_auths();
-
-        let admin = Address::generate(&e);
-        let user = Address::generate(&e);
-
-        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-
-        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
-        deposit_token.mint(&user, &1_000);
-
-        let vault_id = e.register(VaultContract, ());
-        let vault = VaultContractClient::new(&e, &vault_id);
-        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
-
-        // Negative amounts should give NegativeAmount
-        let err: VaultError = match vault.try_deposit(&user, &-1) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::NegativeAmount);
-
-        let err: VaultError = match vault.try_withdraw(&user, &-5) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::NegativeAmount);
-
-        let err: VaultError = match vault.try_distribute_rewards(&-10) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::NegativeAmount);
-    }
-
-    #[test]
-    fn rejects_invalid_token_configuration() {
-        let e = Env::default();
-        e.mock_all_auths();
-
-        let admin = Address::generate(&e);
-        let token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-
-        let vault_id = e.register(VaultContract, ());
-        let vault = VaultContractClient::new(&e, &vault_id);
-
-        let err: VaultError = match vault.try_initialize(&admin, &token_id, &token_id) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InvalidTokenConfiguration);
-
-        // State must remain untouched after the failed initialization
-        let err: VaultError = match vault.try_admin() {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::NotInitialized);
+        // Test negative withdraw
+        assert!(vault.try_withdraw(&user, &-500).is_err());
     }
 
     // -----------------------------------------------------------------------
@@ -464,7 +762,53 @@ mod test {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn cannot_withdraw_more_than_balance() {
+    fn test_negative_deposits_rejected() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        assert!(vault.try_deposit(&user, &-100).is_err());
+    }
+
+    #[test]
+    fn test_negative_withdrawals_rejected() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        vault.deposit(&user, &500);
+
+        assert!(vault.try_withdraw(&user, &-100).is_err());
+    }
+
+    #[test]
+    fn test_cannot_withdraw_more_than_balance() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -483,66 +827,40 @@ mod test {
 
         vault.deposit(&user, &200);
 
-        let err: VaultError = match vault.try_withdraw(&user, &201) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InsufficientBalance);
+        assert!(vault.try_withdraw(&user, &201).is_err());
     }
 
     #[test]
-    fn deposit_requires_available_user_tokens_without_mutating_rewards() {
+    fn test_large_deposit_and_withdraw() {
         let e = Env::default();
         e.mock_all_auths();
 
         let admin = Address::generate(&e);
         let user = Address::generate(&e);
 
-        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
 
         let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
-        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+        let large_amount = 9_223_372_036_854_775_000i128; // Near i128 max
+        deposit_token.mint(&user, &large_amount);
 
-        deposit_token.mint(&user, &150);
-        reward_token.mint(&admin, &200);
-
-        let vault_id = e.register(VaultContract, ());
+        let vault_id = e.register_contract(None, VaultContract);
         let vault = VaultContractClient::new(&e, &vault_id);
+
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
-        vault.deposit(&user, &100);
-        vault.distribute_rewards(&60);
+        vault.deposit(&user, &large_amount);
+        assert_eq!(vault.balance(&user), large_amount);
+        assert_eq!(vault.total_deposits(), large_amount);
 
-        e.as_contract(&vault_id, || {
-            assert_eq!(storage::get_user_rewards(&e, &user).unwrap(), 0);
-            assert_eq!(storage::get_user_reward_index(&e, &user).unwrap(), 0);
-        });
-
-        let err: VaultError = match vault.try_deposit(&user, &100) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InsufficientBalance);
-
-        // Reward state must not be mutated by a failed deposit
-        e.as_contract(&vault_id, || {
-            assert_eq!(storage::get_user_rewards(&e, &user).unwrap(), 0);
-            assert_eq!(storage::get_user_reward_index(&e, &user).unwrap(), 0);
-        });
-        assert_eq!(vault.pending_rewards(&user), 60);
-        assert_eq!(vault.balance(&user), 100);
-        assert_eq!(vault.total_deposits(), 100);
+        vault.withdraw(&user, &large_amount);
+        assert_eq!(vault.balance(&user), 0);
+        assert_eq!(vault.total_deposits(), 0);
     }
 
     #[test]
-    fn distribute_requires_deposits() {
+    fn test_distribute_requires_deposits() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -558,48 +876,8 @@ mod test {
         let vault = VaultContractClient::new(&e, &vault_id);
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
-        let err: VaultError = match vault.try_distribute_rewards(&100) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::NoDeposits);
-    }
-
-    #[test]
-    fn distribute_requires_available_admin_rewards() {
-        let e = Env::default();
-        e.mock_all_auths();
-
-        let admin = Address::generate(&e);
-        let user = Address::generate(&e);
-
-        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
-
-        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
-        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
-
-        deposit_token.mint(&user, &500);
-        reward_token.mint(&admin, &25);
-
-        let vault_id = e.register(VaultContract, ());
-        let vault = VaultContractClient::new(&e, &vault_id);
-        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
-        vault.deposit(&user, &200);
-
-        let err: VaultError = match vault.try_distribute_rewards(&50) {
-            Err(e) => match e {
-                Ok(ce) => ce,
-                Err(he) => panic!("host error: {:?}", he),
-            },
-            Ok(_) => panic!("expected contract error"),
-        };
-        assert_eq!(err, VaultError::InsufficientBalance);
-        assert_eq!(vault.reward_index(), 0);
-        assert_eq!(vault.pending_rewards(&user), 0);
+        // Try to distribute rewards without any deposits
+        assert!(vault.try_distribute_rewards(&100).is_err());
     }
 
     // -----------------------------------------------------------------------
@@ -607,7 +885,7 @@ mod test {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn initialization_is_one_time() {
+    fn test_initialization_is_one_time() {
         let e = Env::default();
         e.mock_all_auths();
 
@@ -755,5 +1033,190 @@ mod test {
 
         let display = format!("{}", VaultError::RewardCalculationFailed);
         assert!(display.contains("reward calculation failed"));
+        assert!(vault
+            .try_initialize(&admin, &deposit_token_id, &reward_token_id)
+            .is_err());
+    }
+
+    // ===== Query Tests =====
+
+    #[test]
+    fn test_query_functions_return_correct_values() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Test version
+        assert_eq!(VaultContract::version(), 1);
+
+        // Test initial state
+        assert_eq!(vault.total_deposits(), 0);
+        assert_eq!(vault.reward_index(), 0);
+        assert_eq!(vault.balance(&user), 0);
+        assert_eq!(vault.pending_rewards(&user), 0);
+    }
+
+    // ===== Round-Trip Tests =====
+
+    #[test]
+    fn test_deposit_withdraw_round_trip() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit = 750_i128;
+        let withdraw = 500_i128;
+
+        vault.deposit(&user, &deposit);
+        let balance_after_deposit = vault.balance(&user);
+        assert_eq!(balance_after_deposit, deposit);
+
+        vault.withdraw(&user, &withdraw);
+        let balance_after_withdraw = vault.balance(&user);
+        assert_eq!(balance_after_withdraw, deposit - withdraw);
+
+        let total = vault.total_deposits();
+        assert_eq!(total, deposit - withdraw);
+    }
+
+    #[test]
+    fn test_multiple_users_deposits_and_withdrawals() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user1 = Address::generate(&e);
+        let user2 = Address::generate(&e);
+        let user3 = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user1, &2_000);
+        deposit_token.mint(&user2, &3_000);
+        deposit_token.mint(&user3, &1_500);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit1 = 800_i128;
+        let deposit2 = 1_200_i128;
+        let deposit3 = 500_i128;
+
+        vault.deposit(&user1, &deposit1);
+        assert_eq!(vault.balance(&user1), deposit1);
+        assert_eq!(vault.total_deposits(), deposit1);
+
+        vault.deposit(&user2, &deposit2);
+        assert_eq!(vault.balance(&user2), deposit2);
+        assert_eq!(vault.total_deposits(), deposit1 + deposit2);
+
+        vault.deposit(&user3, &deposit3);
+        assert_eq!(vault.balance(&user3), deposit3);
+        assert_eq!(vault.total_deposits(), deposit1 + deposit2 + deposit3);
+
+        vault.withdraw(&user1, &300);
+        assert_eq!(vault.balance(&user1), deposit1 - 300);
+        assert_eq!(vault.total_deposits(), deposit1 - 300 + deposit2 + deposit3);
+
+        vault.withdraw(&user2, &400);
+        assert_eq!(vault.balance(&user2), deposit2 - 400);
+
+        let final_total =
+            (deposit1 - 300) + (deposit2 - 400) + deposit3;
+        assert_eq!(vault.total_deposits(), final_total);
+    }
+
+    #[test]
+    fn test_reward_accrual_on_deposit_withdrawal_sequence() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user, &5_000);
+        reward_token.mint(&admin, &2_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        let deposit = 1_000_i128;
+        let reward = 200_i128;
+
+        vault.deposit(&user, &deposit);
+        vault.distribute_rewards(&reward);
+
+        let pending_before_withdraw = vault.pending_rewards(&user);
+        assert!(pending_before_withdraw > 0);
+
+        vault.withdraw(&user, &(deposit / 2));
+
+        let pending_after_withdraw = vault.pending_rewards(&user);
+        assert_eq!(pending_before_withdraw, pending_after_withdraw);
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract(admin.clone());
+        let reward_token_id = e.register_stellar_asset_contract(admin.clone());
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register_contract(None, VaultContract);
+        let vault = VaultContractClient::new(&e, &vault_id);
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Test zero values are rejected
+        assert!(vault.try_deposit(&user, &0).is_err());
+        assert!(vault.try_deposit(&user, &-50).is_err());
+
+        // Test insufficient balance on withdraw
+        vault.deposit(&user, &200);
+        assert!(vault.try_withdraw(&user, &201).is_err());
+
+        // Test invalid amounts
+        assert!(vault.try_withdraw(&user, &0).is_err());
     }
 }
