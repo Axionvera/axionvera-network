@@ -255,6 +255,8 @@ fn ensure_contract_balance(balance: i128, requested_amount: i128) -> Result<(), 
     Ok(())
 }
 
+fn overflow() -> VaultError {
+    ArithmeticError::Overflow.into()
 fn with_non_reentrant<T, F>(e: &Env, f: F) -> Result<T, VaultError>
 where
     F: FnOnce() -> Result<T, VaultError>,
