@@ -207,6 +207,9 @@ Step-by-step:
 7. Transfers `reward_token` from the contract to the user.
 8. Emits a `claim` event when a transfer happens.
 
+Validations:
+- Requires `user` authorization
+- Fails with `InsufficientContractBalance` if the vault reward pool is underfunded
 Example:
 
 ```rust

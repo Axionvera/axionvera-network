@@ -178,20 +178,6 @@ impl VaultContract {
 
         events::emit_claim(&e, user, amt);
         Ok(amt)
-        with_non_reentrant(&e, || {
-            let state = storage::get_state(&e)?;
-            let amt = storage::store_claimable_rewards(&e, &user)?;
-            if amt <= 0 {
-                return Ok(0);
-            }
-
-            let reward_token_id = state.reward_token.clone();
-            let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
-            reward_token.transfer(&e.current_contract_address(), &user, &amt);
-
-            events::emit_claim(&e, user, amt);
-            Ok(amt)
-        })
     }
 
     pub fn balance(e: Env, user: Address) -> Result<i128, VaultError> {
@@ -223,9 +209,21 @@ impl VaultContract {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Internal validation helpers
+// ---------------------------------------------------------------------------
+
+/// Validates that `amount` is strictly positive.
+///
+/// Returns [`VaultError::NegativeAmount`] when `amount < 0` and
+/// [`VaultError::InvalidAmount`] when `amount == 0`. This distinction gives
+/// callers precise diagnostics about *why* their input was rejected.
 fn validate_positive_amount(amount: i128) -> Result<(), VaultError> {
-    if amount <= 0 {
-        return Err(VaultError::InvalidAmount);
+    if amount < 0 {
+        return Err(ValidationError::NegativeAmount.into());
+    }
+    if amount == 0 {
+        return Err(ValidationError::InvalidAmount.into());
     }
     Ok(())
 }
@@ -252,15 +250,6 @@ fn ensure_balance(balance: i128, requested_amount: i128) -> Result<(), VaultErro
 fn ensure_contract_balance(balance: i128, requested_amount: i128) -> Result<(), VaultError> {
     if balance < requested_amount {
         return Err(BalanceError::InsufficientContractBalance.into());
-fn validate_init_config(
-    e: &Env,
-    admin: &Address,
-    deposit_token: &Address,
-    reward_token: &Address,
-) -> Result<(), VaultError> {
-    let contract = e.current_contract_address();
-    if admin == &contract || deposit_token == &contract || reward_token == &contract {
-        return Err(VaultError::InvalidConfiguration);
     }
 
     Ok(())
@@ -744,6 +733,111 @@ mod test {
         let vault = VaultContractClient::new(&e, &vault_id);
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
+        // Zero amounts should give InvalidAmount
+        let err: VaultError = match vault.try_deposit(&user, &0) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InvalidAmount);
+
+        let err: VaultError = match vault.try_withdraw(&user, &0) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InvalidAmount);
+
+        let err: VaultError = match vault.try_distribute_rewards(&0) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InvalidAmount);
+    }
+
+    #[test]
+    fn rejects_negative_amounts() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        deposit_token.mint(&user, &1_000);
+
+        let vault_id = e.register(VaultContract, ());
+        let vault = VaultContractClient::new(&e, &vault_id);
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        // Negative amounts should give NegativeAmount
+        let err: VaultError = match vault.try_deposit(&user, &-1) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::NegativeAmount);
+
+        let err: VaultError = match vault.try_withdraw(&user, &-5) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::NegativeAmount);
+
+        let err: VaultError = match vault.try_distribute_rewards(&-10) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::NegativeAmount);
+    }
+
+    #[test]
+    fn rejects_invalid_token_configuration() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+
+        let vault_id = e.register(VaultContract, ());
+        let vault = VaultContractClient::new(&e, &vault_id);
+
+        let err: VaultError = match vault.try_initialize(&admin, &token_id, &token_id) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InvalidTokenConfiguration);
+
+        // State must remain untouched after the failed initialization
+        let err: VaultError = match vault.try_admin() {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::NotInitialized);
         // Test zero deposit
         assert!(vault.try_deposit(&user, &0).is_err());
 
@@ -827,6 +921,62 @@ mod test {
 
         vault.deposit(&user, &200);
 
+        let err: VaultError = match vault.try_withdraw(&user, &201) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InsufficientBalance);
+    }
+
+    #[test]
+    fn deposit_requires_available_user_tokens_without_mutating_rewards() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user, &150);
+        reward_token.mint(&admin, &200);
+
+        let vault_id = e.register(VaultContract, ());
+        let vault = VaultContractClient::new(&e, &vault_id);
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+
+        vault.deposit(&user, &100);
+        vault.distribute_rewards(&60);
+
+        e.as_contract(&vault_id, || {
+            assert_eq!(storage::get_user_rewards(&e, &user).unwrap(), 0);
+            assert_eq!(storage::get_user_reward_index(&e, &user).unwrap(), 0);
+        });
+
+        let err: VaultError = match vault.try_deposit(&user, &100) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InsufficientBalance);
+
+        // Reward state must not be mutated by a failed deposit
+        e.as_contract(&vault_id, || {
+            assert_eq!(storage::get_user_rewards(&e, &user).unwrap(), 0);
+            assert_eq!(storage::get_user_reward_index(&e, &user).unwrap(), 0);
+        });
+        assert_eq!(vault.pending_rewards(&user), 60);
+        assert_eq!(vault.balance(&user), 100);
+        assert_eq!(vault.total_deposits(), 100);
         assert!(vault.try_withdraw(&user, &201).is_err());
     }
 
@@ -876,6 +1026,48 @@ mod test {
         let vault = VaultContractClient::new(&e, &vault_id);
         vault.initialize(&admin, &deposit_token_id, &reward_token_id);
 
+        let err: VaultError = match vault.try_distribute_rewards(&100) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::NoDeposits);
+    }
+
+    #[test]
+    fn distribute_requires_available_admin_rewards() {
+        let e = Env::default();
+        e.mock_all_auths();
+
+        let admin = Address::generate(&e);
+        let user = Address::generate(&e);
+
+        let deposit_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+        let reward_token_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+
+        let deposit_token = StellarAssetClient::new(&e, &deposit_token_id);
+        let reward_token = StellarAssetClient::new(&e, &reward_token_id);
+
+        deposit_token.mint(&user, &500);
+        reward_token.mint(&admin, &25);
+
+        let vault_id = e.register(VaultContract, ());
+        let vault = VaultContractClient::new(&e, &vault_id);
+        vault.initialize(&admin, &deposit_token_id, &reward_token_id);
+        vault.deposit(&user, &200);
+
+        let err: VaultError = match vault.try_distribute_rewards(&50) {
+            Err(e) => match e {
+                Ok(ce) => ce,
+                Err(he) => panic!("host error: {:?}", he),
+            },
+            Ok(_) => panic!("expected contract error"),
+        };
+        assert_eq!(err, VaultError::InsufficientBalance);
+        assert_eq!(vault.reward_index(), 0);
+        assert_eq!(vault.pending_rewards(&user), 0);
         // Try to distribute rewards without any deposits
         assert!(vault.try_distribute_rewards(&100).is_err());
     }
