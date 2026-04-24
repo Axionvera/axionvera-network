@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::HorizonProvider;
 use crate::error::NetworkError;
 use crate::horizon_client::HorizonClient;
+use metrics::{gauge, counter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
@@ -81,7 +82,7 @@ impl StellarService {
             Box::pin(async move {
                 let url = format!("{}/accounts/{}", provider.url.trim_end_matches('/'), account_id);
                 let client = reqwest::Client::new();
-                
+
                 let response = client
                     .get(&url)
                     .header("Content-Type", "application/json")
@@ -102,6 +103,7 @@ impl StellarService {
             .execute_request(operation)
             .await
             .map_err(|e| {
+                counter!("soroban_rpc_errors_total", 1);
                 error!("Failed to get account {}: {}", account_id, e);
                 e
             })
@@ -116,7 +118,7 @@ impl StellarService {
             Box::pin(async move {
                 let url = format!("{}/transactions/{}", provider.url.trim_end_matches('/'), tx_hash);
                 let client = reqwest::Client::new();
-                
+
                 let response = client
                     .get(&url)
                     .header("Content-Type", "application/json")
@@ -137,6 +139,7 @@ impl StellarService {
             .execute_request(operation)
             .await
             .map_err(|e| {
+                counter!("soroban_rpc_errors_total", 1);
                 error!("Failed to get transaction {}: {}", transaction_hash, e);
                 e
             })
@@ -151,7 +154,7 @@ impl StellarService {
             Box::pin(async move {
                 let url = format!("{}/ledgers/{}", provider.url.trim_end_matches('/'), ledger_sequence);
                 let client = reqwest::Client::new();
-                
+
                 let response = client
                     .get(&url)
                     .header("Content-Type", "application/json")
@@ -171,7 +174,13 @@ impl StellarService {
         self.horizon_client
             .execute_request(operation)
             .await
+            .map(|ledger| {
+                // Update the gauge whenever we successfully process a ledger
+                gauge!("indexer_last_ledger_processed", ledger.sequence as f64);
+                ledger
+            })
             .map_err(|e| {
+                counter!("soroban_rpc_errors_total", 1);
                 error!("Failed to get ledger {}: {}", sequence, e);
                 e
             })
@@ -185,7 +194,7 @@ impl StellarService {
             Box::pin(async move {
                 let url = format!("{}/ledgers?order=desc&limit=1", provider.url.trim_end_matches('/'));
                 let client = reqwest::Client::new();
-                
+
                 let response = client
                     .get(&url)
                     .header("Content-Type", "application/json")
@@ -194,7 +203,7 @@ impl StellarService {
 
                 if response.status().is_success() {
                     let ledger_response: serde_json::Value = response.json().await?;
-                    
+
                     if let Some(embedded) = ledger_response.get("_embedded") {
                         if let Some(records) = embedded.get("records") {
                             if let Some(ledger) = records.as_array().and_then(|arr| arr.first()) {
@@ -203,7 +212,7 @@ impl StellarService {
                             }
                         }
                     }
-                    
+
                     Err(anyhow::anyhow!("Invalid ledger response format"))
                 } else {
                     let error_text = response.text().await.unwrap_or_default();
@@ -215,7 +224,13 @@ impl StellarService {
         self.horizon_client
             .execute_request(operation)
             .await
+            .map(|ledger| {
+                // Update the gauge with the latest ledger sequence
+                gauge!("indexer_last_ledger_processed", ledger.sequence as f64);
+                ledger
+            })
             .map_err(|e| {
+                counter!("soroban_rpc_errors_total", 1);
                 error!("Failed to get latest ledger: {}", e);
                 e
             })
@@ -230,10 +245,10 @@ impl StellarService {
             Box::pin(async move {
                 let url = format!("{}/transactions", provider.url.trim_end_matches('/'));
                 let client = reqwest::Client::new();
-                
+
                 let mut params = std::collections::HashMap::new();
                 params.insert("tx", xdr);
-                
+
                 let response = client
                     .post(&url)
                     .header("Content-Type", "application/x-www-form-urlencoded")
@@ -255,6 +270,7 @@ impl StellarService {
             .execute_request(operation)
             .await
             .map_err(|e| {
+                counter!("soroban_rpc_errors_total", 1);
                 error!("Failed to submit transaction: {}", e);
                 e
             })
@@ -282,7 +298,7 @@ mod tests {
         let config = HorizonConfig::default();
         let horizon_client = Arc::new(crate::horizon_client::HorizonClient::new(config));
         let stellar_service = StellarService::new(horizon_client);
-        
+
         // Test that we can get provider status
         let status = stellar_service.get_provider_status().await.unwrap();
         assert!(!status.is_empty());
@@ -293,7 +309,7 @@ mod tests {
         let config = HorizonConfig::default();
         let horizon_client = Arc::new(crate::horizon_client::HorizonClient::new(config));
         let stellar_service = StellarService::new(horizon_client);
-        
+
         // Test provider switching
         let provider = stellar_service.switch_provider().await;
         assert!(provider.is_ok());
