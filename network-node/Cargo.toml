@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
 hyper = { version = "0.14", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -51,7 +52,7 @@ aws-smithy-runtime = "1"
 aws-smithy-runtime-api = "1"
 aws-types = "1"
 stellar-horizon = "0.8"
-stellar-sdk = "0.39"
+stellar_sdk = "0.1.4"
 reqwest = { version = "0.11", features = ["json"] }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
 dotenvy = "0.15"

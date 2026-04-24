@@ -117,7 +117,7 @@ impl NetworkConfig {
             std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite::memory:".to_string());
 
         let shutdown_grace_period_secs = std::env::var("SHUTDOWN_GRACE_PERIOD")
-            .unwrap_or_else(|_| "10".to_string())
+            .unwrap_or_else(|_| "30".to_string())
             .parse::<u64>()
             .map_err(|_| {
                 crate::error::NetworkError::Config("Invalid SHUTDOWN_GRACE_PERIOD".to_string())

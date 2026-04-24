@@ -95,6 +95,11 @@ impl ConnectionPool {
         &self.pool
     }
 
+    /// Get active connections count
+    pub fn active_connections(&self) -> u32 {
+        self.pool.size() - self.pool.num_idle()
+    }
+
     /// Close the connection pool
     pub async fn close_all(&mut self) -> Result<()> {
         info!("Closing database connection pool...");

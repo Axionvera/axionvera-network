@@ -3,6 +3,7 @@ use std::time::Duration;
 use tokio::signal;
 use tokio::sync::RwLock;
 use tokio::time::timeout;
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
 use crate::config::NetworkConfig;
@@ -174,7 +175,7 @@ impl NetworkNode {
         info!("Starting network node...");
 
         // Start shutdown handler in background
-        let shutdown_signal = self.shutdown_handler.start();
+        let shutdown_token = self.shutdown_handler.start();
 
         // Start HTTP server
         let http_server_handle = self.http_server.start().await?;
@@ -182,8 +183,9 @@ impl NetworkNode {
         // Start gRPC server
         let grpc_server_handle = {
             let grpc_server = self.grpc_server.clone();
+            let token = shutdown_token.clone();
             tokio::spawn(async move {
-                if let Err(e) = grpc_server.start().await {
+                if let Err(e) = grpc_server.start(token).await {
                     error!("gRPC server error: {:?}", e);
                 }
             })
@@ -198,8 +200,9 @@ impl NetworkNode {
 
         // Start event indexer
         let event_indexer = self.event_indexer.clone();
+        let indexer_token = shutdown_token.clone();
         let indexer_handle = tokio::spawn(async move {
-            if let Err(e) = event_indexer.start().await {
+            if let Err(e) = event_indexer.start(indexer_token).await {
                 error!("Event indexer error: {:?}", e);
             }
         });
@@ -229,7 +232,7 @@ impl NetworkNode {
             _ = indexer_handle => {
                 info!("Event indexer stopped");
             }
-            _ = shutdown_signal => {
+            _ = shutdown_token.cancelled() => {
                 info!("Shutdown signal received, initiating graceful shutdown");
                 self.shutdown().await?;
             }
@@ -290,14 +293,11 @@ impl NetworkNode {
 
     /// Wait for database operations to complete
     async fn wait_for_database_operations(&self) -> Result<(), NetworkError> {
-        let pool = self.connection_pool.read().await;
-
-        // Wait for all active connections to become idle
-        let mut attempts = 0;
         let max_attempts = 30; // 30 seconds with 1-second intervals
+        let mut attempts = 0;
 
         while attempts < max_attempts {
-            let active_connections = pool.active_connections();
+            let active_connections = self.connection_pool.read().await.active_connections();
             if active_connections == 0 {
                 info!("All database connections are idle");
                 break;

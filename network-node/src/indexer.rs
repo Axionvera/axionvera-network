@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 use tracing::{info, error, debug, warn, instrument};
 use sqlx::{Postgres, Transaction};
 use crate::stellar_service::{StellarService, Ledger};
@@ -29,17 +30,35 @@ impl EventIndexer {
         }
     }
 
-    pub async fn start(&self) -> Result<()> {
+    pub async fn start(&self, shutdown_token: CancellationToken) -> Result<()> {
         info!("Starting event indexer for contract: {}", self.contract_address);
         
         loop {
-            if let Err(e) = self.process_next_batch().await {
-                error!("Error processing event batch: {}", e);
-                tokio::time::sleep(Duration::from_secs(5)).await;
-                continue;
+            tokio::select! {
+                _ = shutdown_token.cancelled() => {
+                    info!("Event indexer received shutdown signal, stopping...");
+                    break;
+                }
+                result = self.process_next_batch() => {
+                    if let Err(e) = result {
+                        error!("Error processing event batch: {}", e);
+                        tokio::select! {
+                            _ = shutdown_token.cancelled() => break,
+                            _ = tokio::time::sleep(Duration::from_secs(5)) => {},
+                        }
+                        continue;
+                    }
+                }
             }
-            tokio::time::sleep(self.poll_interval).await;
+
+            tokio::select! {
+                _ = shutdown_token.cancelled() => break,
+                _ = tokio::time::sleep(self.poll_interval) => {},
+            }
         }
+        
+        info!("Event indexer stopped gracefully");
+        Ok(())
     }
 
     #[instrument(skip(self))]
