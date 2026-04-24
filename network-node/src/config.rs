@@ -77,6 +77,7 @@ pub struct NetworkConfig {
     /// Path to genesis JSON (`config/genesis.example.json`). See `GENESIS_CONFIG_PATH`.
     pub genesis_config_path: Option<String>,
     pub horizon_config: HorizonConfig,
+    pub vault_contract_address: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -157,6 +158,9 @@ impl NetworkConfig {
             HorizonConfig::default()
         };
 
+        let vault_contract_address = std::env::var("VAULT_CONTRACT_ADDRESS")
+            .unwrap_or_else(|_| "CCDRM2F5H7...".to_string()); // Placeholder
+
         Ok(Self {
             bind_address,
             grpc_bind_address: std::env::var("GRPC_BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0:50051".to_string()),
@@ -180,6 +184,7 @@ impl NetworkConfig {
             cache_ttl_seconds,
             genesis_config_path,
             horizon_config,
+            vault_contract_address,
         })
     }
 }
