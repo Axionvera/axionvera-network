@@ -5,11 +5,30 @@ use std::path::PathBuf;
 use tracing::{error, info, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use metrics::{describe_counter, describe_gauge, describe_histogram};
+use metrics_exporter_prometheus::PrometheusBuilder;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize configuration first
     let config = axionvera_network_node::config::NetworkConfig::from_env()?;
+
+    // ==========================================
+    // METRICS EXPORTER SETUP
+    // ==========================================
+    info!("Starting Prometheus metrics exporter on 0.0.0.0:9090/metrics");
+    PrometheusBuilder::new()
+        // Spin up the secondary lightweight HTTP server on the dedicated port 9090
+        .with_http_listener(([0, 0, 0, 0], 9090))
+        .install()
+        .expect("Failed to install Prometheus recorder");
+
+    // Register metric descriptions for documentation and Prometheus scraping
+    describe_counter!("grpc_requests_total", "Total number of gRPC requests received");
+    describe_histogram!("grpc_request_duration_seconds", "gRPC request latency in seconds");
+    describe_counter!("soroban_rpc_errors_total", "Total number of Soroban RPC errors encountered");
+    describe_gauge!("indexer_last_ledger_processed", "The sequence number of the last ledger processed by the indexer");
+    // ==========================================
 
     // Initialize OpenTelemetry if enabled
     let subscriber = if config.tracing_enabled {
@@ -37,6 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Initialize the subscriber
+    // Note: If using `tracing-subscriber`, we use global init.
     subscriber.init();
 
     info!(
@@ -59,15 +79,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
+<<<<<<< HEAD
     info!("Server shut down gracefully");
     
+=======
+    info!("Network node shutdown complete");
+
+>>>>>>> 54afbe1abe8ecda91c8fe5648c543cb48d0fe8b1
     // Shutdown OpenTelemetry tracer provider
     telemetry::shutdown_tracer();
-    
+
     Ok(())
 }
 
-fn init_basic_logging(config: &axionvera_network_node::config::NetworkConfig) -> Result<Box<dyn Subscriber + Send + Sync>, Box<dyn std::error::Error>> {
+fn init_basic_logging(config: &axionvera_network_node::config::NetworkConfig) -> Result<Box<dyn tracing::Subscriber + Send + Sync>, Box<dyn std::error::Error>> {
     let log_level = config.log_level.parse::<Level>().unwrap_or(Level::INFO);
 
     // Create JSON formatted logging layer
