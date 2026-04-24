@@ -52,6 +52,15 @@ pub enum NetworkError {
 
     #[error("Horizon client error: {0}")]
     HorizonClient(String),
+
+    #[error("Soroban RPC error: {0}")]
+    SorobanRpc(String),
+
+    #[error("Transaction expired")]
+    TransactionExpired,
+
+    #[error("Insufficient fee")]
+    InsufficientFee,
 }
 
 #[derive(Error, Debug)]
@@ -111,6 +120,9 @@ impl NetworkError {
             NetworkError::Signer(_) => false,
             NetworkError::NotImplemented(_) => false,
             NetworkError::HorizonClient(_) => true,
+            NetworkError::SorobanRpc(_) => true,
+            NetworkError::TransactionExpired => false,
+            NetworkError::InsufficientFee => true, // Could be retryable with higher fee
         }
     }
 
@@ -134,6 +146,9 @@ impl NetworkError {
             NetworkError::Signer(_) => "SIGNER_ERROR",
             NetworkError::NotImplemented(_) => "NOT_IMPLEMENTED",
             NetworkError::HorizonClient(_) => "HORIZON_CLIENT_ERROR",
+            NetworkError::SorobanRpc(_) => "SOROBAN_RPC_ERROR",
+            NetworkError::TransactionExpired => "TRANSACTION_EXPIRED",
+            NetworkError::InsufficientFee => "INSUFFICIENT_FEE",
         }
     }
 
@@ -157,6 +172,9 @@ impl NetworkError {
             NetworkError::Signer(_) => 500,
             NetworkError::NotImplemented(_) => 501,
             NetworkError::HorizonClient(_) => 502,
+            NetworkError::SorobanRpc(_) => 502,
+            NetworkError::TransactionExpired => 400,
+            NetworkError::InsufficientFee => 400,
         }
     }
 }
