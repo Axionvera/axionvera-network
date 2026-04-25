@@ -17,6 +17,23 @@ pub struct HorizonConfig {
     pub circuit_breaker_recovery_timeout_seconds: u64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SorobanConfig {
+    pub rpc_url: String,
+    pub network_passphrase: String,
+    pub health_check_interval_seconds: u64,
+}
+
+impl Default for SorobanConfig {
+    fn default() -> Self {
+        Self {
+            rpc_url: "https://soroban-testnet.stellar.org:443".to_string(),
+            network_passphrase: "Test SDF Testnet ; September 2015".to_string(),
+            health_check_interval_seconds: 60,
+        }
+    }
+}
+
 impl Default for HorizonConfig {
     fn default() -> Self {
         Self {
@@ -77,6 +94,7 @@ pub struct NetworkConfig {
     /// Path to genesis JSON (`config/genesis.example.json`). See `GENESIS_CONFIG_PATH`.
     pub genesis_config_path: Option<String>,
     pub horizon_config: HorizonConfig,
+    pub soroban_config: SorobanConfig,
     pub vault_contract_address: String,
 }
 
@@ -158,6 +176,15 @@ impl NetworkConfig {
             HorizonConfig::default()
         };
 
+        let soroban_config = if let Ok(config_json) = std::env::var("SOROBAN_CONFIG") {
+            serde_json::from_str(&config_json).unwrap_or_else(|e| {
+                tracing::warn!("Invalid SOROBAN_CONFIG JSON, using default: {}", e);
+                SorobanConfig::default()
+            })
+        } else {
+            SorobanConfig::default()
+        };
+
         let vault_contract_address = std::env::var("VAULT_CONTRACT_ADDRESS")
             .unwrap_or_else(|_| "CCDRM2F5H7...".to_string()); // Placeholder
 
@@ -200,6 +227,7 @@ impl NetworkConfig {
             cache_ttl_seconds,
             genesis_config_path,
             horizon_config,
+            soroban_config,
             vault_contract_address,
         })
     }

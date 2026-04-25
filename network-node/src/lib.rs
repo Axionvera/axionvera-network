@@ -37,6 +37,8 @@ pub mod rate_limiter;
 pub mod shutdown;
 pub mod signing;
 pub mod stellar_service;
+pub mod soroban_rpc_client;
+pub mod soroban_service;
 pub mod state_trie;
 pub mod telemetry;
 
@@ -54,6 +56,8 @@ pub struct NetworkNode {
     signing_service: Arc<SigningService>,
     horizon_client: Arc<HorizonClient>,
     stellar_service: Arc<StellarService>,
+    soroban_rpc_client: Arc<soroban_rpc_client::SorobanRpcClient>,
+    soroban_service: Arc<soroban_service::SorobanService>,
     event_indexer: Arc<indexer::EventIndexer>,
 }
 
@@ -111,6 +115,14 @@ impl NetworkNode {
         let stellar_service = Arc::new(StellarService::new(horizon_client.clone()));
         info!("Initialized Stellar service");
 
+        // Initialize Soroban RPC client
+        let soroban_rpc_client = Arc::new(soroban_rpc_client::SorobanRpcClient::new(config.soroban_config.clone()));
+        info!("Initialized Soroban RPC client");
+
+        // Initialize Soroban service
+        let soroban_service = Arc::new(soroban_service::SorobanService::new(soroban_rpc_client.clone()));
+        info!("Initialized Soroban service");
+
         // Initialize event indexer
         let event_indexer = Arc::new(indexer::EventIndexer::new(
             stellar_service.clone(),
@@ -166,6 +178,8 @@ impl NetworkNode {
             signing_service,
             horizon_client,
             stellar_service,
+            soroban_rpc_client,
+            soroban_service,
             event_indexer,
         })
     }
@@ -344,6 +358,16 @@ impl NetworkNode {
     pub fn stellar_service(&self) -> &Arc<StellarService> {
         &self.stellar_service
     }
+
+    /// Get a reference to the Soroban RPC client
+    pub fn soroban_rpc_client(&self) -> &Arc<soroban_rpc_client::SorobanRpcClient> {
+        &self.soroban_rpc_client
+    }
+
+    /// Get a reference to the Soroban service
+    pub fn soroban_service(&self) -> &Arc<soroban_service::SorobanService> {
+        &self.soroban_service
+    }
 }
 
 #[cfg(test)]
@@ -377,6 +401,8 @@ mod tests {
             cache_ttl_seconds: 3600,
             genesis_config_path: None,
             horizon_config: crate::config::HorizonConfig::default(),
+            soroban_config: crate::config::SorobanConfig::default(),
+            vault_contract_address: "CCDRM2F5H7...".to_string(),
         };
 
         let node = NetworkNode::new(config).await.unwrap();
