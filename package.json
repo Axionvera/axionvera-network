@@ -10,6 +10,7 @@
     "test:integration:clean": "docker system prune -f && vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "deploy": "tsx scripts/deploy.ts",
+    "deploy:testnet": "bash scripts/deploy_testnet.sh",
     "initialize": "tsx scripts/initialize.ts",
     "format": "prettier --write . && cargo fmt --all",
     "lint": "eslint . --fix && cargo clippy --all-targets --all-features -- -D warnings",
