@@ -83,6 +83,9 @@ impl EventIndexer {
             contract_id,
             polling_interval_secs,
         }
+        
+        info!("Event indexer stopped gracefully");
+        Ok(())
     }
 
     #[instrument(skip(self))]

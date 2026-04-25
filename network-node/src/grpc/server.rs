@@ -162,7 +162,7 @@ impl GrpcServer {
         &self.signing_service
     }
 
-    pub async fn start(&self) -> Result<(), NetworkError> {
+    pub async fn start(&self, shutdown_token: CancellationToken) -> Result<(), NetworkError> {
         let addr: SocketAddr = self.config.grpc_bind_address
             .parse()
             .map_err(|e| NetworkError::Config(format!("Invalid gRPC bind address: {}", e)))?;
@@ -273,11 +273,9 @@ impl GrpcServer {
         });
 
         // Start the server
-        let server_future = server.serve_with_shutdown(addr, async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("Failed to install CTRL+C signal handler");
-            info!("Received shutdown signal, stopping gRPC server");
+        let server_future = server.serve_with_shutdown(addr, async move {
+            shutdown_token.cancelled().await;
+            info!("Shutdown signal received, stopping gRPC server");
         });
 
         info!("gRPC server started successfully on {}", addr);
@@ -294,27 +292,31 @@ impl GrpcServer {
         }
     }
 
-    pub async fn start_with_health_check(&self) -> Result<(), NetworkError> {
+    pub async fn start_with_health_check(&self, shutdown_token: CancellationToken) -> Result<(), NetworkError> {
         // Start health check service in a separate task
         let health_service = HealthServiceImpl::new(self.connection_pool.clone());
         let health_addr: SocketAddr = "0.0.0.0:50051"
             .parse()
             .map_err(|e| NetworkError::Config(format!("Invalid health check address: {}", e)))?;
 
+        let health_shutdown_token = shutdown_token.clone();
         tokio::spawn(async move {
             info!("Starting gRPC health check service on {}", health_addr);
             
-            if let Err(e) = Server::builder()
+            let health_server = Server::builder()
                 .add_service(HealthServiceServer::new(health_service))
-                .serve(health_addr)
-                .await
-            {
+                .serve_with_shutdown(health_addr, async move {
+                    health_shutdown_token.cancelled().await;
+                    info!("Shutdown signal received, stopping health check service");
+                });
+
+            if let Err(e) = health_server.await {
                 error!("Health check service error: {}", e);
             }
         });
 
         // Start main gRPC server
-        self.start().await
+        self.start(shutdown_token).await
     }
 }
 

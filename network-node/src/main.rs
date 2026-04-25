@@ -59,16 +59,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Note: If using `tracing-subscriber`, we use global init.
     subscriber.init();
 
-    // Setup shutdown hook to properly close OpenTelemetry
-    let config_clone = config.clone();
-    ctrlc::set_handler(move || {
-        info!("Received shutdown signal, closing telemetry...");
-        if config_clone.tracing_enabled {
-            telemetry::shutdown_tracer();
-        }
-        std::process::exit(0);
-    })?;
-
     info!(
         service.name = "axionvera-network-node",
         service.version = env!("CARGO_PKG_VERSION"),
@@ -90,6 +80,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     info!("Network node shutdown complete");
+
+
+    info!("Network node shutdown complete");
+
 
     // Shutdown OpenTelemetry tracer provider
     telemetry::shutdown_tracer();
