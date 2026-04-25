@@ -39,6 +39,7 @@ impl VaultContract {
     /// Deposits tokens into the vault and accrues pending rewards before updating balance.
     /// This ensures users receive rewards based on their old balance up to this point.
     pub fn deposit(e: Env, from: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
         from.require_auth();
 
@@ -55,6 +56,7 @@ impl VaultContract {
     /// This function is isolated from reward claiming - it only handles the deposit token.
     /// If the reward token contract fails, users can still withdraw their deposits.
     pub fn withdraw(e: Env, to: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
         to.require_auth();
 
@@ -71,6 +73,7 @@ impl VaultContract {
     /// Distributes rewards to all depositors by updating the global reward index.
     /// Does not immediately transfer rewards to users - they accrue lazily.
     pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
+        storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
 
         let state = storage::get_state(&e)?;
@@ -91,6 +94,7 @@ impl VaultContract {
     /// Claims accrued rewards for a user.
     /// Isolated from withdraw to ensure exit liquidity is always available.
     pub fn claim_rewards(e: Env, user: Address) -> Result<i128, VaultError> {
+        storage::require_initialized(&e)?;
         user.require_auth();
 
         with_non_reentrant(&e, || {
@@ -190,6 +194,7 @@ where
 }
 
 // TODO(reward-optimization): Consider a higher precision / rounding strategy for small totals.
+// TODO(gas): Consider merging per-user keys (balance/index/rewards) into a single struct to reduce reads.
 // TODO(security): Consider adding pausability or per-user deposit caps.
 // TODO(governance): Introduce admin handover / multisig patterns.
 // TODO(upgradeability): Evaluate upgrade patterns compatible with Soroban best practices.
