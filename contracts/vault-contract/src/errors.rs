@@ -54,22 +54,37 @@ pub enum AuthorizationError {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum VaultError {
+    /// Vault has already been initialized
     AlreadyInitialized = 1,
+    /// Vault has not been initialized
     NotInitialized = 2,
+    /// Caller is not authorized to perform this action
     Unauthorized = 3,
+    /// Amount must be greater than zero
     InvalidAmount = 4,
+    /// Available balance is lower than the requested amount
     InsufficientBalance = 5,
+    /// Arithmetic overflow or underflow detected
     MathOverflow = 6,
+    /// Reward distribution requires at least one active deposit
     NoDeposits = 7,
+    /// Deposit and reward token addresses must be different
     InvalidTokenConfiguration = 8,
+    /// Vault token balance is lower than the requested amount
     InsufficientContractBalance = 9,
+    /// Amount must not be negative
     NegativeAmount = 10,
+    /// Provided address is invalid
     InvalidAddress = 11,
+    /// Reward calculation failed due to checked arithmetic
     RewardCalculationFailed = 12,
 
     // Additional errors
+    /// Reentrant contract call detected
     ReentrancyDetected = 13,
+    /// Vault state is internally inconsistent
     InvalidState = 14,
+    /// Reward distribution rounded down to zero
     ZeroRewardIncrement = 15,
 }
 
@@ -135,18 +150,6 @@ impl VaultError {
             Self::ZeroRewardIncrement => ErrorInfo {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
-            },
-            Self::ReentrancyDetected => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
             },
         }
     }
