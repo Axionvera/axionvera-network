@@ -28,6 +28,7 @@ pub enum ValidationError {
     NegativeAmount,
     InvalidAddress,
     InvalidTokenConfiguration,
+    InsufficientRewardAmount,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -71,6 +72,7 @@ pub enum VaultError {
     ReentrancyDetected = 13,
     InvalidState = 14,
     ZeroRewardIncrement = 15,
+    InsufficientRewardAmount = 16,
 }
 
 impl VaultError {
@@ -190,6 +192,7 @@ impl From<ValidationError> for VaultError {
             ValidationError::NegativeAmount => Self::NegativeAmount,
             ValidationError::InvalidAddress => Self::InvalidAddress,
             ValidationError::InvalidTokenConfiguration => Self::InvalidTokenConfiguration,
+            ValidationError::InsufficientRewardAmount => Self::InsufficientRewardAmount,
         }
     }
 }
