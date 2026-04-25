@@ -20,6 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
+    ContractPaused,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -71,6 +72,7 @@ pub enum VaultError {
     ReentrancyDetected = 13,
     InvalidState = 14,
     ZeroRewardIncrement = 15,
+    ContractPaused = 16,
 }
 
 impl VaultError {
@@ -148,6 +150,10 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward increment is zero",
             },
+            Self::ContractPaused => ErrorInfo {
+                category: ErrorCategory::State,
+                message: "contract is paused",
+            },
         }
     }
 
@@ -179,6 +185,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::ContractPaused => Self::ContractPaused,
         }
     }
 }
