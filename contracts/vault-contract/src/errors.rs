@@ -136,18 +136,6 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::ReentrancyDetected => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
-            },
         }
     }
 
