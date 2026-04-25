@@ -31,6 +31,7 @@ pub mod error_middleware;
 pub mod grpc;
 pub mod horizon_client;
 pub mod indexer;
+pub mod memory_profiling;
 pub mod metrics;
 pub mod pb;
 pub mod p2p;
