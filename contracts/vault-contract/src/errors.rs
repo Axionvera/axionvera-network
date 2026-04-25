@@ -20,6 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
+    NoPendingAdmin,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -66,11 +67,10 @@ pub enum VaultError {
     NegativeAmount = 10,
     InvalidAddress = 11,
     RewardCalculationFailed = 12,
-
-    // Additional errors
     ReentrancyDetected = 13,
     InvalidState = 14,
     ZeroRewardIncrement = 15,
+    NoPendingAdmin = 16,
 }
 
 impl VaultError {
@@ -136,17 +136,9 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::ReentrancyDetected => ErrorInfo {
+            Self::NoPendingAdmin => ErrorInfo {
                 category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
+                message: "no pending admin transfer exists",
             },
         }
     }
@@ -179,6 +171,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::NoPendingAdmin => Self::NoPendingAdmin,
         }
     }
 }

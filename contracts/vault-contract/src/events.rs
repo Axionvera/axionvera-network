@@ -5,6 +5,8 @@ const EVT_DEPOSIT: Symbol = symbol_short!("deposit");
 const EVT_WITHDRAW: Symbol = symbol_short!("withdraw");
 const EVT_DISTRIBUTE: Symbol = symbol_short!("distrib");
 const EVT_CLAIM: Symbol = symbol_short!("claim");
+const EVT_ADMIN_PROPOSED: Symbol = symbol_short!("adm_prop");
+const EVT_ADMIN_ACCEPTED: Symbol = symbol_short!("adm_acpt");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,6 +49,22 @@ pub struct DistributeRewardsEvent {
 pub struct ClaimRewardsEvent {
     pub user: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdminTransferProposedEvent {
+    pub current_admin: Address,
+    pub pending_admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdminTransferAcceptedEvent {
+    pub previous_admin: Address,
+    pub new_admin: Address,
     pub timestamp: u64,
 }
 
@@ -104,6 +122,28 @@ pub fn emit_claim(e: &Env, user: Address, amount: i128) {
         ClaimRewardsEvent {
             user,
             amount,
+            timestamp: e.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn emit_admin_transfer_proposed(e: &Env, current_admin: Address, pending_admin: Address) {
+    e.events().publish(
+        (EVT_ADMIN_PROPOSED,),
+        AdminTransferProposedEvent {
+            current_admin,
+            pending_admin,
+            timestamp: e.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn emit_admin_transfer_accepted(e: &Env, previous_admin: Address, new_admin: Address) {
+    e.events().publish(
+        (EVT_ADMIN_ACCEPTED,),
+        AdminTransferAcceptedEvent {
+            previous_admin,
+            new_admin,
             timestamp: e.ledger().timestamp(),
         },
     );
