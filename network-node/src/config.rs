@@ -81,6 +81,10 @@ pub struct NetworkConfig {
     pub bootstrap_peer: Option<String>,
     pub tls_cert_path: Option<String>,
     pub tls_key_path: Option<String>,
+    /// Optional path to a PEM file containing trusted client CA certificates
+    pub tls_client_ca_path: Option<String>,
+    /// Whether to require client certificates (mTLS). Defaults to true when a client CA is provided.
+    pub tls_require_client_auth: bool,
     pub enable_gateway: bool,
     pub enable_reflection: bool,
     pub node_id: String,
@@ -215,6 +219,10 @@ impl NetworkConfig {
             bootstrap_peer: std::env::var("BOOTSTRAP_PEER").ok(),
             tls_cert_path: std::env::var("TLS_CERT_PATH").ok(),
             tls_key_path: std::env::var("TLS_KEY_PATH").ok(),
+            tls_client_ca_path: std::env::var("TLS_CLIENT_CA_PATH").ok(),
+            tls_require_client_auth: std::env::var("TLS_REQUIRE_CLIENT_AUTH").ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(true),
             enable_gateway: std::env::var("ENABLE_GATEWAY").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
             enable_reflection: std::env::var("ENABLE_REFLECTION").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
             node_id,
