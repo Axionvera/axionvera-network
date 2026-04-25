@@ -4,7 +4,7 @@ mod errors;
 mod events;
 mod storage;
 
-use soroban_sdk::{contract, contractimpl, Address, Env};
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use crate::errors::{ArithmeticError, BalanceError, StateError, ValidationError, VaultError};
 
@@ -140,6 +140,25 @@ impl VaultContract {
     pub fn reward_token(e: Env) -> Result<Address, VaultError> {
         storage::get_reward_token(&e)
     }
+
+    /// Upgrades the contract WASM to a new version.
+    /// Only the admin can perform this action.
+    /// The new WASM hash must reference a valid, already-uploaded WASM that
+    /// is compatible with the current storage layout.
+    pub fn upgrade(e: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        admin.require_auth();
+
+        let stored_admin = storage::get_admin(&e)?;
+        if admin != stored_admin {
+            return Err(VaultError::UpgradeFailed);
+        }
+
+        e.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        events::emit_upgrade(&e, admin, new_wasm_hash);
+
+        Ok(())
+    }
 }
 
 fn validate_positive_amount(amount: i128) -> Result<(), VaultError> {
@@ -197,4 +216,130 @@ where
 // TODO(gas): Consider merging per-user keys (balance/index/rewards) into a single struct to reduce reads.
 // TODO(security): Consider adding pausability or per-user deposit caps.
 // TODO(governance): Introduce admin handover / multisig patterns.
-// TODO(upgradeability): Evaluate upgrade patterns compatible with Soroban best practices.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axionvera_vault_contract_v2::VaultContractV2Client;
+    use soroban_sdk::testutils::Address as _;
+
+    /// Deploys V1, initializes it, sets up state, then upgrades to V2.
+    /// Verifies that V2 functions work while maintaining V1 state.
+    ///
+    /// Prerequisite: Build V2 WASM before running:
+    ///   cargo build --target wasm32-unknown-unknown --release -p axionvera-vault-contract-v2
+    #[test]
+    fn upgrade_v1_to_v2_preserves_state() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+        let user = Address::generate(&env);
+
+        // ── Deploy V1 ──────────────────────────────────────────────
+        let contract_id = env.register_contract(None, VaultContract);
+        let v1 = VaultContractClient::new(&env, &contract_id);
+
+        // Initialize V1
+        v1.initialize(&admin, &deposit_token, &reward_token);
+
+        // Verify V1 version
+        assert_eq!(v1.version(), 1);
+
+        // Set up V1 state: write a user balance directly into storage
+        // so we can verify it survives the upgrade without needing a
+        // token contract for a full deposit flow.
+        {
+            let key = storage::DataKey::UserBalance(user.clone());
+            env.as_contract(&contract_id, || {
+                env.storage().persistent().set(&key, &5_000_i128);
+            });
+        }
+
+        // Verify the balance is readable via V1
+        assert_eq!(v1.balance(&user), Ok(5_000));
+        assert_eq!(v1.admin(), Ok(admin.clone()));
+
+        // ── Upload V2 WASM ─────────────────────────────────────────
+        let v2_wasm_path = std::path::Path::new(
+            "../target/wasm32-unknown-unknown/release/axionvera_vault_contract_v2.wasm",
+        );
+        let v2_wasm_bytes =
+            std::fs::read(v2_wasm_path).expect(
+                "V2 WASM not found. Build it first:\n  \
+                 cargo build --target wasm32-unknown-unknown --release \
+                 -p axionvera-vault-contract-v2",
+            );
+        let v2_hash = env.deployer().upload_contract_wasm(v2_wasm_bytes);
+
+        // ── Upgrade to V2 ─────────────────────────────────────────
+        v1.upgrade(&admin, &v2_hash);
+
+        // ── Verify V2 behavior with preserved V1 state ─────────────
+        let v2 = VaultContractV2Client::new(&env, &contract_id);
+
+        // V2 reports version 2
+        assert_eq!(v2.version(), 2);
+
+        // V1 state is still readable
+        assert_eq!(v2.balance(&user), 5_000);
+        assert_eq!(v2.admin(), admin);
+
+        // V2-only function works
+        assert_eq!(v2.v2_greeting(), soroban_sdk::symbol_short!("hello"));
+    }
+
+    /// Verifies that only the stored admin can upgrade the contract.
+    #[test]
+    fn upgrade_rejects_non_admin() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let imposter = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+
+        let contract_id = env.register_contract(None, VaultContract);
+        let client = VaultContractClient::new(&env, &contract_id);
+        client.initialize(&admin, &deposit_token, &reward_token);
+
+        // Build V2 WASM hash (reuse the same WASM for simplicity)
+        let v2_wasm_path = std::path::Path::new(
+            "../target/wasm32-unknown-unknown/release/axionvera_vault_contract_v2.wasm",
+        );
+        let v2_wasm_bytes =
+            std::fs::read(v2_wasm_path).expect("V2 WASM not found. Build it first.");
+        let v2_hash = env.deployer().upload_contract_wasm(v2_wasm_bytes);
+
+        // Non-admin should be rejected
+        let result = client.try_upgrade(&imposter, &v2_hash);
+        assert!(result.is_err());
+    }
+
+    /// Verifies that upgrade fails on uninitialized contract.
+    #[test]
+    fn upgrade_fails_on_uninitialized_contract() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let fake_admin = Address::generate(&env);
+
+        let contract_id = env.register_contract(None, VaultContract);
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        // Build V2 WASM hash
+        let v2_wasm_path = std::path::Path::new(
+            "../target/wasm32-unknown-unknown/release/axionvera_vault_contract_v2.wasm",
+        );
+        let v2_wasm_bytes =
+            std::fs::read(v2_wasm_path).expect("V2 WASM not found. Build it first.");
+        let v2_hash = env.deployer().upload_contract_wasm(v2_wasm_bytes);
+
+        // Upgrade on uninitialized contract should fail
+        let result = client.try_upgrade(&fake_admin, &v2_hash);
+        assert!(result.is_err());
+    }
+}
