@@ -47,7 +47,7 @@ impl VaultContract {
             let (_, position) = storage::store_deposit(&e, &from, amount)?;
             let token = soroban_sdk::token::Client::new(&e, &token_id);
             token.transfer(&from, &e.current_contract_address(), &amount);
-            events::emit_deposit(&e, from.clone(), amount, position.balance);
+            events::emit_deposit(&e, from.clone(), amount);
             Ok(())
         })
     }
@@ -65,7 +65,7 @@ impl VaultContract {
             let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
             token.transfer(&e.current_contract_address(), &to, &amount);
 
-            events::emit_withdraw(&e, to, amount, position.balance);
+            events::emit_withdraw(&e, to, amount);
             Ok(())
         })
     }
@@ -86,7 +86,7 @@ impl VaultContract {
             let next_index = storage::store_reward_distribution(&e, amount)?.reward_index;
             let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
             reward_token.transfer(&admin, &e.current_contract_address(), &amount);
-            events::emit_distribute(&e, admin.clone(), amount, next_index);
+            events::emit_distribute(&e, admin.clone(), amount);
             Ok(next_index)
         })
     }
