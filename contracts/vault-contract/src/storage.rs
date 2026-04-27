@@ -4,11 +4,11 @@ use crate::errors::{ArithmeticError, AuthorizationError, StateError, VaultError}
 
 pub const REWARD_INDEX_SCALE: i128 = 1_000_000_000_000_000_000;
 
-const INSTANCE_TTL_THRESHOLD: u32 = 100;
-const INSTANCE_TTL_EXTEND_TO: u32 = 1_000;
+const INSTANCE_TTL_THRESHOLD: u32 = 518_400;
+const INSTANCE_TTL_EXTEND_TO: u32 = 518_400;
 
-const PERSISTENT_TTL_THRESHOLD: u32 = 100;
-const PERSISTENT_TTL_EXTEND_TO: u32 = 10_000;
+const PERSISTENT_TTL_THRESHOLD: u32 = 518_400;
+const PERSISTENT_TTL_EXTEND_TO: u32 = 518_400;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,6 +22,7 @@ pub enum DataKey {
     UserBalance(Address),
     UserRewardIndex(Address),
     UserRewards(Address),
+    ReentrancyGuard,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,8 +31,44 @@ pub struct UserRewardSnapshot {
     pub rewards: i128,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultState {
+    pub admin: Address,
+    pub deposit_token: Address,
+    pub reward_token: Address,
+    pub total_deposits: i128,
+    pub reward_index: i128,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UserPosition {
+    pub balance: i128,
+    pub reward_index: i128,
+    pub rewards: i128,
+}
+
 pub fn is_initialized(e: &Env) -> bool {
     e.storage().instance().has(&DataKey::Initialized)
+}
+
+pub fn require_initialized(e: &Env) -> Result<(), VaultError> {
+    if is_initialized(e) {
+        Ok(())
+    } else {
+        Err(StateError::NotInitialized.into())
+    }
+}
+
+fn bump_instance_ttl(e: &Env) {
+    e.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
+}
+
+fn bump_persistent_ttl(e: &Env, key: &DataKey) {
+    e.storage()
+        .persistent()
+        .extend_ttl(key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND_TO);
 }
 
 pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
@@ -42,32 +79,43 @@ pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
     {
         return Err(AuthorizationError::ReentrancyDetected.into());
     }
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &true);
     bump_instance_ttl(e);
     Ok(())
 }
 
-pub fn set_initialized(e: &Env) {
+pub fn exit_non_reentrant(e: &Env) {
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
+    bump_instance_ttl(e);
+}
+
+pub fn initialize_state(e: &Env, admin: &Address, deposit_token: &Address, reward_token: &Address) {
     e.storage().instance().set(&DataKey::Initialized, &true);
-    bump_instance_ttl(e);
-}
-
-pub fn set_admin(e: &Env, admin: &Address) {
     e.storage().instance().set(&DataKey::Admin, admin);
+    e.storage().instance().set(&DataKey::DepositToken, deposit_token);
+    e.storage().instance().set(&DataKey::RewardToken, reward_token);
+    e.storage().instance().set(&DataKey::TotalDeposits, &0_i128);
+    e.storage().instance().set(&DataKey::RewardIndex, &0_i128);
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
     bump_instance_ttl(e);
 }
 
-pub fn get_admin(e: &Env) -> Result<Address, VaultError> {
+pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
     require_initialized(e)?;
-    e.storage()
-        .instance()
-        .get(&DataKey::State)
-        .ok_or(StateError::NotInitialized)?;
+    let state = VaultState {
+        admin: e.storage().instance().get(&DataKey::Admin).ok_or(StateError::NotInitialized)?,
+        deposit_token: e.storage().instance().get(&DataKey::DepositToken).ok_or(StateError::NotInitialized)?,
+        reward_token: e.storage().instance().get(&DataKey::RewardToken).ok_or(StateError::NotInitialized)?,
+        total_deposits: e.storage().instance().get(&DataKey::TotalDeposits).unwrap_or(0_i128),
+        reward_index: e.storage().instance().get(&DataKey::RewardIndex).unwrap_or(0_i128),
+    };
     bump_instance_ttl(e);
     Ok(state)
 }
 
-pub fn set_deposit_token(e: &Env, token: &Address) {
-    e.storage().instance().set(&DataKey::DepositToken, token);
+pub fn set_state(e: &Env, state: &VaultState) {
+    e.storage().instance().set(&DataKey::TotalDeposits, &state.total_deposits);
+    e.storage().instance().set(&DataKey::RewardIndex, &state.reward_index);
     bump_instance_ttl(e);
 }
 
@@ -75,9 +123,8 @@ pub fn get_admin(e: &Env) -> Result<Address, VaultError> {
     Ok(get_state(e)?.admin)
 }
 
-pub fn set_reward_token(e: &Env, token: &Address) {
-    e.storage().instance().set(&DataKey::RewardToken, token);
-    bump_instance_ttl(e);
+pub fn get_deposit_token(e: &Env) -> Result<Address, VaultError> {
+    Ok(get_state(e)?.deposit_token)
 }
 
 pub fn get_reward_token(e: &Env) -> Result<Address, VaultError> {
@@ -85,50 +132,24 @@ pub fn get_reward_token(e: &Env) -> Result<Address, VaultError> {
 }
 
 pub fn get_total_deposits(e: &Env) -> Result<i128, VaultError> {
-    require_initialized(e)?;
-    Ok(e.storage()
-        .instance()
-        .get(&DataKey::TotalDeposits)
-        .unwrap_or(0_i128))
-}
-
-pub fn set_total_deposits(e: &Env, total: i128) {
-    e.storage().instance().set(&DataKey::TotalDeposits, &total);
-    bump_instance_ttl(e);
-}
-
-pub fn set_total_deposits(e: &Env, total: i128) {
-    if let Ok(mut state) = get_state(e) {
-        state.total_deposits = total;
-        set_state(e, &state);
-    }
+    Ok(get_state(e)?.total_deposits)
 }
 
 pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
-    require_initialized(e)?;
-    Ok(e.storage()
-        .instance()
-        .get(&DataKey::RewardIndex)
-        .unwrap_or(0_i128))
+    Ok(get_state(e)?.reward_index)
 }
 
-pub fn get_user_position(e: &Env, user: &Address) -> Result<UserPosition, VaultError> {
-    require_initialized(e)?;
-    bump_instance_ttl(e);
-}
-
-pub fn get_user_balance(e: &Env, user: &Address) -> Result<i128, VaultError> {
-    require_initialized(e)?;
+pub fn get_user_balance_and_extend(e: &Env, user: &Address) -> i128 {
     let key = DataKey::UserBalance(user.clone());
     if let Some(bal) = e.storage().persistent().get(&key) {
         bump_persistent_ttl(e, &key);
-        Ok(bal)
+        bal
     } else {
-        Ok(0_i128)
+        0_i128
     }
 }
 
-pub fn set_user_balance(e: &Env, user: &Address, balance: i128) {
+pub fn set_user_balance_and_extend(e: &Env, user: &Address, balance: i128) {
     let key = DataKey::UserBalance(user.clone());
     if balance == 0 {
         e.storage().persistent().remove(&key);
@@ -138,34 +159,59 @@ pub fn set_user_balance(e: &Env, user: &Address, balance: i128) {
     }
 }
 
+pub fn get_user_reward_index_and_extend(e: &Env, user: &Address) -> i128 {
+    let key = DataKey::UserRewardIndex(user.clone());
+    if let Some(idx) = e.storage().persistent().get(&key) {
+        bump_persistent_ttl(e, &key);
+        idx
+    } else {
+        0_i128
+    }
+}
+
+pub fn set_user_reward_index_and_extend(e: &Env, user: &Address, index: i128) {
+    let key = DataKey::UserRewardIndex(user.clone());
+    e.storage().persistent().set(&key, &index);
+    bump_persistent_ttl(e, &key);
+}
+
+pub fn get_user_rewards_and_extend(e: &Env, user: &Address) -> i128 {
+    let key = DataKey::UserRewards(user.clone());
+    if let Some(rewards) = e.storage().persistent().get(&key) {
+        bump_persistent_ttl(e, &key);
+        rewards
+    } else {
+        0_i128
+    }
+}
+
+pub fn set_user_rewards_and_extend(e: &Env, user: &Address, rewards: i128) {
+    let key = DataKey::UserRewards(user.clone());
+    e.storage().persistent().set(&key, &rewards);
+    bump_persistent_ttl(e, &key);
+}
+
+pub fn get_user_position_unchecked(e: &Env, user: &Address) -> UserPosition {
+    UserPosition {
+        balance: get_user_balance_and_extend(e, user),
+        reward_index: get_user_reward_index_and_extend(e, user),
+        rewards: get_user_rewards_and_extend(e, user),
+    }
+}
+
+pub fn get_user_position(e: &Env, user: &Address) -> Result<UserPosition, VaultError> {
+    require_initialized(e)?;
+    Ok(get_user_position_unchecked(e, user))
+}
+
+pub fn set_user_position(e: &Env, user: &Address, position: &UserPosition) {
+    set_user_balance_and_extend(e, user, position.balance);
+    set_user_reward_index_and_extend(e, user, position.reward_index);
+    set_user_rewards_and_extend(e, user, position.rewards);
+}
+
 pub fn get_user_balance(e: &Env, user: &Address) -> Result<i128, VaultError> {
     Ok(get_user_position(e, user)?.balance)
-}
-
-pub fn set_user_balance(e: &Env, user: &Address, balance: i128) {
-    let mut position = get_user_position_unchecked(e, user);
-    position.balance = balance;
-    set_user_position(e, user, &position);
-}
-
-pub fn get_user_reward_index(e: &Env, user: &Address) -> Result<i128, VaultError> {
-    Ok(get_user_position(e, user)?.reward_index)
-}
-
-pub fn set_user_reward_index(e: &Env, user: &Address, index: i128) {
-    let mut position = get_user_position_unchecked(e, user);
-    position.reward_index = index;
-    set_user_position(e, user, &position);
-}
-
-pub fn get_user_rewards(e: &Env, user: &Address) -> Result<i128, VaultError> {
-    Ok(get_user_position(e, user)?.rewards)
-}
-
-pub fn set_user_rewards(e: &Env, user: &Address, rewards: i128) {
-    let mut position = get_user_position_unchecked(e, user);
-    position.rewards = rewards;
-    set_user_position(e, user, &position);
 }
 
 pub fn store_deposit(
@@ -206,6 +252,13 @@ pub fn store_withdraw(
     if state.total_deposits < amount {
         return Err(StateError::InvalidState.into());
     }
+
+    position.balance = position.balance.checked_sub(amount).unwrap();
+    state.total_deposits = state.total_deposits.checked_sub(amount).unwrap();
+
+    set_state(e, &state);
+    set_user_position(e, user, &position);
+    Ok((state, position))
 }
 
 pub fn store_reward_distribution(e: &Env, amount: i128) -> Result<VaultState, VaultError> {
@@ -235,18 +288,11 @@ pub fn store_claimable_rewards(e: &Env, user: &Address) -> Result<i128, VaultErr
 
 pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapshot, VaultError> {
     if !is_initialized(e) {
-        return Err(VaultError::NotInitialized);
+        return Err(StateError::NotInitialized.into());
     }
 
-    let global_idx = get_reward_index(e)?;
-    let user_idx = get_user_reward_index(e, user)?;
-    let current_rewards = get_user_rewards(e, user)?;
-    if global_idx == user_idx {
-        return Ok(UserRewardSnapshot {
-            reward_index: user_idx,
-            rewards: current_rewards,
-        });
-    }
+    let state = get_state(e)?;
+    let position = get_user_position_unchecked(e, user);
 
     if state.reward_index == position.reward_index || position.balance == 0 {
         return Ok(UserRewardSnapshot {
@@ -293,6 +339,13 @@ pub(crate) fn checked_reward_index_increment(
     Ok(increment)
 }
 
+pub(crate) fn checked_accrued_rewards(balance: i128, delta: i128) -> Result<i128, VaultError> {
+    let scaled = balance
+        .checked_mul(delta)
+        .ok_or(VaultError::MathOverflow)?;
+    Ok(scaled / REWARD_INDEX_SCALE)
+}
+
 pub fn pending_user_rewards_view(e: &Env, user: &Address) -> Result<i128, VaultError> {
     Ok(preview_user_rewards(e, user)?.rewards)
 }
@@ -322,24 +375,4 @@ fn accrue_position_rewards(
 
     position.reward_index = state.reward_index;
     Ok(())
-}
-
-fn require_initialized(e: &Env) -> Result<(), VaultError> {
-    if is_initialized(e) {
-        Ok(())
-    } else {
-        Err(StateError::NotInitialized.into())
-    }
-}
-
-fn bump_instance_ttl(e: &Env) {
-    e.storage()
-        .instance()
-        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
-}
-
-fn bump_persistent_ttl(e: &Env, key: &DataKey) {
-    e.storage()
-        .persistent()
-        .extend_ttl(key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND_TO);
 }

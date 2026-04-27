@@ -44,8 +44,8 @@ impl VaultContract {
         from.require_auth();
 
         with_non_reentrant(&e, || {
-            let (_, position) = storage::store_deposit(&e, &from, amount)?;
-            let token = soroban_sdk::token::Client::new(&e, &token_id);
+            let (state, position) = storage::store_deposit(&e, &from, amount)?;
+            let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
             token.transfer(&from, &e.current_contract_address(), &amount);
             events::emit_deposit(&e, from.clone(), amount, position.balance);
             Ok(())
