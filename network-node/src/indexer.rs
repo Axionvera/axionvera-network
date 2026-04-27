@@ -1,21 +1,14 @@
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, instrument};
 
 use crate::database::ConnectionPool;
-use crate::stellar_service::StellarService;
 use crate::error::NetworkError;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct GetEventsRequest {
-    jsonrpc: String,
-    id: u32,
-    method: String,
-    params: GetEventsParams,
-}
+use crate::soroban_rpc_client::SorobanRpcClient;
+use crate::stellar_service::StellarService;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct GetEventsParams {
@@ -31,12 +24,6 @@ struct EventFilter {
     #[serde(rename = "contractIds")]
     contract_ids: Vec<String>,
     topics: Vec<Vec<String>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct GetEventsResponse {
-    result: Option<EventsResult>,
-    error: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,6 +53,7 @@ struct SorobanEventValue {
 pub struct EventIndexer {
     stellar_service: Arc<StellarService>,
     connection_pool: ConnectionPool,
+    soroban_rpc_client: Arc<SorobanRpcClient>,
     contract_id: String,
     polling_interval_secs: u64,
 }
@@ -74,75 +62,72 @@ impl EventIndexer {
     pub fn new(
         stellar_service: Arc<StellarService>,
         connection_pool: ConnectionPool,
+        soroban_rpc_client: Arc<SorobanRpcClient>,
         contract_id: String,
         polling_interval_secs: u64,
     ) -> Self {
         Self {
             stellar_service,
             connection_pool,
+            soroban_rpc_client,
             contract_id,
             polling_interval_secs,
         }
-        
-        info!("Event indexer stopped gracefully");
-        Ok(())
     }
 
     #[instrument(skip(self))]
-    pub async fn start(&self) -> Result<(), NetworkError> {
-        info!("Starting Soroban Event Indexer for contract: {}", self.contract_id);
-        
-        let client = Client::new();
-        let rpc_url = std::env::var("SOROBAN_RPC_URL").unwrap_or_else(|_| "https://soroban-testnet.stellar.org".to_string());
+    pub async fn start(&self, shutdown_token: CancellationToken) -> Result<(), NetworkError> {
+        info!(
+            "Starting Soroban Event Indexer for contract: {}",
+            self.contract_id
+        );
+
+        // Keep these dependencies initialized and available as the indexer evolves.
+        let _ = (&self.stellar_service, &self.connection_pool);
+
         let mut interval = time::interval(Duration::from_secs(self.polling_interval_secs));
         let mut current_ledger: u32 = 0;
 
         loop {
-            interval.tick().await;
-            
+            tokio::select! {
+                _ = shutdown_token.cancelled() => {
+                    info!("Event indexer stopped gracefully");
+                    return Ok(());
+                }
+                _ = interval.tick() => {}
+            }
+
             let filter = EventFilter {
                 event_type: "contract".to_string(),
                 contract_ids: vec![self.contract_id.clone()],
                 topics: vec![vec!["AxionveraVault".to_string()]],
             };
 
-            let req_body = GetEventsRequest {
-                jsonrpc: "2.0".to_string(),
-                id: 1,
-                method: "getEvents".to_string(),
-                params: GetEventsParams {
-                    start_ledger: current_ledger,
-                    filters: vec![filter],
-                },
+            let params = GetEventsParams {
+                start_ledger: current_ledger,
+                filters: vec![filter],
             };
 
-            match client.post(&rpc_url).json(&req_body).send().await {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        match response.json::<GetEventsResponse>().await {
-                            Ok(rpc_response) => {
-                                if let Some(res) = rpc_response.result {
-                                    for event in res.events {
-                                        info!(
-                                            event_id = %event.id,
-                                            ledger = event.ledger,
-                                            "Parsed AxionveraVault Soroban event"
-                                        );
-                                        // Ensure sensitive XDR is truncated/omitted from INFO logs
-                                        debug!(xdr = %event.value.xdr, "Event XDR payload");
-                                    }
-                                    current_ledger = res.latest_ledger + 1;
-                                } else if let Some(err) = rpc_response.error {
-                                    error!(error = ?err, "RPC error returned");
-                                }
-                            }
-                            Err(e) => error!("Failed to parse RPC response: {}", e),
-                        }
-                    } else {
-                        error!("RPC request failed with status: {}", response.status());
+            match self
+                .soroban_rpc_client
+                .call::<_, EventsResult>("getEvents", params)
+                .await
+            {
+                Ok(events_result) => {
+                    for event in events_result.events {
+                        info!(
+                            event_id = %event.id,
+                            ledger = event.ledger,
+                            "Parsed AxionveraVault Soroban event"
+                        );
+                        debug!(xdr = %event.value.xdr, "Event XDR payload");
                     }
+
+                    current_ledger = events_result.latest_ledger + 1;
                 }
-                Err(e) => error!("Failed to connect to Soroban RPC: {}", e),
+                Err(e) => {
+                    error!(error = %e, "Failed to fetch Soroban events");
+                }
             }
         }
     }

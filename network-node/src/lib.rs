@@ -128,6 +128,7 @@ impl NetworkNode {
         let event_indexer = Arc::new(indexer::EventIndexer::new(
             stellar_service.clone(),
             connection_pool.read().await.clone(),
+            soroban_rpc_client.clone(),
             config.vault_contract_address.clone(),
             5, // poll interval in seconds
         ));
