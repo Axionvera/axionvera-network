@@ -1,62 +1,125 @@
 use soroban_sdk::contracterror;
 
+/// Categories of errors that can occur within the vault contract.
+/// Used for grouping errors in logs and UI.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ErrorCategory {
+    /// Errors related to user permissions and authentication.
     Authorization,
+    /// Errors related to insufficient token balances.
     Balance,
+    /// Errors occurring during arithmetic calculations (overflow, etc.).
     Math,
+    /// Errors related to the contract's initialization or internal state.
     State,
+    /// Errors related to input validation (invalid amounts, addresses, etc.).
     Validation,
 }
 
+/// Structured information about an error.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct ErrorInfo {
+    /// The category this error belongs to.
     pub category: ErrorCategory,
+    /// A human-readable message describing the error.
     pub message: &'static str,
 }
 
+/// Specific errors related to contract state management.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum StateError {
+    /// Thrown when `initialize` is called on an already initialized contract.
     AlreadyInitialized,
+    /// Thrown when a sensitive function is called before the contract is initialized.
     NotInitialized,
+    /// Thrown when the internal state is found to be inconsistent.
     InvalidState,
     NoPendingAdmin,
 }
 
+/// Specific errors related to input validation.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ValidationError {
+    /// Thrown when an amount is zero but must be positive.
     InvalidAmount,
+    /// Thrown when a negative amount is provided where only positive values are allowed.
     NegativeAmount,
+    /// Thrown when a provided address is invalid or not authorized.
     InvalidAddress,
+    /// Thrown when token addresses (deposit/reward) are misconfigured (e.g., identical).
     InvalidTokenConfiguration,
     InsufficientRewardAmount,
 }
 
+/// Specific errors related to balance checks.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BalanceError {
+    /// Thrown when a user tries to withdraw more than their staked balance.
     InsufficientBalance,
+    /// Thrown when the vault itself doesn't have enough reward tokens to pay out.
     InsufficientContractBalance,
+    /// Thrown when reward distribution is attempted but there are no depositors.
     NoDeposits,
 }
 
+/// Specific errors related to mathematical operations.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ArithmeticError {
+    /// Thrown when an addition, subtraction, or multiplication would overflow.
     Overflow,
+    /// Thrown when reward calculation logic fails due to precision issues or zero division.
     RewardCalculationFailed,
+    /// Thrown when a distributed reward amount is too small to increment the index.
     ZeroRewardIncrement,
 }
 
+/// Specific errors related to authorization and security.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AuthorizationError {
+    /// Thrown when a caller lacks the necessary permissions for an action.
     Unauthorized,
+    /// Thrown when a reentrant call is detected by the guard.
     ReentrancyDetected,
     UpgradeFailed,
 }
 
+/// The primary error type for the Vault contract.
+///
+/// This enum is exposed to the Soroban runtime and mapped to specific error codes (u32).
+/// It implements `From` for all sub-error types for easy conversion.
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum VaultError {
+    /// Error code 1: The vault has already been initialized.
+    AlreadyInitialized = 1,
+    /// Error code 2: The vault has not been initialized yet.
+    NotInitialized = 2,
+    /// Error code 3: The caller is not authorized for this operation.
+    Unauthorized = 3,
+    /// Error code 4: The provided amount is invalid (e.g., zero).
+    InvalidAmount = 4,
+    /// Error code 5: The user has insufficient balance for the operation.
+    InsufficientBalance = 5,
+    /// Error code 6: An arithmetic overflow or underflow occurred.
+    MathOverflow = 6,
+    /// Error code 7: No deposits are present to receive distributed rewards.
+    NoDeposits = 7,
+    /// Error code 8: The token configuration (deposit vs reward) is invalid.
+    InvalidTokenConfiguration = 8,
+    /// Error code 9: The contract has insufficient funds to fulfill a request.
+    InsufficientContractBalance = 9,
+    /// Error code 10: A negative amount was provided where prohibited.
+    NegativeAmount = 10,
+    /// Error code 11: The provided address is invalid.
+    InvalidAddress = 11,
+    /// Error code 12: Reward calculation failed due to mathematical error.
+    RewardCalculationFailed = 12,
+    /// Error code 13: A reentrant call was detected and blocked.
+    ReentrancyDetected = 13,
+    /// Error code 14: The internal state of the contract is invalid.
+    InvalidState = 14,
+    /// Error code 15: The reward increment would be zero (amount too small).
     /// Vault has already been initialized
     AlreadyInitialized = 1,
     /// Vault has not been initialized
