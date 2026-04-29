@@ -67,4 +67,13 @@ This avoids iterating over depositors and keeps distribution `O(1)`.
 - Gas and storage read optimizations
 - Additional security checks (pause, caps, allowlists)
 - Governance patterns (admin handover, multisig)
-- Upgrade patterns compatible with Soroban best practices
+
+## Contract Upgradeability
+
+The vault contract implements WASM-swap upgradeability via the `upgrade(env, admin, new_wasm_hash)` function. See [ARCHITECTURE.md](../../ARCHITECTURE.md) for the full upgrade procedure and safety considerations.
+
+Key points:
+- Only the stored admin can authorize an upgrade (`admin.require_auth()` + address comparison).
+- The new WASM must use the same `DataKey` storage layout to preserve state.
+- Every upgrade emits an `upgrade` event (admin + new WASM hash) for auditability.
+- The `VaultContractV2` crate in `contracts/vault-contract-v2/` serves as a reference V2 mock for upgrade testing.

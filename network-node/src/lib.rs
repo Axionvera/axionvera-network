@@ -31,6 +31,7 @@ pub mod error_middleware;
 pub mod grpc;
 pub mod horizon_client;
 pub mod indexer;
+pub mod memory_profiling;
 pub mod metrics;
 pub mod pb;
 pub mod p2p;
@@ -128,6 +129,7 @@ impl NetworkNode {
         let event_indexer = Arc::new(indexer::EventIndexer::new(
             stellar_service.clone(),
             connection_pool.read().await.clone(),
+            soroban_rpc_client.clone(),
             config.vault_contract_address.clone(),
             5, // poll interval in seconds
         ));

@@ -19,15 +19,45 @@ pub struct HorizonConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SorobanConfig {
+    #[serde(default = "default_soroban_rpc_url")]
     pub rpc_url: String,
+    #[serde(default)]
+    pub rpc_urls: Vec<String>,
     pub network_passphrase: String,
     pub health_check_interval_seconds: u64,
+}
+
+fn default_soroban_rpc_url() -> String {
+    "https://soroban-testnet.stellar.org:443".to_string()
+}
+
+impl SorobanConfig {
+    pub fn rpc_endpoints(&self) -> Vec<String> {
+        let mut endpoints = Vec::new();
+
+        if !self.rpc_url.trim().is_empty() {
+            endpoints.push(self.rpc_url.clone());
+        }
+
+        for rpc_url in &self.rpc_urls {
+            if !rpc_url.trim().is_empty() && !endpoints.iter().any(|url| url == rpc_url) {
+                endpoints.push(rpc_url.clone());
+            }
+        }
+
+        if endpoints.is_empty() {
+            endpoints.push(default_soroban_rpc_url());
+        }
+
+        endpoints
+    }
 }
 
 impl Default for SorobanConfig {
     fn default() -> Self {
         Self {
-            rpc_url: "https://soroban-testnet.stellar.org:443".to_string(),
+            rpc_url: default_soroban_rpc_url(),
+            rpc_urls: Vec::new(),
             network_passphrase: "Test SDF Testnet ; September 2015".to_string(),
             health_check_interval_seconds: 60,
         }

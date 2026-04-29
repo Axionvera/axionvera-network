@@ -151,3 +151,81 @@ The core source of truth is the Soroban smart contract.
   - `UserRewards(Address)`: i128
 
 For detailed contract math and reward mechanics, see the contract specifications in `docs/contract-spec.md`.
+
+## Contract Upgradeability (WASM Swap)
+
+The vault contract supports in-place WASM upgrades, allowing the admin to replace the contract code while preserving all on-chain state. This is critical for deploying bug fixes without requiring users to migrate to a new contract address.
+
+### How It Works
+
+The contract exposes an `upgrade(env, admin, new_wasm_hash)` function that:
+
+1. Verifies the contract has been initialized.
+2. Requires `admin.require_auth()` — only the stored admin can authorize an upgrade.
+3. Checks that the caller matches the stored admin address (double-check beyond Soroban auth).
+4. Calls `env.deployer().update_current_contract_wasm(new_wasm_hash)` — the Soroban built-in that swaps the WASM code at the current contract address.
+5. Emits an `upgrade` event with the admin address and the new WASM hash for auditability.
+
+### Storage Compatibility
+
+After an upgrade, the new WASM **must** use the same `DataKey` enum layout for instance and persistent storage. If the keys change, the upgraded contract will be unable to read existing state and user funds could be lost.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Vault as Vault Contract (V1)
+    participant Deployer as Soroban Deployer
+    participant VaultV2 as Vault Contract (V2)
+
+    Admin->>Vault: upgrade(admin, v2_wasm_hash)
+    Vault->>Vault: verify admin + require_auth()
+    Vault->>Deployer: update_current_contract_wasm(v2_wasm_hash)
+    Deployer-->>Vault: WASM swapped in-place
+    Vault->>Vault: emit upgrade event
+    Note over Vault,VaultV2: Same contract address, new code
+    Admin->>VaultV2: version() → 2
+    Admin->>VaultV2: balance(user) → preserved V1 state
+```
+
+### Upgrade Procedure via Stellar CLI
+
+1. **Build the new WASM**:
+   ```bash
+   cargo build --target wasm32-unknown-unknown --release -p axionvera-vault-contract
+   ```
+
+2. **Deploy the new WASM to the network**:
+   ```bash
+   soroban contract upload \
+     --wasm target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm \
+     --source admin \
+     --network testnet
+   ```
+   This returns the new WASM hash (`<NEW_WASM_HASH>`).
+
+3. **Invoke the upgrade function** on the existing contract:
+   ```bash
+   soroban contract invoke \
+     --id <CONTRACT_ID> \
+     --source admin \
+     --network testnet \
+     -- upgrade \
+     --admin <ADMIN_ADDRESS> \
+     --new_wasm_hash <NEW_WASM_HASH>
+   ```
+
+4. **Verify the upgrade** by calling `version()` or another function that distinguishes V2 from V1:
+   ```bash
+   soroban contract invoke \
+     --id <CONTRACT_ID> \
+     --network testnet \
+     -- version
+   ```
+
+### Safety Considerations
+
+- **Admin-only**: Only the address stored as `admin` in instance storage can call `upgrade`. If admin access is lost, the contract cannot be upgraded.
+- **No state migration**: `update_current_contract_wasm` only swaps the code. It does not run any initialization logic in the new WASM. Any state migration must be handled by the new contract code explicitly.
+- **Storage layout**: The new WASM must preserve the `DataKey` enum variant order. Adding new variants is safe; reordering or removing existing variants is not.
+- **Event audit trail**: Every upgrade emits an `upgrade` event containing the admin and the new WASM hash, enabling off-chain monitors to detect and verify upgrades.
+- **Test before deploying**: Always test the upgrade path on Futurenet before deploying to Testnet or Mainnet.
