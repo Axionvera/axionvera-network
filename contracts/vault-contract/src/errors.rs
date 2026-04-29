@@ -20,7 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
-    ContractPaused,
+    NoPendingAdmin,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -81,15 +81,12 @@ pub enum VaultError {
     InvalidAddress = 11,
     /// Reward calculation failed due to checked arithmetic
     RewardCalculationFailed = 12,
-
-    // Additional errors
-    /// Reentrant contract call detected
     ReentrancyDetected = 13,
     /// Vault state is internally inconsistent
     InvalidState = 14,
     /// Reward distribution rounded down to zero
     ZeroRewardIncrement = 15,
-    InsufficientRewardAmount = 16,
+    NoPendingAdmin = 16,
 }
 
 impl VaultError {
@@ -155,6 +152,10 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
+            Self::NoPendingAdmin => ErrorInfo {
+                category: ErrorCategory::State,
+                message: "no pending admin transfer exists",
+            },
         }
     }
 
@@ -186,7 +187,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
-            StateError::ContractPaused => Self::ContractPaused,
+            StateError::NoPendingAdmin => Self::NoPendingAdmin,
         }
     }
 }
