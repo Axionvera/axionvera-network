@@ -1,5 +1,10 @@
 use axionvera_network_node::NetworkNode;
 use axionvera_network_node::config::TracingExporter;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 use axionvera_network_node::telemetry;
 use std::path::PathBuf;
 use tracing::{error, info, Level};

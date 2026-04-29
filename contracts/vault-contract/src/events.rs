@@ -1,10 +1,11 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol};
 
 const EVT_INIT: Symbol = symbol_short!("init");
 const EVT_DEPOSIT: Symbol = symbol_short!("deposit");
 const EVT_WITHDRAW: Symbol = symbol_short!("withdraw");
 const EVT_DISTRIBUTE: Symbol = symbol_short!("distrib");
 const EVT_CLAIM: Symbol = symbol_short!("claim");
+const EVT_UPGRADE: Symbol = symbol_short!("upgrade");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -104,6 +105,25 @@ pub fn emit_claim(e: &Env, user: Address, amount: i128) {
         ClaimRewardsEvent {
             user,
             amount,
+            timestamp: e.ledger().timestamp(),
+        },
+    );
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UpgradeEvent {
+    pub admin: Address,
+    pub new_wasm_hash: BytesN<32>,
+    pub timestamp: u64,
+}
+
+pub fn emit_upgrade(e: &Env, admin: Address, new_wasm_hash: BytesN<32>) {
+    e.events().publish(
+        (EVT_UPGRADE,),
+        UpgradeEvent {
+            admin,
+            new_wasm_hash,
             timestamp: e.ledger().timestamp(),
         },
     );

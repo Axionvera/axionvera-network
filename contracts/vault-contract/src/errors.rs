@@ -20,6 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
+    ContractPaused,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -48,6 +49,7 @@ pub enum ArithmeticError {
 pub enum AuthorizationError {
     Unauthorized,
     ReentrancyDetected,
+    UpgradeFailed,
 }
 
 #[contracterror]
@@ -71,6 +73,8 @@ pub enum VaultError {
     ReentrancyDetected = 13,
     InvalidState = 14,
     ZeroRewardIncrement = 15,
+    ContractPaused = 16,
+    UpgradeFailed = 16,
 }
 
 impl VaultError {
@@ -167,6 +171,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::ContractPaused => Self::ContractPaused,
         }
     }
 }
@@ -207,6 +212,7 @@ impl From<AuthorizationError> for VaultError {
         match error {
             AuthorizationError::Unauthorized => Self::Unauthorized,
             AuthorizationError::ReentrancyDetected => Self::ReentrancyDetected,
+            AuthorizationError::UpgradeFailed => Self::UpgradeFailed,
         }
     }
 }

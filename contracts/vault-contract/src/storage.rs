@@ -23,6 +23,7 @@ pub enum DataKey {
     UserBalance(Address),
     UserRewardIndex(Address),
     UserRewards(Address),
+    IsPaused,
 }
 
 #[contracttype]
