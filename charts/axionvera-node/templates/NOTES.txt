@@ -1,0 +1,24 @@
+1. The Axionvera node has been deployed.
+
+  Get the service details:
+    kubectl get svc {{ include "axionvera-node.fullname" . }} -n {{ .Release.Namespace }}
+
+  To inspect the service endpoint:
+    kubectl get svc {{ include "axionvera-node.fullname" . }} -n {{ .Release.Namespace }} -o wide
+
+2. Main service ports:
+    http: {{ .Values.service.ports.http }}
+    rpc: {{ .Values.service.ports.rpc }}
+    p2p: {{ .Values.service.ports.p2p }}
+
+{{- if .Values.service.metrics.enabled }}
+3. Metrics service:
+    kubectl get svc {{ printf "%s-metrics" (include "axionvera-node.fullname" .) }} -n {{ .Release.Namespace }}
+    metrics: {{ .Values.service.ports.metrics }}
+
+{{- end }}
+4. From within the cluster, use the service DNS name:
+    {{ include "axionvera-node.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+
+5. Example install command:
+    helm install <release-name> ./charts/axionvera-node --namespace <namespace> --create-namespace

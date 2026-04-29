@@ -1,0 +1,66 @@
+replicaCount: 3
+
+image:
+  repository: axionvera-network
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+  ports:
+    http: 8080
+    rpc: 8000
+    p2p: 9000
+    metrics: 8080
+  metrics:
+    enabled: true
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: 2Gi
+    ephemeral-storage: 1Gi
+  requests:
+    cpu: "500m"
+    memory: 1Gi
+    ephemeral-storage: 500Mi
+
+config:
+  server:
+    host: "0.0.0.0"
+    port: 8080
+  rpc:
+    enabled: true
+    port: 8000
+  p2p:
+    enabled: true
+    port: 9000
+    bootstrap_nodes: []
+  metrics:
+    enabled: true
+    port: 8080
+    path: "/metrics"
+  logging:
+    level: info
+    format: json
+  transaction_queue:
+    max_size: 10000
+    batch_size: 100
+    timeout_ms: 5000
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
