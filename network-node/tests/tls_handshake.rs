@@ -1,11 +1,11 @@
-use rcgen::{CertificateParams, DistinguishedName, DnType, IsCa, BasicConstraints};
-use tokio::net::TcpListener;
-use tokio_rustls::TlsAcceptor;
-use tokio_rustls::rustls::{ClientConfig, RootCertStore, Certificate as RCert};
-use tokio_rustls::TlsConnector;
-use tokio::io::{AsyncWriteExt};
-use std::sync::Arc;
 use axionvera_network_node::tls_utils::build_rustls_server_config;
+use rcgen::{BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa};
+use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpListener;
+use tokio_rustls::rustls::{Certificate as RCert, ClientConfig, RootCertStore};
+use tokio_rustls::TlsAcceptor;
+use tokio_rustls::TlsConnector;
 
 #[tokio::test]
 async fn server_rejects_client_without_cert_when_mtls_required() {
@@ -13,13 +13,17 @@ async fn server_rejects_client_without_cert_when_mtls_required() {
     let mut ca_params = CertificateParams::new(vec![]);
     ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
     ca_params.distinguished_name = DistinguishedName::new();
-    ca_params.distinguished_name.push(DnType::CommonName, "Test CA");
+    ca_params
+        .distinguished_name
+        .push(DnType::CommonName, "Test CA");
     let ca_cert = rcgen::Certificate::from_params(ca_params).unwrap();
 
     // Server cert signed by CA
     let mut server_params = CertificateParams::new(vec!["localhost".to_string()]);
     server_params.distinguished_name = DistinguishedName::new();
-    server_params.distinguished_name.push(DnType::CommonName, "localhost");
+    server_params
+        .distinguished_name
+        .push(DnType::CommonName, "localhost");
     server_params.is_ca = IsCa::NoCa;
     let server_cert = rcgen::Certificate::from_params(server_params).unwrap();
     let server_cert_pem = server_cert.serialize_pem_with_signer(&ca_cert).unwrap();
@@ -32,7 +36,8 @@ async fn server_rejects_client_without_cert_when_mtls_required() {
         server_key_pem.as_bytes(),
         Some(ca_pem.as_bytes()),
         true,
-    ).expect("build server config");
+    )
+    .expect("build server config");
 
     let acceptor = TlsAcceptor::from(Arc::new(rustls_cfg));
 
@@ -57,7 +62,9 @@ async fn server_rejects_client_without_cert_when_mtls_required() {
     // Client: build client config trusting CA, but provide no client cert
     let mut root_store = RootCertStore::empty();
     let ca_certs = rustls_pemfile::certs(&mut ca_pem.as_bytes()).unwrap();
-    for cert in ca_certs { root_store.add(&RCert(cert)).unwrap(); }
+    for cert in ca_certs {
+        root_store.add(&RCert(cert)).unwrap();
+    }
 
     let client_cfg = ClientConfig::builder()
         .with_safe_defaults()
@@ -70,7 +77,10 @@ async fn server_rejects_client_without_cert_when_mtls_required() {
 
     let res = connector.connect(domain, stream).await;
 
-    assert!(res.is_err(), "Handshake should fail when client cert is missing");
+    assert!(
+        res.is_err(),
+        "Handshake should fail when client cert is missing"
+    );
 
     let _ = server.await;
 }
