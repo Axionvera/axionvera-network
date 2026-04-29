@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol};
 
 /// Protocol identifier for all Axionvera Vault events (Topic 1)
 const PROTOCOL: Symbol = symbol_short!("AxionVault");
@@ -146,6 +146,28 @@ pub fn emit_claim(e: &Env, user: Address, amount: i128) {
         ClaimEvent {
             user_address: user,
             amount,
+            timestamp: e.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn emit_admin_transfer_proposed(e: &Env, current_admin: Address, pending_admin: Address) {
+    e.events().publish(
+        (EVT_ADMIN_PROPOSED,),
+        AdminTransferProposedEvent {
+            current_admin,
+            pending_admin,
+            timestamp: e.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn emit_admin_transfer_accepted(e: &Env, previous_admin: Address, new_admin: Address) {
+    e.events().publish(
+        (EVT_ADMIN_ACCEPTED,),
+        AdminTransferAcceptedEvent {
+            previous_admin,
+            new_admin,
             timestamp: e.ledger().timestamp(),
         },
     );
