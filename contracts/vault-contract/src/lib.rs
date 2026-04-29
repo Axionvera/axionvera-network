@@ -4,6 +4,9 @@ mod errors;
 mod events;
 mod storage;
 
+#[cfg(test)]
+mod test;
+
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
 use crate::errors::{ArithmeticError, BalanceError, StateError, ValidationError, VaultError};
