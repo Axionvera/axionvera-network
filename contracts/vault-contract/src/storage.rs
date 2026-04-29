@@ -14,6 +14,9 @@ const PERSISTENT_TTL_EXTEND_TO: u32 = 518_400;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
     Initialized,
+    State,
+    UserPosition(Address),
+    ReentrancyGuard,
     ReentrancyGuard,
     Admin,
     PendingAdmin,
@@ -94,6 +97,28 @@ pub fn is_initialized(e: &Env) -> bool {
 
 pub fn require_initialized(e: &Env) -> Result<(), VaultError> {
     if is_initialized(e) {
+        Ok(())
+    } else {
+        Err(StateError::NotInitialized.into())
+    }
+}
+
+pub fn initialize_state(e: &Env, admin: &Address, deposit_token: &Address, reward_token: &Address) {
+    let state = VaultState {
+        admin: admin.clone(),
+        deposit_token: deposit_token.clone(),
+        reward_token: reward_token.clone(),
+        total_deposits: 0,
+        reward_index: 0,
+    };
+    e.storage().instance().set(&DataKey::State, &state);
+    e.storage().instance().set(&DataKey::Initialized, &true);
+    bump_instance_ttl(e);
+}
+
+pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
+    require_initialized(e)?;
+    let state: VaultState = e
         bump_instance_ttl(e);
         Ok(())
     } else {
@@ -192,6 +217,7 @@ pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
 }
 
 pub fn set_state(e: &Env, state: &VaultState) {
+    e.storage().instance().set(&DataKey::State, state);
     e.storage().instance().set(&DataKey::TotalDeposits, &state.total_deposits);
     e.storage().instance().set(&DataKey::RewardIndex, &state.reward_index);
 // ---------------------------------------------------------------------------
@@ -212,6 +238,8 @@ pub fn set_pending_admin(e: &Env, pending_admin: &Address) {
     bump_instance_ttl(e);
 }
 
+pub fn get_deposit_token(e: &Env) -> Result<Address, VaultError> {
+    Ok(get_state(e)?.deposit_token)
 pub fn clear_pending_admin(e: &Env) {
     e.storage().instance().remove(&DataKey::PendingAdmin);
     bump_instance_ttl(e);
@@ -242,6 +270,40 @@ pub fn get_reward_token(e: &Env) -> Result<Address, VaultError> {
 
 pub fn get_total_deposits(e: &Env) -> Result<i128, VaultError> {
     Ok(get_state(e)?.total_deposits)
+}
+
+pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
+    Ok(get_state(e)?.reward_index)
+}
+
+pub fn get_user_position(e: &Env, user: &Address) -> Result<UserPosition, VaultError> {
+    require_initialized(e)?;
+    let key = DataKey::UserPosition(user.clone());
+    let position = e
+        .storage()
+        .persistent()
+        .get(&key)
+        .unwrap_or(UserPosition {
+            balance: 0,
+            reward_index: get_reward_index(e)?,
+            rewards: 0,
+        });
+    bump_persistent_ttl(e, &key);
+    Ok(position)
+}
+
+pub fn get_user_position_unchecked(e: &Env, user: &Address) -> UserPosition {
+    get_user_position(e, user).unwrap_or(UserPosition {
+        balance: 0,
+        reward_index: get_reward_index(e).unwrap_or(0),
+        rewards: 0,
+    })
+}
+
+pub fn set_user_position(e: &Env, user: &Address, position: &UserPosition) {
+    let key = DataKey::UserPosition(user.clone());
+    e.storage().persistent().set(&key, position);
+    bump_persistent_ttl(e, &key);
 }
 
 pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
@@ -357,6 +419,21 @@ pub fn set_user_rewards_and_extend(e: &Env, user: &Address, rewards: i128) {
     bump_persistent_ttl(e, &key);
 }
 
+pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
+    if e.storage()
+        .instance()
+        .get::<_, bool>(&DataKey::ReentrancyGuard)
+        .unwrap_or(false)
+    {
+        return Err(AuthorizationError::ReentrancyDetected.into());
+    }
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &true);
+    bump_instance_ttl(e);
+    Ok(())
+}
+
+pub fn exit_non_reentrant(e: &Env) {
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
 pub fn get_user_position_unchecked(e: &Env, user: &Address) -> UserPosition {
     UserPosition {
         balance: get_user_balance_and_extend(e, user),
@@ -462,6 +539,19 @@ pub fn store_withdraw(
     if position.balance < amount {
         return Err(BalanceError::InsufficientBalance.into());
     }
+    
+    position.balance = position
+        .balance
+        .checked_sub(amount)
+        .ok_or(VaultError::MathOverflow)?;
+    state.total_deposits = state
+        .total_deposits
+        .checked_sub(amount)
+        .ok_or(VaultError::MathOverflow)?;
+
+    set_state(e, &state);
+    set_user_position(e, user, &position);
+    Ok((state, position))
     if state.total_deposits < amount {
         return Err(StateError::InvalidState.into());
     }
@@ -522,6 +612,8 @@ pub fn store_claimable_rewards(e: &Env, user: &Address) -> Result<i128, VaultErr
 }
 
 pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapshot, VaultError> {
+    require_initialized(e)?;
+
     if !is_initialized(e) {
         return Err(StateError::NotInitialized.into());
     }
@@ -617,6 +709,11 @@ fn accrue_position_rewards(
     Ok(())
 }
 
+fn checked_accrued_rewards(balance: i128, index_delta: i128) -> Result<i128, VaultError> {
+    balance
+        .checked_mul(index_delta)
+        .and_then(|v| v.checked_div(REWARD_INDEX_SCALE))
+        .ok_or(VaultError::MathOverflow)
 fn checked_accrued_rewards(balance: i128, reward_delta: i128) -> Result<i128, VaultError> {
     balance
         .checked_mul(reward_delta)
