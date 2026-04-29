@@ -140,14 +140,6 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::UpgradeFailed => ErrorInfo {
-                category: ErrorCategory::Authorization,
-                message: "contract upgrade failed: caller is not the admin",
-            },
-            Self::ContractPaused => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "contract is paused",
-            },
         }
     }
 
