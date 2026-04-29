@@ -1,21 +1,14 @@
 use soroban_sdk::{contracttype, Address, Env};
 
-use crate::errors::{ArithmeticError, AuthorizationError, StateError, VaultError};
+use crate::errors::{ArithmeticError, AuthorizationError, BalanceError, StateError, VaultError};
 
-/// The scale used for the reward index to maintain precision during divisions.
-/// We use 18 decimal places (10^18) which is a standard in DeFi (similar to ETH/DAI).
-pub const REWARD_INDEX_SCALE: i128 = 1_000_000_000_000_000_000;
+pub const PRECISION_FACTOR: i128 = 1_000_000_000;
 
-/// Threshold for extending the Time-To-Live (TTL) of instance storage.
-/// If the remaining TTL is below this value, it will be extended.
-const INSTANCE_TTL_THRESHOLD: u32 = 100;
-/// The target TTL to extend instance storage to.
-const INSTANCE_TTL_EXTEND_TO: u32 = 1_000;
+const INSTANCE_TTL_THRESHOLD: u32 = 518_400;
+const INSTANCE_TTL_EXTEND_TO: u32 = 518_400;
 
-/// Threshold for extending the TTL of persistent storage.
-const PERSISTENT_TTL_THRESHOLD: u32 = 100;
-/// The target TTL to extend persistent storage to.
-const PERSISTENT_TTL_EXTEND_TO: u32 = 10_000;
+const PERSISTENT_TTL_THRESHOLD: u32 = 518_400;
+const PERSISTENT_TTL_EXTEND_TO: u32 = 518_400;
 
 /// Keys used to store data in the contract's storage.
 /// Soroban supports three types of storage:
@@ -37,6 +30,19 @@ pub enum DataKey {
     /// A guard to prevent reentrant calls to sensitive functions.
     /// Stores a boolean value.
     ReentrancyGuard,
+    ReentrancyGuard,
+    Admin,
+    PendingAdmin,
+    DepositToken,
+    RewardToken,
+    TotalDeposits,
+    RewardIndex,
+    ReentrancyGuard,
+    UserBalance(Address),
+    UserRewardIndex(Address),
+    UserRewards(Address),
+    ReentrancyGuard,
+    IsPaused,
 }
 
 /// The global state of the vault contract.
@@ -73,6 +79,22 @@ pub struct UserPosition {
 
 /// A helper struct for returning reward information in view functions.
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultState {
+    pub admin: Address,
+    pub deposit_token: Address,
+    pub reward_token: Address,
+    pub total_deposits: i128,
+    pub reward_index: i128,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UserPosition {
+    pub balance: i128,
+    pub reward_index: i128,
+    pub rewards: i128,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UserRewardSnapshot {
     /// The current reward index applied to the snapshot.
     pub reward_index: i128,
@@ -83,6 +105,25 @@ pub struct UserRewardSnapshot {
 /// Checks if the contract has been initialized.
 ///
 /// Returns `true` if initialized, `false` otherwise.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultState {
+    pub admin: Address,
+    pub deposit_token: Address,
+    pub reward_token: Address,
+    pub total_deposits: i128,
+    pub reward_index: i128,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UserPosition {
+    pub balance: i128,
+    pub reward_index: i128,
+    pub rewards: i128,
+}
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+
 pub fn is_initialized(e: &Env) -> bool {
     e.storage()
         .instance()
@@ -125,33 +166,159 @@ pub fn initialize_state(e: &Env, admin: &Address, deposit_token: &Address, rewar
 pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
     require_initialized(e)?;
     let state: VaultState = e
+        bump_instance_ttl(e);
+        Ok(())
+    } else {
+        Err(StateError::NotInitialized.into())
+    }
+}
+
+fn bump_instance_ttl(e: &Env) {
+    e.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
+}
+
+fn bump_persistent_ttl(e: &Env, key: &DataKey) {
+    e.storage()
+        .persistent()
+        .extend_ttl(key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND_TO);
+pub fn initialize_state(e: &Env, admin: &Address, deposit_token: &Address, reward_token: &Address) {
+    e.storage().instance().set(&DataKey::Initialized, &true);
+    e.storage().instance().set(&DataKey::Admin, admin);
+    e.storage().instance().remove(&DataKey::PendingAdmin);
+    e.storage()
+        .instance()
+        .set(&DataKey::DepositToken, deposit_token);
+    e.storage()
+        .instance()
+        .set(&DataKey::RewardToken, reward_token);
+    e.storage().instance().set(&DataKey::TotalDeposits, &0_i128);
+    e.storage().instance().set(&DataKey::RewardIndex, &0_i128);
+    e.storage()
+        .instance()
+        .set(&DataKey::ReentrancyGuard, &false);
+    bump_instance_ttl(e);
+}
+
+pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
+    if e.storage()
+        .instance()
+        .get::<_, bool>(&DataKey::ReentrancyGuard)
+        .unwrap_or(false)
+    {
+        return Err(AuthorizationError::ReentrancyDetected.into());
+    }
+
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &true);
+    bump_instance_ttl(e);
+    Ok(())
+}
+
+pub fn exit_non_reentrant(e: &Env) {
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
+    bump_instance_ttl(e);
+}
+
+pub fn initialize_state(e: &Env, admin: &Address, deposit_token: &Address, reward_token: &Address) {
+    e.storage().instance().set(&DataKey::Initialized, &true);
+    e.storage().instance().set(&DataKey::Admin, admin);
+    e.storage().instance().set(&DataKey::DepositToken, deposit_token);
+    e.storage().instance().set(&DataKey::RewardToken, reward_token);
+    e.storage().instance().set(&DataKey::TotalDeposits, &0_i128);
+    e.storage().instance().set(&DataKey::RewardIndex, &0_i128);
+    e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
+    bump_instance_ttl(e);
+    e.storage()
+        .instance()
+        .set(&DataKey::ReentrancyGuard, &false);
+    bump_instance_ttl(e);
+}
+
+pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
+    Ok(VaultState {
+        admin: get_admin(e)?,
+        deposit_token: get_deposit_token(e)?,
+        reward_token: get_reward_token(e)?,
+        total_deposits: get_total_deposits(e)?,
+        reward_index: get_reward_index(e)?,
+    })
+}
+
+pub fn get_state(e: &Env) -> Result<VaultState, VaultError> {
+    require_initialized(e)?;
+    let state = VaultState {
+        admin: e.storage().instance().get(&DataKey::Admin).ok_or(StateError::NotInitialized)?,
+        deposit_token: e.storage().instance().get(&DataKey::DepositToken).ok_or(StateError::NotInitialized)?,
+        reward_token: e.storage().instance().get(&DataKey::RewardToken).ok_or(StateError::NotInitialized)?,
+        total_deposits: e.storage().instance().get(&DataKey::TotalDeposits).unwrap_or(0_i128),
+        reward_index: e.storage().instance().get(&DataKey::RewardIndex).unwrap_or(0_i128),
+    };
+    let admin = e
         .storage()
         .instance()
-        .get(&DataKey::State)
-        .ok_or(StateError::NotInitialized)?;
+        .get(&DataKey::Admin)
+        .ok_or(StateError::InvalidState)?;
     bump_instance_ttl(e);
-    Ok(state)
+    Ok(admin)
 }
 
 /// Updates the global vault state.
 pub fn set_state(e: &Env, state: &VaultState) {
     e.storage().instance().set(&DataKey::State, state);
+    e.storage().instance().set(&DataKey::TotalDeposits, &state.total_deposits);
+    e.storage().instance().set(&DataKey::RewardIndex, &state.reward_index);
+// ---------------------------------------------------------------------------
+// State (global)
+// ---------------------------------------------------------------------------
+
+pub fn get_pending_admin(e: &Env) -> Result<Option<Address>, VaultError> {
+    require_initialized(e)?;
+    let pending = e.storage().instance().get(&DataKey::PendingAdmin);
     bump_instance_ttl(e);
+    Ok(pending)
 }
 
 /// Retrieves the admin address from the vault state.
 pub fn get_admin(e: &Env) -> Result<Address, VaultError> {
     Ok(get_state(e)?.admin)
+pub fn set_pending_admin(e: &Env, pending_admin: &Address) {
+    e.storage()
+        .instance()
+        .set(&DataKey::PendingAdmin, pending_admin);
+    bump_instance_ttl(e);
 }
 
 /// Retrieves the deposit token address from the vault state.
 pub fn get_deposit_token(e: &Env) -> Result<Address, VaultError> {
     Ok(get_state(e)?.deposit_token)
+pub fn clear_pending_admin(e: &Env) {
+    e.storage().instance().remove(&DataKey::PendingAdmin);
+    bump_instance_ttl(e);
+}
+
+pub fn get_deposit_token(e: &Env) -> Result<Address, VaultError> {
+    Ok(get_state(e)?.deposit_token)
+    require_initialized(e)?;
+    let token = e
+        .storage()
+        .instance()
+        .get(&DataKey::DepositToken)
+        .ok_or(StateError::InvalidState)?;
+    bump_instance_ttl(e);
+    Ok(token)
 }
 
 /// Retrieves the reward token address from the vault state.
 pub fn get_reward_token(e: &Env) -> Result<Address, VaultError> {
-    Ok(get_state(e)?.reward_token)
+    require_initialized(e)?;
+    let token = e
+        .storage()
+        .instance()
+        .get(&DataKey::RewardToken)
+        .ok_or(StateError::InvalidState)?;
+    bump_instance_ttl(e);
+    Ok(token)
 }
 
 /// Retrieves the total amount of deposits from the vault state.
@@ -203,6 +370,117 @@ pub fn set_user_position(e: &Env, user: &Address, position: &UserPosition) {
 /// Retrieves just the balance part of a user's position.
 pub fn get_user_balance(e: &Env, user: &Address) -> Result<i128, VaultError> {
     Ok(get_user_position(e, user)?.balance)
+pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
+    Ok(get_state(e)?.reward_index)
+}
+
+pub fn get_user_balance_and_extend(e: &Env, user: &Address) -> i128 {
+    let key = DataKey::UserBalance(user.clone());
+    if let Some(bal) = e.storage().persistent().get(&key) {
+        bump_persistent_ttl(e, &key);
+        bal
+    } else {
+        0_i128
+    }
+}
+
+pub fn set_user_balance_and_extend(e: &Env, user: &Address, balance: i128) {
+    let key = DataKey::UserBalance(user.clone());
+    if balance == 0 {
+        e.storage().persistent().remove(&key);
+    } else {
+        e.storage().persistent().set(&key, &balance);
+        bump_persistent_ttl(e, &key);
+    require_initialized(e)?;
+    let total = e
+        .storage()
+        .instance()
+        .get(&DataKey::TotalDeposits)
+        .ok_or(StateError::InvalidState)?;
+    bump_instance_ttl(e);
+    Ok(total)
+}
+
+pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
+    Ok(get_state(e)?.reward_index)
+}
+
+pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
+    require_initialized(e)?;
+    let reward_index = e
+        .storage()
+        .instance()
+        .get(&DataKey::RewardIndex)
+        .ok_or(StateError::InvalidState)?;
+    bump_instance_ttl(e);
+    Ok(reward_index)
+}
+
+pub fn set_reward_index(e: &Env, reward_index: i128) {
+    e.storage()
+        .instance()
+        .set(&DataKey::RewardIndex, &reward_index);
+    bump_instance_ttl(e);
+}
+
+pub fn get_user_position(e: &Env, user: &Address) -> Result<UserPosition, VaultError> {
+    require_initialized(e)?;
+    Ok(get_user_position_unchecked(e, user))
+}
+
+fn get_user_position_unchecked(e: &Env, user: &Address) -> UserPosition {
+    let balance_key = DataKey::UserBalance(user.clone());
+    let reward_index_key = DataKey::UserRewardIndex(user.clone());
+    let rewards_key = DataKey::UserRewards(user.clone());
+
+    let balance = e.storage().persistent().get(&balance_key).unwrap_or(0_i128);
+    let reward_index = e
+        .storage()
+        .persistent()
+        .get(&reward_index_key)
+        .unwrap_or(0_i128);
+    let rewards = e.storage().persistent().get(&rewards_key).unwrap_or(0_i128);
+
+    if balance != 0 {
+        bump_persistent_ttl(e, &balance_key);
+    }
+    if reward_index != 0 {
+        bump_persistent_ttl(e, &reward_index_key);
+    }
+    if rewards != 0 {
+        bump_persistent_ttl(e, &rewards_key);
+    }
+
+pub fn get_user_reward_index_and_extend(e: &Env, user: &Address) -> i128 {
+    let key = DataKey::UserRewardIndex(user.clone());
+    if let Some(idx) = e.storage().persistent().get(&key) {
+        bump_persistent_ttl(e, &key);
+        idx
+    } else {
+        0_i128
+    }
+}
+
+pub fn set_user_reward_index_and_extend(e: &Env, user: &Address, index: i128) {
+    let key = DataKey::UserRewardIndex(user.clone());
+    e.storage().persistent().set(&key, &index);
+    bump_persistent_ttl(e, &key);
+}
+
+pub fn get_user_rewards_and_extend(e: &Env, user: &Address) -> i128 {
+    let key = DataKey::UserRewards(user.clone());
+    if let Some(rewards) = e.storage().persistent().get(&key) {
+        bump_persistent_ttl(e, &key);
+        rewards
+    } else {
+        0_i128
+    }
+}
+
+pub fn set_user_rewards_and_extend(e: &Env, user: &Address, rewards: i128) {
+    let key = DataKey::UserRewards(user.clone());
+    e.storage().persistent().set(&key, &rewards);
+    bump_persistent_ttl(e, &key);
 }
 
 /// Sets the reentrancy guard flag to prevent recursive calls.
@@ -225,6 +503,67 @@ pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
 /// Clears the reentrancy guard flag.
 pub fn exit_non_reentrant(e: &Env) {
     e.storage().instance().set(&DataKey::ReentrancyGuard, &false);
+pub fn get_user_position_unchecked(e: &Env, user: &Address) -> UserPosition {
+    UserPosition {
+        balance: get_user_balance_and_extend(e, user),
+        reward_index: get_user_reward_index_and_extend(e, user),
+        rewards: get_user_rewards_and_extend(e, user),
+    }
+}
+
+pub fn get_user_position(e: &Env, user: &Address) -> Result<UserPosition, VaultError> {
+    require_initialized(e)?;
+    Ok(get_user_position_unchecked(e, user))
+}
+
+pub fn set_user_position(e: &Env, user: &Address, position: &UserPosition) {
+    set_user_balance_and_extend(e, user, position.balance);
+    set_user_reward_index_and_extend(e, user, position.reward_index);
+    set_user_rewards_and_extend(e, user, position.rewards);
+}
+
+    UserPosition {
+        balance,
+        reward_index,
+        rewards,
+    }
+}
+
+fn set_user_position(e: &Env, user: &Address, position: &UserPosition) {
+    let balance_key = DataKey::UserBalance(user.clone());
+    let reward_index_key = DataKey::UserRewardIndex(user.clone());
+    let rewards_key = DataKey::UserRewards(user.clone());
+
+    if position.balance == 0 {
+        e.storage().persistent().remove(&balance_key);
+    } else {
+        e.storage()
+            .persistent()
+            .set(&balance_key, &position.balance);
+        bump_persistent_ttl(e, &balance_key);
+    }
+
+    if position.reward_index == 0 {
+        e.storage().persistent().remove(&reward_index_key);
+    } else {
+        e.storage()
+            .persistent()
+            .set(&reward_index_key, &position.reward_index);
+        bump_persistent_ttl(e, &reward_index_key);
+    }
+
+    if position.rewards == 0 {
+        e.storage().persistent().remove(&rewards_key);
+    } else {
+        e.storage()
+            .persistent()
+            .set(&rewards_key, &position.rewards);
+        bump_persistent_ttl(e, &rewards_key);
+    }
+}
+
+pub fn get_user_balance(e: &Env, user: &Address) -> Result<i128, VaultError> {
+    Ok(get_user_position(e, user)?.balance)
 }
 
 /// Logic for recording a deposit in the contract state.
@@ -236,7 +575,7 @@ pub fn store_deposit(
     user: &Address,
     amount: i128,
 ) -> Result<(VaultState, UserPosition), VaultError> {
-    let mut state = get_state(e)?;
+    let state = get_state(e)?;
     let mut position = get_user_position_unchecked(e, user);
     
     // Accrue rewards earned up to this point using the old balance.
@@ -246,16 +585,24 @@ pub fn store_deposit(
     position.balance = position
         .balance
         .checked_add(amount)
-        .ok_or(VaultError::MathOverflow)?;
-    state.total_deposits = state
+        .ok_or(ArithmeticError::Overflow)?;
+    let next_total = state
         .total_deposits
         .checked_add(amount)
-        .ok_or(VaultError::MathOverflow)?;
+        .ok_or(ArithmeticError::Overflow)?;
 
     // Persist changes.
     set_state(e, &state);
+    set_total_deposits(e, next_total);
     set_user_position(e, user, &position);
-    Ok((state, position))
+
+    Ok((
+        VaultState {
+            total_deposits: next_total,
+            ..state
+        },
+        position,
+    ))
 }
 
 /// Logic for recording a withdrawal in the contract state.
@@ -266,14 +613,14 @@ pub fn store_withdraw(
     user: &Address,
     amount: i128,
 ) -> Result<(VaultState, UserPosition), VaultError> {
-    let mut state = get_state(e)?;
+    let state = get_state(e)?;
     let mut position = get_user_position_unchecked(e, user);
     
     // Accrue rewards earned up to this point using the old balance.
     accrue_position_rewards(&state, &mut position)?;
 
     if position.balance < amount {
-        return Err(VaultError::InsufficientBalance);
+        return Err(BalanceError::InsufficientBalance.into());
     }
     
     // Update balance and total deposits.
@@ -290,23 +637,57 @@ pub fn store_withdraw(
     set_state(e, &state);
     set_user_position(e, user, &position);
     Ok((state, position))
+    if state.total_deposits < amount {
+        return Err(StateError::InvalidState.into());
+    }
+
+    position.balance = position.balance.checked_sub(amount).unwrap();
+    state.total_deposits = state.total_deposits.checked_sub(amount).unwrap();
+
+    set_state(e, &state);
+    set_user_position(e, user, &position);
+    Ok((state, position))
+    position.balance = position
+        .balance
+        .checked_sub(amount)
+        .ok_or(ArithmeticError::Overflow)?;
+    let next_total = state
+        .total_deposits
+        .checked_sub(amount)
+        .ok_or(ArithmeticError::Overflow)?;
+
+    set_total_deposits(e, next_total);
+    set_user_position(e, user, &position);
+
+    Ok((
+        VaultState {
+            total_deposits: next_total,
+            ..state
+        },
+        position,
+    ))
 }
 
 /// Logic for distributing rewards and updating the global reward index.
 ///
 /// Calculates the index increment based on the distributed amount and total deposits.
 pub fn store_reward_distribution(e: &Env, amount: i128) -> Result<VaultState, VaultError> {
-    let mut state = get_state(e)?;
+    let state = get_state(e)?;
     let increment = checked_reward_index_increment(amount, state.total_deposits)?;
 
     // Increment the global index. All subsequent interactions will use this new index.
     state.reward_index = state
+    let next_reward_index = state
         .reward_index
         .checked_add(increment)
-        .ok_or(VaultError::MathOverflow)?;
+        .ok_or(ArithmeticError::Overflow)?;
 
-    set_state(e, &state);
-    Ok(state)
+    set_reward_index(e, next_reward_index);
+
+    Ok(VaultState {
+        reward_index: next_reward_index,
+        ..state
+    })
 }
 
 /// Logic for claiming accrued rewards for a user.
@@ -332,6 +713,16 @@ pub fn store_claimable_rewards(e: &Env, user: &Address) -> Result<i128, VaultErr
 pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapshot, VaultError> {
     require_initialized(e)?;
 
+    if !is_initialized(e) {
+        return Err(StateError::NotInitialized.into());
+    }
+
+// ---------------------------------------------------------------------------
+// Read-only reward preview
+// ---------------------------------------------------------------------------
+
+pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapshot, VaultError> {
+    require_initialized(e)?;
     let state = get_state(e)?;
     let position = get_user_position_unchecked(e, user);
 
@@ -353,10 +744,13 @@ pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapsho
         .rewards
         .checked_add(accrued)
         .ok_or(VaultError::MathOverflow)?;
+    let state = get_state(e)?;
+    let mut position = get_user_position_unchecked(e, user);
+    accrue_position_rewards(&state, &mut position)?;
 
     Ok(UserRewardSnapshot {
-        reward_index: state.reward_index,
-        rewards,
+        reward_index: position.reward_index,
+        rewards: position.rewards,
     })
 }
 
@@ -373,18 +767,18 @@ pub(crate) fn checked_reward_index_increment(
     total_deposits: i128,
 ) -> Result<i128, VaultError> {
     if total_deposits <= 0 {
-        return Err(VaultError::NoDeposits);
+        return Err(BalanceError::NoDeposits.into());
     }
 
     let scaled = amount
         .checked_mul(REWARD_INDEX_SCALE)
-        .ok_or(VaultError::MathOverflow)?;
+        .ok_or(ArithmeticError::Overflow)?;
     let increment = scaled
         .checked_div(total_deposits)
-        .ok_or(VaultError::from(ArithmeticError::RewardCalculationFailed))?;
+        .ok_or(ArithmeticError::RewardCalculationFailed)?;
 
     if increment <= 0 {
-        return Err(VaultError::from(ArithmeticError::ZeroRewardIncrement));
+        return Err(ArithmeticError::ZeroRewardIncrement.into());
     }
 
     Ok(increment)
@@ -393,11 +787,23 @@ pub(crate) fn checked_reward_index_increment(
 /// Internal helper to accrue rewards for a specific user position.
 ///
 /// Updates `position.rewards` and syncs `position.reward_index` with `state.reward_index`.
+pub(crate) fn checked_accrued_rewards(balance: i128, delta: i128) -> Result<i128, VaultError> {
+    let scaled = balance
+        .checked_mul(delta)
+        .ok_or(VaultError::MathOverflow)?;
+    Ok(scaled / REWARD_INDEX_SCALE)
+}
+
+pub fn pending_user_rewards_view(e: &Env, user: &Address) -> Result<i128, VaultError> {
+    Ok(preview_user_rewards(e, user)?.rewards)
+}
+
 fn accrue_position_rewards(
     state: &VaultState,
     position: &mut UserPosition,
 ) -> Result<(), VaultError> {
-    if state.reward_index == position.reward_index {
+    if state.reward_index == position.reward_index || position.balance == 0 {
+        position.reward_index = state.reward_index;
         return Ok(());
     }
 
@@ -405,14 +811,14 @@ fn accrue_position_rewards(
         let delta = state
             .reward_index
             .checked_sub(position.reward_index)
-            .ok_or(VaultError::MathOverflow)?;
+            .ok_or(ArithmeticError::Overflow)?;
         let accrued = checked_accrued_rewards(position.balance, delta)?;
 
         if accrued > 0 {
             position.rewards = position
                 .rewards
                 .checked_add(accrued)
-                .ok_or(VaultError::MathOverflow)?;
+                .ok_or(ArithmeticError::Overflow)?;
         }
     }
 
@@ -429,6 +835,12 @@ fn checked_accrued_rewards(balance: i128, index_delta: i128) -> Result<i128, Vau
         .checked_mul(index_delta)
         .and_then(|v| v.checked_div(REWARD_INDEX_SCALE))
         .ok_or(VaultError::MathOverflow)
+fn checked_accrued_rewards(balance: i128, reward_delta: i128) -> Result<i128, VaultError> {
+    balance
+        .checked_mul(reward_delta)
+        .ok_or(ArithmeticError::Overflow)?
+        .checked_div(REWARD_INDEX_SCALE)
+        .ok_or(ArithmeticError::RewardCalculationFailed.into())
 }
 
 /// Bumps the TTL for instance storage to keep the contract active.

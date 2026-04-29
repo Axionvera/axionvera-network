@@ -19,15 +19,45 @@ pub struct HorizonConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SorobanConfig {
+    #[serde(default = "default_soroban_rpc_url")]
     pub rpc_url: String,
+    #[serde(default)]
+    pub rpc_urls: Vec<String>,
     pub network_passphrase: String,
     pub health_check_interval_seconds: u64,
+}
+
+fn default_soroban_rpc_url() -> String {
+    "https://soroban-testnet.stellar.org:443".to_string()
+}
+
+impl SorobanConfig {
+    pub fn rpc_endpoints(&self) -> Vec<String> {
+        let mut endpoints = Vec::new();
+
+        if !self.rpc_url.trim().is_empty() {
+            endpoints.push(self.rpc_url.clone());
+        }
+
+        for rpc_url in &self.rpc_urls {
+            if !rpc_url.trim().is_empty() && !endpoints.iter().any(|url| url == rpc_url) {
+                endpoints.push(rpc_url.clone());
+            }
+        }
+
+        if endpoints.is_empty() {
+            endpoints.push(default_soroban_rpc_url());
+        }
+
+        endpoints
+    }
 }
 
 impl Default for SorobanConfig {
     fn default() -> Self {
         Self {
-            rpc_url: "https://soroban-testnet.stellar.org:443".to_string(),
+            rpc_url: default_soroban_rpc_url(),
+            rpc_urls: Vec::new(),
             network_passphrase: "Test SDF Testnet ; September 2015".to_string(),
             health_check_interval_seconds: 60,
         }
@@ -81,6 +111,10 @@ pub struct NetworkConfig {
     pub bootstrap_peer: Option<String>,
     pub tls_cert_path: Option<String>,
     pub tls_key_path: Option<String>,
+    /// Optional path to a PEM file containing trusted client CA certificates
+    pub tls_client_ca_path: Option<String>,
+    /// Whether to require client certificates (mTLS). Defaults to true when a client CA is provided.
+    pub tls_require_client_auth: bool,
     pub enable_gateway: bool,
     pub enable_reflection: bool,
     pub node_id: String,
@@ -215,6 +249,10 @@ impl NetworkConfig {
             bootstrap_peer: std::env::var("BOOTSTRAP_PEER").ok(),
             tls_cert_path: std::env::var("TLS_CERT_PATH").ok(),
             tls_key_path: std::env::var("TLS_KEY_PATH").ok(),
+            tls_client_ca_path: std::env::var("TLS_CLIENT_CA_PATH").ok(),
+            tls_require_client_auth: std::env::var("TLS_REQUIRE_CLIENT_AUTH").ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(true),
             enable_gateway: std::env::var("ENABLE_GATEWAY").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
             enable_reflection: std::env::var("ENABLE_REFLECTION").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true),
             node_id,

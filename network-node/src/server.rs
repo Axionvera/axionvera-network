@@ -195,8 +195,19 @@ impl GrpcServer {
                 .map_err(|e| NetworkError::Config(format!("Failed to read TLS private key: {}", e)))?;
 
             let identity = Identity::from_pem(cert, key);
-            let tls_config = ServerTlsConfig::new()
-                .identity(identity);
+            let mut tls_config = ServerTlsConfig::new().identity(identity);
+
+            // Configure mutual TLS (mTLS) if a client CA is provided
+            if let Some(ca_path) = &self.config.tls_client_ca_path {
+                info!("Configuring client CA for mTLS: {}", ca_path);
+                let ca_pem = std::fs::read_to_string(ca_path)
+                    .map_err(|e| NetworkError::Config(format!("Failed to read client CA file: {}", e)))?;
+                let ca_cert = Certificate::from_pem(ca_pem);
+                tls_config = tls_config.client_ca_root(ca_cert);
+            } else if self.config.tls_require_client_auth {
+                // If operator explicitly requires client auth but no CA provided, fail fast to avoid insecure startup
+                return Err(NetworkError::Config("TLS client authentication is required but no TLS_CLIENT_CA_PATH is configured".to_string()));
+            }
 
             server = server.tls_config(tls_config)
                 .map_err(|e| NetworkError::Config(format!("Failed to configure TLS: {}", e)))?;

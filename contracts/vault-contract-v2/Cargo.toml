@@ -1,5 +1,5 @@
 [package]
-name = "axionvera-vault-contract"
+name = "axionvera-vault-contract-v2"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
@@ -12,6 +12,4 @@ crate-type = ["cdylib", "rlib"]
 soroban-sdk = "22.0.0"
 
 [dev-dependencies]
-proptest = "1.6.0"
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
-axionvera-vault-contract-v2 = { path = "../vault-contract-v2" }

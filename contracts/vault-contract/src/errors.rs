@@ -34,6 +34,7 @@ pub enum StateError {
     NotInitialized,
     /// Thrown when the internal state is found to be inconsistent.
     InvalidState,
+    NoPendingAdmin,
 }
 
 /// Specific errors related to input validation.
@@ -47,6 +48,7 @@ pub enum ValidationError {
     InvalidAddress,
     /// Thrown when token addresses (deposit/reward) are misconfigured (e.g., identical).
     InvalidTokenConfiguration,
+    InsufficientRewardAmount,
 }
 
 /// Specific errors related to balance checks.
@@ -78,6 +80,7 @@ pub enum AuthorizationError {
     Unauthorized,
     /// Thrown when a reentrant call is detected by the guard.
     ReentrancyDetected,
+    UpgradeFailed,
 }
 
 /// The primary error type for the Vault contract.
@@ -117,7 +120,36 @@ pub enum VaultError {
     /// Error code 14: The internal state of the contract is invalid.
     InvalidState = 14,
     /// Error code 15: The reward increment would be zero (amount too small).
+    /// Vault has already been initialized
+    AlreadyInitialized = 1,
+    /// Vault has not been initialized
+    NotInitialized = 2,
+    /// Caller is not authorized to perform this action
+    Unauthorized = 3,
+    /// Amount must be greater than zero
+    InvalidAmount = 4,
+    /// Available balance is lower than the requested amount
+    InsufficientBalance = 5,
+    /// Arithmetic overflow or underflow detected
+    MathOverflow = 6,
+    /// Reward distribution requires at least one active deposit
+    NoDeposits = 7,
+    /// Deposit and reward token addresses must be different
+    InvalidTokenConfiguration = 8,
+    /// Vault token balance is lower than the requested amount
+    InsufficientContractBalance = 9,
+    /// Amount must not be negative
+    NegativeAmount = 10,
+    /// Provided address is invalid
+    InvalidAddress = 11,
+    /// Reward calculation failed due to checked arithmetic
+    RewardCalculationFailed = 12,
+    ReentrancyDetected = 13,
+    /// Vault state is internally inconsistent
+    InvalidState = 14,
+    /// Reward distribution rounded down to zero
     ZeroRewardIncrement = 15,
+    NoPendingAdmin = 16,
 }
 
 impl VaultError {
@@ -183,17 +215,9 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::ReentrancyDetected => ErrorInfo {
+            Self::NoPendingAdmin => ErrorInfo {
                 category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
+                message: "no pending admin transfer exists",
             },
         }
     }
@@ -226,6 +250,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::NoPendingAdmin => Self::NoPendingAdmin,
         }
     }
 }
@@ -237,6 +262,7 @@ impl From<ValidationError> for VaultError {
             ValidationError::NegativeAmount => Self::NegativeAmount,
             ValidationError::InvalidAddress => Self::InvalidAddress,
             ValidationError::InvalidTokenConfiguration => Self::InvalidTokenConfiguration,
+            ValidationError::InsufficientRewardAmount => Self::InsufficientRewardAmount,
         }
     }
 }
@@ -266,6 +292,7 @@ impl From<AuthorizationError> for VaultError {
         match error {
             AuthorizationError::Unauthorized => Self::Unauthorized,
             AuthorizationError::ReentrancyDetected => Self::ReentrancyDetected,
+            AuthorizationError::UpgradeFailed => Self::UpgradeFailed,
         }
     }
 }
