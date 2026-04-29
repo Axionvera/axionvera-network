@@ -23,6 +23,7 @@ impl VaultContract {
         deposit_token: Address,
         reward_token: Address,
     ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
         if storage::is_initialized(&e) {
             return Err(StateError::AlreadyInitialized.into());
         }
@@ -39,6 +40,7 @@ impl VaultContract {
     /// Deposits tokens into the vault and accrues pending rewards before updating balance.
     /// This ensures users receive rewards based on their old balance up to this point.
     pub fn deposit(e: Env, from: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
         from.require_auth();
@@ -76,6 +78,7 @@ impl VaultContract {
     /// Distributes rewards to all depositors by updating the global reward index.
     /// Does not immediately transfer rewards to users - they accrue lazily.
     pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
 
@@ -144,6 +147,25 @@ impl VaultContract {
         storage::get_reward_token(&e)
     }
 
+    pub fn pause_contract(e: Env, admin: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let current_admin = storage::get_admin(&e)?;
+        if current_admin != admin {
+            return Err(VaultError::Unauthorized);
+        }
+        admin.require_auth();
+        storage::set_paused(&e, true);
+        Ok(())
+    }
+
+    pub fn unpause_contract(e: Env, admin: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let current_admin = storage::get_admin(&e)?;
+        if current_admin != admin {
+            return Err(VaultError::Unauthorized);
+        }
+        admin.require_auth();
+        storage::set_paused(&e, false);
     /// Upgrades the contract WASM to a new version.
     /// Only the admin can perform this action.
     /// The new WASM hash must reference a valid, already-uploaded WASM that

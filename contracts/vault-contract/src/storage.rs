@@ -22,6 +22,7 @@ pub enum DataKey {
     UserBalance(Address),
     UserRewardIndex(Address),
     UserRewards(Address),
+    IsPaused,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,6 +49,23 @@ pub fn enter_non_reentrant(e: &Env) -> Result<(), VaultError> {
 
 pub fn set_initialized(e: &Env) {
     e.storage().instance().set(&DataKey::Initialized, &true);
+    bump_instance_ttl(e);
+}
+
+pub fn is_paused(e: &Env) -> bool {
+    e.storage().instance().get(&DataKey::IsPaused).unwrap_or(false)
+}
+
+pub fn require_not_paused(e: &Env) -> Result<(), VaultError> {
+    if is_paused(e) {
+        Err(StateError::ContractPaused.into())
+    } else {
+        Ok(())
+    }
+}
+
+pub fn set_paused(e: &Env, paused: bool) {
+    e.storage().instance().set(&DataKey::IsPaused, &paused);
     bump_instance_ttl(e);
 }
 

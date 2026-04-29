@@ -20,6 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
+    ContractPaused,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -72,6 +73,7 @@ pub enum VaultError {
     ReentrancyDetected = 13,
     InvalidState = 14,
     ZeroRewardIncrement = 15,
+    ContractPaused = 16,
     UpgradeFailed = 16,
 }
 
@@ -142,6 +144,10 @@ impl VaultError {
                 category: ErrorCategory::Authorization,
                 message: "contract upgrade failed: caller is not the admin",
             },
+            Self::ContractPaused => ErrorInfo {
+                category: ErrorCategory::State,
+                message: "contract is paused",
+            },
         }
     }
 
@@ -173,6 +179,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::ContractPaused => Self::ContractPaused,
         }
     }
 }
