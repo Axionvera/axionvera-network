@@ -451,51 +451,128 @@ Returns the reward token contract address.
 
 ## Events
 
-The contract emits structured events for important state changes.
+The contract emits standardized Soroban events for all state-changing actions. Events follow a consistent structure to ensure reliable off-chain indexing.
 
-### `init`
+### Event Structure
 
-Fields:
+All vault events use a **two-topic design** for efficient filtering:
 
-- `admin`
-- `deposit_token`
-- `reward_token`
-- `timestamp`
+- **Topic 1 (Protocol Identifier)**: `Symbol("AxionVault")` — Identifies the protocol namespace
+- **Topic 2 (Action)**: Identifies the specific action (e.g., `Symbol("Deposit")`, `Symbol("Withdraw")`)
+- **Data Payload**: Structured tuple containing event-specific data (user_address, amount, timestamp)
 
-### `deposit`
+This design allows indexers to rapidly filter by:
+- Protocol identifier for vault-specific events
+- Action type for specific state changes
 
-Fields:
+**Important**: Dynamic data such as user addresses and amounts are **stored in the data payload, not in topics**, because topic space is highly constrained on Soroban.
 
-- `user`
-- `amount`
-- `new_balance`
-- `timestamp`
+### Event: `Initialize`
 
-### `withdraw`
+**Topics:**
+- Topic 1: `Symbol("AxionVault")`
+- Topic 2: `Symbol("Initialize")`
 
-Fields:
+**Data Payload (XDR Struct):**
+```rust
+struct InitializeEvent {
+    admin: Address,
+    deposit_token: Address,
+    reward_token: Address,
+    timestamp: u64,
+}
+```
 
-- `user`
-- `amount`
-- `new_balance`
-- `timestamp`
+**Description:** Emitted once when the contract is initialized with protocol parameters.
 
-### `distrib`
+### Event: `Deposit`
 
-Fields:
+**Topics:**
+- Topic 1: `Symbol("AxionVault")`
+- Topic 2: `Symbol("Deposit")`
 
-- `caller`
-- `amount`
-- `reward_index`
-- `timestamp`
+**Data Payload (XDR Struct):**
+```rust
+struct DepositEvent {
+    user_address: Address,
+    amount: i128,
+    timestamp: u64,
+}
+```
 
-### `claim`
+**Description:** Emitted when a user deposits tokens. The `amount` field contains the deposit quantity. The `timestamp` field is set from the ledger at event emission time.
 
-Fields:
+### Event: `Withdraw`
 
-- `user`
-- `amount`
-- `timestamp`
+**Topics:**
+- Topic 1: `Symbol("AxionVault")`
+- Topic 2: `Symbol("Withdraw")`
+
+**Data Payload (XDR Struct):**
+```rust
+struct WithdrawEvent {
+    user_address: Address,
+    amount: i128,
+    timestamp: u64,
+}
+```
+
+**Description:** Emitted when a user withdraws tokens from the vault. The `amount` field contains the withdrawal quantity. The `timestamp` field is set from the ledger at event emission time.
+
+### Event: `Distribute`
+
+**Topics:**
+- Topic 1: `Symbol("AxionVault")`
+- Topic 2: `Symbol("Distribute")`
+
+**Data Payload (XDR Struct):**
+```rust
+struct DistributeEvent {
+    caller: Address,
+    amount: i128,
+    timestamp: u64,
+}
+```
+
+**Description:** Emitted when an admin distributes rewards to the vault. The `amount` field contains the total reward tokens distributed. The `caller` field is the admin account. The `timestamp` field is set from the ledger at event emission time.
+
+### Event: `Claim`
+
+**Topics:**
+- Topic 1: `Symbol("AxionVault")`
+- Topic 2: `Symbol("Claim")`
+
+**Data Payload (XDR Struct):**
+```rust
+struct ClaimEvent {
+    user_address: Address,
+    amount: i128,
+    timestamp: u64,
+}
+```
+
+**Description:** Emitted when a user claims their accrued rewards. The `amount` field contains the reward quantity claimed. The `timestamp` field is set from the ledger at event emission time.
+
+### Indexer Integration
+
+Off-chain indexers should:
+
+1. **Subscribe to events with Topic 1 = `Symbol("AxionVault")`** to catch all vault events
+2. **Filter by Topic 2** to identify specific actions (Initialize, Deposit, Withdraw, Distribute, Claim)
+3. **Parse the data payload** to extract user_address, amount, and timestamp
+4. **Build the user dashboard** by aggregating Deposit, Withdraw, Distribute, and Claim events chronologically
+
+### XDR Serialization
+
+Each event data payload is serialized as a Soroban ContractData XDR type. The indexer receives the full XDR envelope and must deserialize the data payload according to the struct definitions above.
+
+Example (pseudocode):
+```
+event.topics[0] == Symbol("AxionVault")
+event.topics[1] == Symbol("Deposit")
+data = deserialize_xdr(event.data) as DepositEvent
+// data.user_address, data.amount, data.timestamp are now available
+```
 
 ## Errors
 

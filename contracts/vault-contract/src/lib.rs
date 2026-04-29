@@ -86,7 +86,7 @@ impl VaultContract {
             let (state, position) = storage::store_deposit(&e, &from, amount)?;
             let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
             token.transfer(&from, &e.current_contract_address(), &amount);
-            events::emit_deposit(&e, from.clone(), amount, position.balance);
+            events::emit_deposit(&e, from.clone(), amount);
             Ok(())
         })
     }
@@ -107,7 +107,8 @@ impl VaultContract {
             let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
             // Adhering to Check-Effects-Interactions pattern.
             token.transfer(&e.current_contract_address(), &to, &amount);
-            events::emit_withdraw(&e, to, amount, position.balance);
+
+            events::emit_withdraw(&e, to, amount);
             Ok(())
         })
     }
@@ -137,8 +138,8 @@ pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
             let next_state = storage::store_reward_distribution(&e, amount)?;
             let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
             reward_token.transfer(&admin, &e.current_contract_address(), &amount);
-            events::emit_distribute(&e, admin.clone(), amount, next_state.reward_index);
-            Ok(next_state.reward_index)
+            events::emit_distribute(&e, admin.clone(), amount);
+            Ok(next_index)
         })
     }
 
