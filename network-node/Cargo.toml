@@ -33,6 +33,11 @@ metrics-exporter-prometheus = "0.12"
 prometheus = "0.13"
 redis = { version = "0.23", features = ["tokio-comp"] }
 tonic = { version = "0.11", features = ["transport", "prost", "gzip"] }
+rustls = { version = "0.21", package = "rustls" }
+tokio-rustls = "0.23"
+tonic-rustls = "0.6"
+rustls-pemfile = "1.0"
+tokio-stream = "0.1"
 prost = "0.12"
 prost-types = "0.12"
 tonic-web = "0.11"
@@ -54,6 +59,8 @@ aws-types = "1"
 stellar-horizon = "0.8"
 stellar_sdk = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
+reqwest-middleware = "0.2"
+reqwest-retry = "0.2"
 sqlx = { version = "0.7", features = [
     "runtime-tokio-rustls",
     "postgres",
@@ -75,3 +82,4 @@ tonic-build = "0.11"
 [dev-dependencies]
 tempfile = "3.0"
 mockall = "0.11"
+rcgen = "0.9"

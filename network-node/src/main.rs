@@ -32,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     describe_counter!("grpc_requests_total", "Total number of gRPC requests received");
     describe_histogram!("grpc_request_duration_seconds", "gRPC request latency in seconds");
     describe_counter!("soroban_rpc_errors_total", "Total number of Soroban RPC errors encountered");
+    describe_counter!("soroban_rpc_failovers_total", "Total number of Soroban RPC endpoint failovers");
     describe_gauge!("indexer_last_ledger_processed", "The sequence number of the last ledger processed by the indexer");
     // ==========================================
 
@@ -86,9 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Network node shutdown complete");
 
-
     info!("Network node shutdown complete");
-
 
     // Shutdown OpenTelemetry tracer provider
     telemetry::shutdown_tracer();

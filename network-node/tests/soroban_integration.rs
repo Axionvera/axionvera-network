@@ -31,7 +31,7 @@ async fn test_soroban_simulate_read_only() {
     // Example: A simple read-only simulation for a known contract on Testnet
     // If you don't have a specific contract, we use a placeholder or simulate a failure
     let contract_id = "CCDRM2F5H7..."; // Placeholder
-    
+
     // In a real integration test, we would build a real InvokeHostFunction XDR here
     let dummy_tx_xdr = "AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
