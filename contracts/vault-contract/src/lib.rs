@@ -76,27 +76,35 @@ impl VaultContract {
         })
     }
 
-    /// Distributes rewards to all depositors by updating the global reward index.
-    /// Does not immediately transfer rewards to users - they accrue lazily.
-    pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
-        storage::require_not_paused(&e)?;
-        storage::require_initialized(&e)?;
-        validate_positive_amount(amount)?;
+/// Distributes rewards to all depositors by updating the global reward index.
+/// Does not immediately transfer rewards to users - they accrue lazily.
+/// 
+/// Security: Only admin can call this function.
+/// Minimum amount: 100,000 stroops to prevent dust spam attacks.
+pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
+    storage::require_initialized(&e)?;
+    validate_positive_amount(amount)?;
 
-        let state = storage::get_state(&e)?;
-        let admin = state.admin.clone();
-        let reward_token_id = state.reward_token.clone();
-
-        admin.require_auth();
-
-        with_non_reentrant(&e, || {
-            let next_index = storage::store_reward_distribution(&e, amount)?.reward_index;
-            let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
-            reward_token.transfer(&admin, &e.current_contract_address(), &amount);
-            events::emit_distribute(&e, admin.clone(), amount, next_index);
-            Ok(next_index)
-        })
+    // Prevent dust spam attacks by enforcing minimum amount
+    const MIN_REWARD_DISTRIBUTION: i128 = 100_000;
+    if amount < MIN_REWARD_DISTRIBUTION {
+        return Err(ValidationError::InsufficientRewardAmount.into());
     }
+
+    let state = storage::get_state(&e)?;
+    let admin = state.admin.clone();
+    let reward_token_id = state.reward_token.clone();
+
+    admin.require_auth();
+
+    with_non_reentrant(&e, || {
+        let next_index = storage::store_reward_distribution(&e, amount)?.reward_index;
+        let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
+        reward_token.transfer(&admin, &e.current_contract_address(), &amount);
+        events::emit_distribute(&e, admin.clone(), amount, next_index);
+        Ok(next_index)
+    })
+}
 
     /// Claims accrued rewards for a user.
     /// Isolated from withdraw to ensure exit liquidity is always available.
