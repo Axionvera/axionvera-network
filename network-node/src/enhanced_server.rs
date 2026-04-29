@@ -5,6 +5,13 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use tokio_rustls::rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig as RustlsServerConfig, AllowAnyAuthenticatedClient};
+use tokio_rustls::TlsAcceptor;
+use std::io::Cursor;
+use rustls_pemfile::{certs, read_one, Item};
+use tokio_stream::wrappers::TcpListenerStream;
+use futures_util::StreamExt;
+use hyper::server::accept::from_stream;
 use serde_json::{json, Value};
 use std::sync::Arc;
 use std::time::Duration;
@@ -152,7 +159,7 @@ impl EnhancedHttpServer {
             .parse()
             .map_err(|e| NetworkError::Config(format!("Invalid bind address: {}", e)))?;
 
-        // Start the server
+        // Start the server (with optional TLS / mTLS)
         let handle = tokio::spawn(async move {
             let listener = tokio::net::TcpListener::bind(addr)
                 .await
@@ -160,6 +167,109 @@ impl EnhancedHttpServer {
 
             info!("HTTP server listening on {}", addr);
 
+            // If TLS certs are provided, wrap incoming connections with a TLS acceptor
+            if let (Some(cert_path), Some(key_path)) = (&self.config.tls_cert_path, &self.config.tls_key_path) {
+                // Read certs and keys
+                let cert_pem = std::fs::read(cert_path)
+                    .map_err(|e| NetworkError::Config(format!("Failed to read TLS certificate: {}", e)))?;
+                let key_pem = std::fs::read(key_path)
+                    .map_err(|e| NetworkError::Config(format!("Failed to read TLS private key: {}", e)))?;
+
+                // Parse server certs
+                let mut cert_cursor = Cursor::new(&cert_pem);
+                let server_certs = certs(&mut cert_cursor)
+                    .map_err(|_| NetworkError::Config("Failed to parse server cert PEM".to_string()))?;
+                if server_certs.is_empty() {
+                    return Err(NetworkError::Config("No server certificates found in TLS cert file".to_string()));
+                }
+
+                // Parse private key
+                let mut key_cursor = Cursor::new(&key_pem);
+                let mut keys = Vec::new();
+                loop {
+                    match read_one(&mut key_cursor).map_err(|_| NetworkError::Config("Failed to parse TLS private key PEM".to_string()))? {
+                        Some(Item::PKCS8Key(key)) => { keys.push(key); }
+                        Some(Item::RSAKey(key)) => { keys.push(key); }
+                        Some(_) => {}
+                        None => break,
+                    }
+                }
+                if keys.is_empty() {
+                    return Err(NetworkError::Config("No private keys found in TLS key file".to_string()));
+                }
+
+                let der_certs = server_certs.into_iter().map(Certificate).collect::<Vec<_>>();
+                let der_key = PrivateKey(keys.remove(0));
+
+                // Build root store if client CA provided
+                let mut rustls_cfg = if let Some(client_ca_path) = &self.config.tls_client_ca_path {
+                    let ca_pem = std::fs::read(client_ca_path)
+                        .map_err(|e| NetworkError::Config(format!("Failed to read TLS client CA file: {}", e)))?;
+
+                    let mut roots = RootCertStore::empty();
+                    let mut cursor = Cursor::new(&ca_pem);
+                    let parsed = certs(&mut cursor)
+                        .map_err(|_| NetworkError::Config("Failed to parse client CA PEM".to_string()))?;
+                    if parsed.is_empty() {
+                        return Err(NetworkError::Config("No CA certificates found in tls_client_ca_path".to_string()));
+                    }
+                    for cert in parsed { roots.add(&Certificate(cert)).map_err(|e| NetworkError::Config(format!("Failed to add CA cert to root store: {}", e)))?; }
+
+                    if self.config.tls_require_client_auth {
+                        RustlsServerConfig::builder()
+                            .with_safe_defaults()
+                            .with_client_cert_verifier(AllowAnyAuthenticatedClient::new(roots))
+                            .with_single_cert(der_certs.clone(), der_key.clone())
+                            .map_err(|e| NetworkError::Config(format!("Failed to create rustls server config: {}", e)))?
+                    } else {
+                        RustlsServerConfig::builder()
+                            .with_safe_defaults()
+                            .with_no_client_auth()
+                            .with_single_cert(der_certs.clone(), der_key.clone())
+                            .map_err(|e| NetworkError::Config(format!("Failed to create rustls server config: {}", e)))?
+                    }
+                } else {
+                    // No client CA: one-way TLS
+                    RustlsServerConfig::builder()
+                        .with_safe_defaults()
+                        .with_no_client_auth()
+                        .with_single_cert(der_certs.clone(), der_key.clone())
+                        .map_err(|e| NetworkError::Config(format!("Failed to create rustls server config: {}", e)))?
+                };
+
+                let acceptor = TlsAcceptor::from(std::sync::Arc::new(rustls_cfg));
+                let acceptor = std::sync::Arc::new(acceptor);
+
+                // Build incoming stream that performs TLS handshake per-connection.
+                let incoming = TcpListenerStream::new(listener)
+                    .filter_map(move |tcp_res| {
+                        let acceptor = acceptor.clone();
+                        async move {
+                            match tcp_res {
+                                Ok(stream) => match acceptor.accept(stream).await {
+                                    Ok(tls_stream) => Some(Ok::<_, std::io::Error>(tls_stream)),
+                                    Err(e) => {
+                                        tracing::warn!("TLS handshake failed: {}", e);
+                                        // Drop connection by returning None
+                                        None
+                                    }
+                                },
+                                Err(e) => Some(Err(e)),
+                            }
+                        }
+                    });
+
+                let server = hyper::Server::builder(from_stream(incoming))
+                    .serve(app.into_make_service())
+                    .with_graceful_shutdown(async {
+                        shutdown_rx.await.ok();
+                        info!("HTTP server shutdown signal received");
+                    });
+
+                return server.await.map_err(|e| NetworkError::Server(format!("HTTP server error: {}", e)));
+            }
+
+            // No TLS configured: plain TCP
             axum::serve(listener, app)
                 .with_graceful_shutdown(async {
                     shutdown_rx.await.ok();

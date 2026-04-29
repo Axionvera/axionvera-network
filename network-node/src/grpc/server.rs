@@ -5,6 +5,10 @@ use tokio::sync::RwLock;
 use tonic::metadata::MetadataMap;
 use tonic::service::{interceptor, Interceptor};
 use tonic::transport::{Identity, Server, ServerTlsConfig};
+use tokio_rustls::rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig as RustlsServerConfig, AllowAnyAuthenticatedClient};
+use tonic_rustls::server::TlsConfigExt;
+use std::io::Cursor;
+use rustls_pemfile::{certs, read_one, Item};
 use tonic::{Request, Status};
 use tracing::{info, error, warn};
 
@@ -240,21 +244,99 @@ impl GrpcServer {
             )
         );
 
-        // Configure TLS if certificates are provided
+        // Configure TLS (with optional mTLS) if certificates are provided
         if let (Some(cert_path), Some(key_path)) = (&self.config.tls_cert_path, &self.config.tls_key_path) {
             info!("Configuring TLS for gRPC server");
-            
-            let cert = std::fs::read_to_string(cert_path)
+
+            // Read server cert and key as PEM bytes and parse into DER for rustls
+            let cert_pem = std::fs::read(cert_path)
                 .map_err(|e| NetworkError::Config(format!("Failed to read TLS certificate: {}", e)))?;
-            let key = std::fs::read_to_string(key_path)
+            let key_pem = std::fs::read(key_path)
                 .map_err(|e| NetworkError::Config(format!("Failed to read TLS private key: {}", e)))?;
 
-            let identity = Identity::from_pem(cert, key);
-            let tls_config = ServerTlsConfig::new()
-                .identity(identity);
+            // Build identity for tonic by converting to strings (preserve previous behavior)
+            let cert_str = String::from_utf8(cert_pem.clone())
+                .map_err(|e| NetworkError::Config(format!("Invalid cert PEM encoding: {}", e)))?;
+            let key_str = String::from_utf8(key_pem.clone())
+                .map_err(|e| NetworkError::Config(format!("Invalid key PEM encoding: {}", e)))?;
 
-            server = server.tls_config(tls_config)
-                .map_err(|e| NetworkError::Config(format!("Failed to configure TLS: {}", e)))?;
+            let identity = Identity::from_pem(cert_str, key_str);
+
+            // If a client CA is provided, configure rustls to require client authentication
+            if let Some(client_ca_path) = &self.config.tls_client_ca_path {
+                info!("Configuring mTLS: requiring client certificates");
+
+                let ca_pem = std::fs::read(client_ca_path)
+                    .map_err(|e| NetworkError::Config(format!("Failed to read TLS client CA file: {}", e)))?;
+
+                // Parse CA certs and populate a RootCertStore using rustls-pemfile
+                let mut roots = RootCertStore::empty();
+                let mut cursor = Cursor::new(&ca_pem);
+                let parsed = certs(&mut cursor)
+                    .map_err(|_| NetworkError::Config("Failed to parse client CA PEM".to_string()))?;
+
+                if parsed.is_empty() {
+                    return Err(NetworkError::Config("No CA certificates found in tls_client_ca_path".to_string()));
+                }
+
+                for cert in parsed {
+                    roots.add(&Certificate(cert)).map_err(|e| NetworkError::Config(format!("Failed to add CA cert to root store: {}", e)))?;
+                }
+
+                // Parse server cert PEM to DER vec
+                let mut cert_cursor = Cursor::new(&cert_pem);
+                let server_certs = certs(&mut cert_cursor)
+                    .map_err(|_| NetworkError::Config("Failed to parse server cert PEM".to_string()))?;
+
+                if server_certs.is_empty() {
+                    return Err(NetworkError::Config("No server certificates found in TLS cert file".to_string()));
+                }
+
+                // Parse private key PEM (support pkcs8 and rsa)
+                let mut key_cursor = Cursor::new(&key_pem);
+                let mut keys = Vec::new();
+                loop {
+                    match read_one(&mut key_cursor).map_err(|_| NetworkError::Config("Failed to parse TLS private key PEM".to_string()))? {
+                        Some(Item::PKCS8Key(key)) => { keys.push(key); }
+                        Some(Item::RSAKey(key)) => { keys.push(key); }
+                        Some(_) => {}
+                        None => break,
+                    }
+                }
+
+                if keys.is_empty() {
+                    return Err(NetworkError::Config("No private keys found in TLS key file".to_string()));
+                }
+
+                let der_certs = server_certs.into_iter().map(Certificate).collect::<Vec<_>>();
+                let der_key = PrivateKey(keys.remove(0));
+
+                let mut rustls_cfg = RustlsServerConfig::builder()
+                    .with_safe_defaults()
+                    .with_client_cert_verifier(AllowAnyAuthenticatedClient::new(roots))
+                    .with_single_cert(der_certs.clone(), der_key.clone())
+                    .map_err(|e| NetworkError::Config(format!("Failed to create rustls server config: {}", e)))?;
+
+                // If configured to not require client auth, switch to NoClientAuth
+                if !self.config.tls_require_client_auth {
+                    rustls_cfg = RustlsServerConfig::builder()
+                        .with_safe_defaults()
+                        .with_no_client_auth()
+                        .with_single_cert(der_certs.clone(), der_key.clone())
+                        .map_err(|e| NetworkError::Config(format!("Failed to create rustls server config: {}", e)))?;
+                }
+
+                // Convert rustls config into a tonic ServerTlsConfig via tonic-rustls helper
+                let tls_config = ServerTlsConfig::new().rustls_server_config(Arc::new(rustls_cfg));
+
+                server = server.tls_config(tls_config)
+                    .map_err(|e| NetworkError::Config(format!("Failed to configure TLS: {}", e)))?;
+            } else {
+                // No client CA provided: use one-way TLS with existing Identity path
+                let tls_config = ServerTlsConfig::new().identity(identity);
+                server = server.tls_config(tls_config)
+                    .map_err(|e| NetworkError::Config(format!("Failed to configure TLS: {}", e)))?;
+            }
         }
 
         // Add reflection service for development
