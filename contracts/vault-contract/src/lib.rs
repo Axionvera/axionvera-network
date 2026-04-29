@@ -62,10 +62,13 @@ impl VaultContract {
 
         with_non_reentrant(&e, || {
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
+            
+            events::emit_withdraw(&e, to.clone(), amount, position.balance);
+
             let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
+            // Adhering to Check-Effects-Interactions pattern.
             token.transfer(&e.current_contract_address(), &to, &amount);
 
-            events::emit_withdraw(&e, to, amount, position.balance);
             Ok(())
         })
     }
