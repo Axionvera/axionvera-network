@@ -20,35 +20,80 @@ impl VaultContract {
         1
     }
 
+    /// Initializes the vault with the specified admin and token addresses.
+    ///
+    /// # Security Considerations
+    /// This function can only be called once. It checks the initialization state
+    /// using a dedicated storage flag. The provided `admin` address must authorize
+    /// the call to ensure that the person initializing the contract is indeed
+    /// the intended administrator.
+    ///
+    /// # Arguments
+    /// * `e` - The environment.
+    /// * `admin` - The address that will have administrative privileges (e.g., distributing rewards).
+    /// * `deposit_token` - The address of the token that users will deposit.
+    /// * `reward_token` - The address of the token that will be distributed as rewards.
+    ///
+    /// # Errors
+    /// * `VaultError::AlreadyInitialized` - If the vault has already been initialized.
+    /// * `VaultError::InvalidTokenConfiguration` - If the deposit and reward tokens are the same.
     pub fn initialize(
         e: Env,
         admin: Address,
         deposit_token: Address,
         reward_token: Address,
     ) -> Result<(), VaultError> {
+        // --- STEP 1: INITIALIZATION GUARD ---
+        // We must ensure this function is only callable once to prevent an attacker
+        // from re-initializing the contract and taking control.
         if storage::is_initialized(&e) {
             return Err(StateError::AlreadyInitialized.into());
         }
 
+        // --- STEP 2: VALIDATION ---
+        // Basic sanity checks for the provided addresses.
         validate_distinct_token_addresses(&deposit_token, &reward_token)?;
+        
+        // --- STEP 3: AUTHENTICATION ---
+        // We require the admin to sign this transaction. This prevents front-running
+        // by an attacker who might try to initialize the contract with their own address
+        // if the deployer doesn't include the initialization in the deployment transaction.
         admin.require_auth();
 
+        // --- STEP 4: STATE INITIALIZATION ---
+        // Persist the initial state to the contract's instance storage.
         storage::initialize_state(&e, &admin, &deposit_token, &reward_token);
+        
+        // --- STEP 5: EVENT EMISSION ---
+        // Emit an event for indexers and off-chain monitoring.
         events::emit_initialize(&e, admin, deposit_token, reward_token);
 
         Ok(())
     }
 
     /// Deposits tokens into the vault and accrues pending rewards before updating balance.
-    /// This ensures users receive rewards based on their old balance up to this point.
+    ///
+    /// This function handles the transfer of tokens from the user to the contract.
+    /// It ensures that rewards are accrued for the user's previous balance before
+    /// the new deposit increases their stake.
+    ///
+    /// # Arguments
+    /// * `e` - The environment.
+    /// * `from` - The address of the user depositing tokens.
+    /// * `amount` - The amount of tokens to deposit.
+    ///
+    /// # Errors
+    /// * `VaultError::NotInitialized` - If the vault hasn't been initialized.
+    /// * `VaultError::InvalidAmount` - If the amount is zero or negative.
+    /// * `VaultError::ReentrancyDetected` - If called recursively.
     pub fn deposit(e: Env, from: Address, amount: i128) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
         from.require_auth();
 
         with_non_reentrant(&e, || {
-            let (_, position) = storage::store_deposit(&e, &from, amount)?;
-            let token = soroban_sdk::token::Client::new(&e, &token_id);
+            let (state, position) = storage::store_deposit(&e, &from, amount)?;
+            let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
             token.transfer(&from, &e.current_contract_address(), &amount);
             events::emit_deposit(&e, from.clone(), amount, position.balance);
             Ok(())
@@ -56,8 +101,15 @@ impl VaultContract {
     }
 
     /// Withdraws tokens from the vault and accrues pending rewards before updating balance.
+    ///
     /// This function is isolated from reward claiming - it only handles the deposit token.
-    /// If the reward token contract fails, users can still withdraw their deposits.
+    /// This "separation of concerns" ensures that even if the reward token contract is
+    /// malfunctioning, users can still recover their initial deposits.
+    ///
+    /// # Arguments
+    /// * `e` - The environment.
+    /// * `to` - The address of the user withdrawing tokens.
+    /// * `amount` - The amount of tokens to withdraw.
     pub fn withdraw(e: Env, to: Address, amount: i128) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
@@ -74,7 +126,14 @@ impl VaultContract {
     }
 
     /// Distributes rewards to all depositors by updating the global reward index.
-    /// Does not immediately transfer rewards to users - they accrue lazily.
+    ///
+    /// This is an administrative function that increases the cumulative rewards
+    /// per unit of deposit. It does not immediately transfer tokens to users;
+    /// instead, users accrue rewards lazily whenever they interact with the vault.
+    ///
+    /// # Arguments
+    /// * `e` - The environment.
+    /// * `amount` - The total amount of reward tokens to distribute.
     pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
@@ -89,13 +148,19 @@ impl VaultContract {
             let next_index = storage::store_reward_distribution(&e, amount)?.reward_index;
             let reward_token = soroban_sdk::token::Client::new(&e, &reward_token_id);
             reward_token.transfer(&admin, &e.current_contract_address(), &amount);
-            events::emit_distribute(&e, admin.clone(), amount, next_index);
+            events::emit_distribute_rewards(&e, amount, next_index);
             Ok(next_index)
         })
     }
 
-    /// Claims accrued rewards for a user.
-    /// Isolated from withdraw to ensure exit liquidity is always available.
+    /// Claims all accrued rewards for the calling user.
+    ///
+    /// This function calculates all pending rewards since the user's last interaction
+    /// and transfers them from the contract's balance to the user.
+    ///
+    /// # Arguments
+    /// * `e` - The environment.
+    /// * `user` - The address of the user claiming rewards.
     pub fn claim_rewards(e: Env, user: Address) -> Result<i128, VaultError> {
         storage::require_initialized(&e)?;
         user.require_auth();
@@ -111,7 +176,7 @@ impl VaultContract {
             ensure_contract_balance(reward_token.balance(&e.current_contract_address()), amt)?;
             reward_token.transfer(&e.current_contract_address(), &user, &amt);
 
-            events::emit_claim(&e, user, amt);
+            events::emit_claim_rewards(&e, user, amt);
             Ok(amt)
         })
     }
