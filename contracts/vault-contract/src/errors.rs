@@ -20,6 +20,7 @@ pub enum StateError {
     AlreadyInitialized,
     NotInitialized,
     InvalidState,
+    ContractPaused,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -49,6 +50,7 @@ pub enum ArithmeticError {
 pub enum AuthorizationError {
     Unauthorized,
     ReentrancyDetected,
+    UpgradeFailed,
 }
 
 #[contracterror]
@@ -138,18 +140,6 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::ReentrancyDetected => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
-            },
         }
     }
 
@@ -181,6 +171,7 @@ impl From<StateError> for VaultError {
             StateError::AlreadyInitialized => Self::AlreadyInitialized,
             StateError::NotInitialized => Self::NotInitialized,
             StateError::InvalidState => Self::InvalidState,
+            StateError::ContractPaused => Self::ContractPaused,
         }
     }
 }
@@ -222,6 +213,7 @@ impl From<AuthorizationError> for VaultError {
         match error {
             AuthorizationError::Unauthorized => Self::Unauthorized,
             AuthorizationError::ReentrancyDetected => Self::ReentrancyDetected,
+            AuthorizationError::UpgradeFailed => Self::UpgradeFailed,
         }
     }
 }

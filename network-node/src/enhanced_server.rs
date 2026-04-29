@@ -110,6 +110,8 @@ impl EnhancedHttpServer {
             .route("/stellar/ledger/latest", axum::routing::get(get_latest_ledger))
             .route("/stellar/providers/status", axum::routing::get(get_horizon_providers_status))
             .route("/stellar/providers/switch", axum::routing::post(switch_horizon_provider))
+            .route("/admin/memory/dump", axum::routing::post(memory_dump))
+            .route("/admin/memory/stats", axum::routing::get(memory_stats))
             .layer(
                 middleware::from_fn_with_state(
                     error_middleware.clone(),
@@ -530,6 +532,58 @@ async fn get_stellar_account(
                 "message": e.to_string()
             }))
         ).into_response(),
+    }
+}
+
+/// Handler for triggering a memory dump
+async fn memory_dump(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
+    let path = params
+        .get("path")
+        .cloned()
+        .unwrap_or_else(|| format!("heap_dump_{}.prof", chrono::Utc::now().timestamp()));
+
+    match crate::memory_profiling::dump_memory_stats(&path) {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({
+                "status": "success",
+                "message": format!("Memory dump written to {}", path),
+                "path": path
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "status": "error",
+                "message": e
+            })),
+        )
+            .into_response(),
+    }
+}
+
+/// Handler for getting memory statistics
+async fn memory_stats() -> impl IntoResponse {
+    match crate::memory_profiling::get_memory_stats() {
+        Ok(stats) => (
+            StatusCode::OK,
+            Json(json!({
+                "status": "success",
+                "stats": stats
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::NOT_IMPLEMENTED,
+            Json(json!({
+                "status": "error",
+                "message": e
+            })),
+        )
+            .into_response(),
     }
 }
 
