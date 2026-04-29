@@ -49,6 +49,7 @@ pub enum ArithmeticError {
 pub enum AuthorizationError {
     Unauthorized,
     ReentrancyDetected,
+    UpgradeFailed,
 }
 
 #[contracterror]
@@ -73,6 +74,7 @@ pub enum VaultError {
     InvalidState = 14,
     ZeroRewardIncrement = 15,
     ContractPaused = 16,
+    UpgradeFailed = 16,
 }
 
 impl VaultError {
@@ -138,17 +140,9 @@ impl VaultError {
                 category: ErrorCategory::Math,
                 message: "reward distribution rounded down to zero",
             },
-            Self::ReentrancyDetected => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "reentrancy detected",
-            },
-            Self::InvalidState => ErrorInfo {
-                category: ErrorCategory::State,
-                message: "invalid contract state",
-            },
-            Self::ZeroRewardIncrement => ErrorInfo {
-                category: ErrorCategory::Math,
-                message: "reward increment is zero",
+            Self::UpgradeFailed => ErrorInfo {
+                category: ErrorCategory::Authorization,
+                message: "contract upgrade failed: caller is not the admin",
             },
             Self::ContractPaused => ErrorInfo {
                 category: ErrorCategory::State,
@@ -226,6 +220,7 @@ impl From<AuthorizationError> for VaultError {
         match error {
             AuthorizationError::Unauthorized => Self::Unauthorized,
             AuthorizationError::ReentrancyDetected => Self::ReentrancyDetected,
+            AuthorizationError::UpgradeFailed => Self::UpgradeFailed,
         }
     }
 }

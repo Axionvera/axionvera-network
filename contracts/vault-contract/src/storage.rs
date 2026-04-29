@@ -224,6 +224,20 @@ pub fn store_withdraw(
     if state.total_deposits < amount {
         return Err(StateError::InvalidState.into());
     }
+
+    position.balance = position
+        .balance
+        .checked_sub(amount)
+        .ok_or(VaultError::MathOverflow)?;
+    state.total_deposits = state
+        .total_deposits
+        .checked_sub(amount)
+        .ok_or(VaultError::MathOverflow)?;
+
+    set_state(e, &state);
+    set_user_position(e, user, &position);
+
+    Ok((state, position))
 }
 
 pub fn store_reward_distribution(e: &Env, amount: i128) -> Result<VaultState, VaultError> {
