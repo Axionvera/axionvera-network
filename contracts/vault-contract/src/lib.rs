@@ -1,10 +1,10 @@
 #![no_std]
 
-mod errors;
+pub mod errors;
 mod events;
 mod storage;
 
-use soroban_sdk::{contract, contractimpl, Address, Env};
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
 
@@ -23,6 +23,7 @@ impl VaultContract {
         deposit_token: Address,
         reward_token: Address,
     ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
         if storage::is_initialized(&e) {
             return Err(StateError::AlreadyInitialized.into());
         }
@@ -76,6 +77,7 @@ impl VaultContract {
     /// Deposits tokens into the vault and accrues pending rewards before updating balance.
     /// This ensures users receive rewards based on their old balance up to this point.
     pub fn deposit(e: Env, from: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
         from.require_auth();
@@ -99,25 +101,37 @@ impl VaultContract {
 
         with_non_reentrant(&e, || {
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
-            let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
-            token.transfer(&e.current_contract_address(), &to, &amount);
+            
+            events::emit_withdraw(&e, to.clone(), amount, position.balance);
 
+            let token = soroban_sdk::token::Client::new(&e, &state.deposit_token);
+            // Adhering to Check-Effects-Interactions pattern.
+            token.transfer(&e.current_contract_address(), &to, &amount);
             events::emit_withdraw(&e, to, amount, position.balance);
             Ok(())
         })
     }
 
-    /// Distributes rewards to all depositors by updating the global reward index.
-    /// Does not immediately transfer rewards to users - they accrue lazily.
-    pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
-        storage::require_initialized(&e)?;
-        validate_positive_amount(amount)?;
+/// Distributes rewards to all depositors by updating the global reward index.
+/// Does not immediately transfer rewards to users - they accrue lazily.
+/// 
+/// Security: Only admin can call this function.
+/// Minimum amount: 100,000 stroops to prevent dust spam attacks.
+pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError> {
+    storage::require_initialized(&e)?;
+    validate_positive_amount(amount)?;
 
-        let state = storage::get_state(&e)?;
-        let admin = state.admin.clone();
-        let reward_token_id = state.reward_token.clone();
+    // Prevent dust spam attacks by enforcing minimum amount
+    const MIN_REWARD_DISTRIBUTION: i128 = 100_000;
+    if amount < MIN_REWARD_DISTRIBUTION {
+        return Err(ValidationError::InsufficientRewardAmount.into());
+    }
 
-        admin.require_auth();
+    let state = storage::get_state(&e)?;
+    let admin = state.admin.clone();
+    let reward_token_id = state.reward_token.clone();
+
+    admin.require_auth();
 
         with_non_reentrant(&e, || {
             let next_state = storage::store_reward_distribution(&e, amount)?;
@@ -181,6 +195,44 @@ impl VaultContract {
     pub fn reward_token(e: Env) -> Result<Address, VaultError> {
         storage::get_reward_token(&e)
     }
+
+    pub fn pause_contract(e: Env, admin: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let current_admin = storage::get_admin(&e)?;
+        if current_admin != admin {
+            return Err(VaultError::Unauthorized);
+        }
+        admin.require_auth();
+        storage::set_paused(&e, true);
+        Ok(())
+    }
+
+    pub fn unpause_contract(e: Env, admin: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let current_admin = storage::get_admin(&e)?;
+        if current_admin != admin {
+            return Err(VaultError::Unauthorized);
+        }
+        admin.require_auth();
+        storage::set_paused(&e, false);
+    /// Upgrades the contract WASM to a new version.
+    /// Only the admin can perform this action.
+    /// The new WASM hash must reference a valid, already-uploaded WASM that
+    /// is compatible with the current storage layout.
+    pub fn upgrade(e: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        admin.require_auth();
+
+        let stored_admin = storage::get_admin(&e)?;
+        if admin != stored_admin {
+            return Err(VaultError::UpgradeFailed);
+        }
+
+        e.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        events::emit_upgrade(&e, admin, new_wasm_hash);
+
+        Ok(())
+    }
 }
 
 fn validate_positive_amount(amount: i128) -> Result<(), VaultError> {
@@ -208,7 +260,6 @@ fn ensure_contract_balance(balance: i128, requested_amount: i128) -> Result<(), 
     if balance < requested_amount {
         return Err(BalanceError::InsufficientContractBalance.into());
     }
-
     Ok(())
 }
 
@@ -222,7 +273,98 @@ where
     result
 }
 
-// TODO(reward-optimization): Consider a higher precision / rounding strategy for small totals.
+// ---------------------------------------------------------------------------
+// Precision math unit tests  (issue #81)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod precision_tests {
+    use super::storage::{checked_accrued_rewards, checked_reward_index_increment, PRECISION_FACTOR};
+    use super::errors::VaultError;
+
+    #[test]
+    fn increment_basic() {
+        // 400 rewards / 400 total => index += 1 * PRECISION_FACTOR
+        let inc = checked_reward_index_increment(400, 400).unwrap();
+        assert_eq!(inc, PRECISION_FACTOR);
+    }
+
+    #[test]
+    fn increment_small_reward_large_deposits_retains_precision() {
+        // 1 reward token, 1_000_000 deposited.
+        // Without scaling this would be 0; with PRECISION_FACTOR it is non-zero.
+        let inc = checked_reward_index_increment(1, 1_000_000).unwrap();
+        assert!(inc > 0, "precision lost: increment rounded to zero");
+        assert_eq!(inc, PRECISION_FACTOR / 1_000_000);
+    }
+
+    #[test]
+    fn increment_rejects_zero_deposits() {
+        assert_eq!(
+            checked_reward_index_increment(100, 0),
+            Err(VaultError::NoDeposits)
+        );
+    }
+
+    #[test]
+    fn increment_rejects_negative_deposits() {
+        assert_eq!(
+            checked_reward_index_increment(100, -1),
+            Err(VaultError::NoDeposits)
+        );
+    }
+
+    #[test]
+    fn accrued_proportional_equal_deposits() {
+        // Both users deposited 100 each (200 total), 400 rewards distributed.
+        // index increment = (400 * PRECISION_FACTOR) / 200 = 2 * PRECISION_FACTOR
+        let delta = checked_reward_index_increment(400, 200).unwrap();
+        let reward = checked_accrued_rewards(100, delta).unwrap();
+        assert_eq!(reward, 200);
+    }
+
+    #[test]
+    fn accrued_vastly_different_deposits_user_a_tiny() {
+        // User A: 1 token, User B: 1_000_000 tokens. 1_000_001 rewards distributed.
+        let total = 1_000_001_i128;
+        let rewards = 1_000_001_i128;
+        let delta = checked_reward_index_increment(rewards, total).unwrap();
+
+        let reward_a = checked_accrued_rewards(1, delta).unwrap();
+        assert_eq!(reward_a, 1);
+
+        let reward_b = checked_accrued_rewards(1_000_000, delta).unwrap();
+        assert_eq!(reward_b, 1_000_000);
+    }
+
+    #[test]
+    fn accrued_zero_balance_returns_zero() {
+        let delta = checked_reward_index_increment(1000, 500).unwrap();
+        assert_eq!(checked_accrued_rewards(0, delta).unwrap(), 0);
+    }
+
+    #[test]
+    fn accrued_zero_delta_returns_zero() {
+        assert_eq!(checked_accrued_rewards(1_000_000, 0).unwrap(), 0);
+    }
+
+    #[test]
+    fn precision_factor_value() {
+        assert_eq!(PRECISION_FACTOR, 1_000_000_000);
+    }
+
+    #[test]
+    fn round_trip_proportionality() {
+        // Alice: 1 token, Bob: 999_999 tokens. 1_000_000 rewards.
+        let total = 1_000_000_i128;
+        let rewards = 1_000_000_i128;
+        let delta = checked_reward_index_increment(rewards, total).unwrap();
+
+        assert_eq!(checked_accrued_rewards(1, delta).unwrap(), 1);
+        assert_eq!(checked_accrued_rewards(999_999, delta).unwrap(), 999_999);
+    }
+}
+
 // TODO(gas): Consider merging per-user keys (balance/index/rewards) into a single struct to reduce reads.
 // TODO(security): Consider adding pausability or per-user deposit caps.
 // TODO(upgradeability): Evaluate upgrade patterns compatible with Soroban best practices.

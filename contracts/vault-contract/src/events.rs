@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol};
 
 const EVT_INIT: Symbol = symbol_short!("init");
 const EVT_DEPOSIT: Symbol = symbol_short!("deposit");

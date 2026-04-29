@@ -149,6 +149,48 @@ This function is called in:
 
 ### Test Coverage
 
+## Security Considerations
+
+### Admin-Only Reward Distribution
+
+The `distribute_rewards` function is a critical security-sensitive operation that:
+
+1. **Requires Admin Authorization**: Only the admin address can call this function. The contract enforces `admin.require_auth()` to prevent unauthorized reward distributions.
+
+2. **Minimum Amount Enforcement**: To prevent dust spam attacks, the function enforces a minimum distribution amount of **100,000 stroops** (0.0001 XLM). Any attempt to distribute smaller amounts will be rejected with `ValidationError::InsufficientRewardAmount`.
+
+### Why Minimum Amount Matters
+
+Without a minimum amount check, a malicious actor could:
+- Spam small reward distributions to artificially inflate the `reward_index` calculation frequency
+- Grief the network by forcing unnecessary state updates
+- Waste gas on the Stellar network
+
+The 100,000 stroop minimum:
+- Prevents dust attacks while remaining accessible for legitimate admin operations
+- Aligns with Stellar's native asset precision (1 stroop = 10^-7 XLM)
+- Is small enough for testing but large enough to deter spam
+
+### Function Signature
+
+```rust
+/// Distributes rewards to all depositors by updating the global reward index.
+/// Does not immediately transfer rewards to users - they accrue lazily.
+///
+/// Security: Only admin can call this function.
+/// Minimum amount: 100,000 stroops to prevent dust spam attacks.
+pub fn distribute_rewards(e: Env, amount: i128) -> Result<i128, VaultError>
+```
+
+### Error Cases
+
+| Error | Condition |
+|-------|-----------|
+| `NotInitialized` | Vault not initialized |
+| `InvalidAmount` | Amount is zero or negative |
+| `InsufficientRewardAmount` | Amount < 100,000 stroops |
+| `Unauthorized` | Caller is not the admin |
+
 The following tests verify this logic:
 
 - `test_rewards_are_proportional_and_claimable` - Multiple users receive proportional rewards

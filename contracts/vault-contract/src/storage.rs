@@ -2,7 +2,7 @@ use soroban_sdk::{contracttype, Address, Env};
 
 use crate::errors::{ArithmeticError, AuthorizationError, BalanceError, StateError, VaultError};
 
-pub const REWARD_INDEX_SCALE: i128 = 1_000_000_000_000_000_000;
+pub const PRECISION_FACTOR: i128 = 1_000_000_000;
 
 const INSTANCE_TTL_THRESHOLD: u32 = 100;
 const INSTANCE_TTL_EXTEND_TO: u32 = 1_000;
@@ -21,9 +21,29 @@ pub enum DataKey {
     RewardToken,
     TotalDeposits,
     RewardIndex,
+    ReentrancyGuard,
     UserBalance(Address),
     UserRewardIndex(Address),
     UserRewards(Address),
+    IsPaused,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultState {
+    pub admin: Address,
+    pub deposit_token: Address,
+    pub reward_token: Address,
+    pub total_deposits: i128,
+    pub reward_index: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UserPosition {
+    pub balance: i128,
+    pub reward_index: i128,
+    pub rewards: i128,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,6 +67,10 @@ pub struct UserRewardSnapshot {
     pub reward_index: i128,
     pub rewards: i128,
 }
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
 
 pub fn is_initialized(e: &Env) -> bool {
     e.storage().instance().has(&DataKey::Initialized)
@@ -121,10 +145,9 @@ pub fn get_admin(e: &Env) -> Result<Address, VaultError> {
     Ok(admin)
 }
 
-pub fn set_admin(e: &Env, admin: &Address) {
-    e.storage().instance().set(&DataKey::Admin, admin);
-    bump_instance_ttl(e);
-}
+// ---------------------------------------------------------------------------
+// State (global)
+// ---------------------------------------------------------------------------
 
 pub fn get_pending_admin(e: &Env) -> Result<Option<Address>, VaultError> {
     require_initialized(e)?;
@@ -178,9 +201,8 @@ pub fn get_total_deposits(e: &Env) -> Result<i128, VaultError> {
     Ok(total)
 }
 
-pub fn set_total_deposits(e: &Env, total: i128) {
-    e.storage().instance().set(&DataKey::TotalDeposits, &total);
-    bump_instance_ttl(e);
+pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
+    Ok(get_state(e)?.reward_index)
 }
 
 pub fn get_reward_index(e: &Env) -> Result<i128, VaultError> {
@@ -368,8 +390,21 @@ pub fn store_claimable_rewards(e: &Env, user: &Address) -> Result<i128, VaultErr
     Ok(claimable)
 }
 
+// ---------------------------------------------------------------------------
+// Read-only reward preview
+// ---------------------------------------------------------------------------
+
 pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapshot, VaultError> {
     require_initialized(e)?;
+    let state = get_state(e)?;
+    let position = get_user_position_unchecked(e, user);
+
+    if state.reward_index == position.reward_index || position.balance == 0 {
+        return Ok(UserRewardSnapshot {
+            reward_index: state.reward_index,
+            rewards: position.rewards,
+        });
+    }
 
     let state = get_state(e)?;
     let mut position = get_user_position_unchecked(e, user);
@@ -411,7 +446,8 @@ fn accrue_position_rewards(
     state: &VaultState,
     position: &mut UserPosition,
 ) -> Result<(), VaultError> {
-    if state.reward_index == position.reward_index {
+    if state.reward_index == position.reward_index || position.balance == 0 {
+        position.reward_index = state.reward_index;
         return Ok(());
     }
 

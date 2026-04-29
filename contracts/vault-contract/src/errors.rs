@@ -29,6 +29,7 @@ pub enum ValidationError {
     NegativeAmount,
     InvalidAddress,
     InvalidTokenConfiguration,
+    InsufficientRewardAmount,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -49,26 +50,41 @@ pub enum ArithmeticError {
 pub enum AuthorizationError {
     Unauthorized,
     ReentrancyDetected,
+    UpgradeFailed,
 }
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum VaultError {
+    /// Vault has already been initialized
     AlreadyInitialized = 1,
+    /// Vault has not been initialized
     NotInitialized = 2,
+    /// Caller is not authorized to perform this action
     Unauthorized = 3,
+    /// Amount must be greater than zero
     InvalidAmount = 4,
+    /// Available balance is lower than the requested amount
     InsufficientBalance = 5,
+    /// Arithmetic overflow or underflow detected
     MathOverflow = 6,
+    /// Reward distribution requires at least one active deposit
     NoDeposits = 7,
+    /// Deposit and reward token addresses must be different
     InvalidTokenConfiguration = 8,
+    /// Vault token balance is lower than the requested amount
     InsufficientContractBalance = 9,
+    /// Amount must not be negative
     NegativeAmount = 10,
+    /// Provided address is invalid
     InvalidAddress = 11,
+    /// Reward calculation failed due to checked arithmetic
     RewardCalculationFailed = 12,
     ReentrancyDetected = 13,
+    /// Vault state is internally inconsistent
     InvalidState = 14,
+    /// Reward distribution rounded down to zero
     ZeroRewardIncrement = 15,
     NoPendingAdmin = 16,
 }
@@ -183,6 +199,7 @@ impl From<ValidationError> for VaultError {
             ValidationError::NegativeAmount => Self::NegativeAmount,
             ValidationError::InvalidAddress => Self::InvalidAddress,
             ValidationError::InvalidTokenConfiguration => Self::InvalidTokenConfiguration,
+            ValidationError::InsufficientRewardAmount => Self::InsufficientRewardAmount,
         }
     }
 }
@@ -212,6 +229,7 @@ impl From<AuthorizationError> for VaultError {
         match error {
             AuthorizationError::Unauthorized => Self::Unauthorized,
             AuthorizationError::ReentrancyDetected => Self::ReentrancyDetected,
+            AuthorizationError::UpgradeFailed => Self::UpgradeFailed,
         }
     }
 }
