@@ -1,0 +1,12 @@
+apiVersion: v2
+name: axionvera-node
+description: Deploy the Axionvera network node to Kubernetes using Helm.
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - axionvera
+  - network
+  - node
+  - kubernetes
+  - helm

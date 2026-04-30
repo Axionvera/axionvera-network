@@ -119,16 +119,18 @@ impl CryptoWorkerPool {
 
         workers.push(batch_processor);
 
-        Self {
-            workers,
-            work_sender,
-            result_sender,
-            batch_size,
-            batch_timeout_ms,
-            pending_requests,
-            semaphore,
-        },
-        result_receiver
+        (
+            Self {
+                workers,
+                work_sender,
+                result_sender,
+                batch_size,
+                batch_timeout_ms,
+                pending_requests,
+                semaphore,
+            },
+            result_receiver,
+        )
     }
 
     /// Worker thread loop for processing individual signature verifications
