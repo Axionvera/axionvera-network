@@ -113,8 +113,8 @@ impl ChainParameterRegistry {
     pub fn from_genesis_file(path: &Path) -> Result<Self, String> {
         let raw = std::fs::read_to_string(path)
             .map_err(|e| format!("Failed to read genesis file {}: {}", path.display(), e))?;
-        let doc: GenesisDocument = serde_json::from_str(&raw)
-            .map_err(|e| format!("Invalid genesis JSON: {}", e))?;
+        let doc: GenesisDocument =
+            serde_json::from_str(&raw).map_err(|e| format!("Invalid genesis JSON: {}", e))?;
         Ok(Self::from_genesis_document(doc))
     }
 
@@ -151,6 +151,10 @@ impl ChainParameterRegistry {
 
     pub fn chain_id(&self) -> &str {
         &self.chain_id
+    }
+
+    pub fn governance_config(&self) -> &GovernanceConfig {
+        &self.governance
     }
 
     pub fn current_height(&self) -> u64 {
@@ -242,11 +246,15 @@ impl ChainParameterRegistry {
         match &self.governance {
             GovernanceConfig::AdminKeys { keys } => {
                 if dao_voter_addresses.iter().any(|v| !v.is_empty()) {
-                    return Err("dao_voter_addresses must be empty for admin_keys governance".to_string());
+                    return Err(
+                        "dao_voter_addresses must be empty for admin_keys governance".to_string(),
+                    );
                 }
                 let p = normalize_id(proposer_address);
                 if p.is_empty() {
-                    return Err("proposer_address is required for admin_keys governance".to_string());
+                    return Err(
+                        "proposer_address is required for admin_keys governance".to_string()
+                    );
                 }
                 let ok = keys.iter().any(|k| normalize_id(k) == p);
                 if !ok {
@@ -288,7 +296,7 @@ impl ChainParameterRegistry {
     }
 }
 
-fn normalize_id(s: &str) -> String {
+pub fn normalize_id(s: &str) -> String {
     s.trim().to_ascii_lowercase()
 }
 
