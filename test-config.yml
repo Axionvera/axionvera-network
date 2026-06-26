@@ -1,0 +1,145 @@
+name: Axionvera Network Test Configuration
+
+env:
+  # Test Environment Configuration
+  TEST_NODE_HOST: localhost
+  TEST_NODE_PORT: "50051"
+  TEST_DATABASE_URL: "postgresql://testuser:testpass@localhost:5432/testdb"
+  
+  # Test Timeout Configuration
+  TEST_TIMEOUT: "300000"  # 5 minutes
+  GLOBAL_TIMEOUT: "900000"  # 15 minutes
+  
+  # Test Data Configuration
+  DEFAULT_DEPOSIT_AMOUNT: "1000"
+  DEFAULT_WITHDRAW_AMOUNT: "500"
+  DEFAULT_REWARD_DISTRIBUTION: "500000"
+  MIN_STAKE_AMOUNT: "100"
+  
+  # User Configuration
+  TEST_USER_COUNT: "5"
+  TEST_USERS: |
+    ["GALICE1234567890ABCDEFGHIJ1234567890ABCDEFGHIJKL",
+     "GBOB9876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321",
+     "GCHARLIE111222333444555666777888999000111222333444",
+     "GDAVE444555666777888999000111222333444555666777888",
+     "GEVE999000111222333444555666777888999000111222333"]
+  
+  # Contract Configuration
+  CONTRACT_ADDRESS: "CAXIONVERA001"
+  ADMIN_ADDRESS: "GBA_ADMIN0000000000000000000000000000000000000000000000"
+  
+  # Token Configuration
+  DEPOSIT_TOKEN_ADDRESS: "CDEPOSIT123"
+  REWARD_TOKEN_ADDRESS: "CREWARD456"
+  
+  # Governance Configuration
+  GOVERNANCE_THRESHOLD: "50"
+  VOTING_PERIOD: "86400"
+  EMERGENCY_DEADLINE: "3600"
+
+# Test Coverage Thresholds
+coverage:
+  minimum: "85%"
+  minimum_by_component:
+    core_protocol: "90%"
+    reward_distribution: "85%"
+    staking_operations: "80%"
+    treasury_actions: "85%"
+    governance: "90%"
+
+# Test Reporting Configuration
+reporting:
+  format: "json"
+  output_path: "test-results.json"
+  coverage_path: "test-coverage.json"
+  include_screenshots: true
+  include_logs: true
+
+# Retries Configuration
+retries:
+  max_attempts: 3
+  delay_ms: "1000"
+  backoff_multiplier: "2"
+
+# Performance Thresholds
+performance:
+  max_test_duration: "300000"  # 5 minutes
+  max_memory_usage_mb: "512"
+  expected_throughput: "10_requests_per_second"
+
+# Security Testing
+security:
+  enable_penetration_tests: "false"
+  enable_rate_limit_tests: "true"
+  enable_auth_bypass_tests: "true"
+  enable_sql_injection_tests: "true"
+
+# Compliance Requirements
+compliance:
+  audit_all_transactions: "true"
+  log_transaction_details: "true"
+  maintain_audit_trail: "true"
+  data_encryption: "aes256"
+
+# Environment-specific overrides
+environments:
+  development:
+    host: "localhost"
+    port: "50051"
+    debug: "true"
+    verbose_logging: "true"
+  
+  staging:
+    host: "staging.axionvera.network"
+    port: "443"
+    debug: "false"
+    verbose_logging: "false"
+    
+  production:
+    host: "api.axionvera.network"
+    port: "443"
+    debug: "false"
+    verbose_logging: "false"
+    health_check_timeout: "10000"
+
+# Test Data Generation
+ test_data:
+  generate_random_users: "true"
+  generate_realistic_balances: "true"
+  include_edge_cases: "true"
+  corrupt_data_percentage: "5"
+
+# Failure Handling
+failure_handling:
+  continue_on_failure: "false"
+  notify_on_failure: "true"
+  auto_retry_failed_tests: "true"
+  capture_failed_scenarios: "true"
+
+# Artifact Management
+artifacts:
+  test_results:
+    retention_days: 90
+    compression: "true"
+    encrypt: "true"
+  
+  screenshots:
+    capture_on_failure: "true"
+    directory: "test-artifacts/screenshots"
+    format: "png"
+    
+  logs:
+    capture_system_logs: "true"
+    capture_application_logs: "true"
+    directory: "test-artifacts/logs"
+    format: "log"
+
+# Performance Monitoring
+monitoring:
+  enable_performance_metrics: "true"
+  track_response_times: "true"
+  track_memory_usage: "true"
+  track_error_rates: "true"
+  alert_on_slow_tests: "true"
+  alert_on_high_error_rate: "true"
