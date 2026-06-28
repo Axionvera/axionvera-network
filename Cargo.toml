@@ -4,6 +4,7 @@ members = [
   "contracts/vault-contract",
   "contracts/vault-contract-v2",
   "contracts/events",
+  "contracts/accounting",
   "contracts/core",
   "contracts/interfaces",
   "network-node",

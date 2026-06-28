@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 soroban-sdk = "22.0.0"
 axionvera-events = { path = "../events" }
+axionvera-accounting = { path = "../accounting" }
 axionvera-core = { path = "../core" }
 axionvera-interfaces = { path = "../interfaces" }
 

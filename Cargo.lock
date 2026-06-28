@@ -866,6 +866,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "axionvera-accounting"
+version = "0.1.0"
+dependencies = [
+ "axionvera-events",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "axionvera-core"
 version = "0.1.0"
 dependencies = [
@@ -963,6 +971,7 @@ dependencies = [
 name = "axionvera-vault-contract"
 version = "0.1.0"
 dependencies = [
+ "axionvera-accounting",
  "axionvera-core",
  "axionvera-events",
  "axionvera-interfaces",

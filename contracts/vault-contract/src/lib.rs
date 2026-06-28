@@ -9,6 +9,8 @@ mod test;
 
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
+use axionvera_accounting as accounting;
+
 use crate::cross_contract::CrossContractClient;
 use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
 
@@ -49,6 +51,17 @@ impl VaultContract {
             target_deposits,
             &utilization_multipliers,
         );
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::Initialize,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(1, 10, 2, 0),
+        )?;
         events::emit_initialize(&e, admin, deposit_token, reward_token);
 
         Ok(())
@@ -61,6 +74,17 @@ impl VaultContract {
         admin.require_auth();
 
         storage::set_pending_admin(&e, &new_admin);
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernanceAdminPropose,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(2, 1, 2, 0),
+        )?;
         events::emit_admin_transfer_proposed(&e, admin, new_admin);
 
         Ok(())
@@ -79,6 +103,17 @@ impl VaultContract {
 
         storage::set_admin(&e, &new_admin);
         storage::clear_pending_admin(&e);
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernanceAdminAccept,
+            Some(new_admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(3, 2, 2, 0),
+        )?;
         events::emit_admin_transfer_accepted(&e, previous_admin, new_admin);
 
         Ok(())
@@ -101,6 +136,17 @@ impl VaultContract {
             )?;
 
             let (_state, _position) = storage::store_deposit(&e, &from, amount)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::VaultDeposit,
+                Some(from.clone()),
+                Some(state.deposit_token.clone()),
+                amount,
+                0,
+                amount,
+                accounting::OperationResources::new(5, 5, 2, 1),
+            )?;
             events::emit_deposit(&e, from.clone(), amount);
             Ok(())
         })
@@ -113,9 +159,19 @@ impl VaultContract {
         to.require_auth();
 
         with_non_reentrant(&e, || {
-            let state = storage::get_state(&e)?;
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
 
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::VaultWithdraw,
+                Some(to.clone()),
+                Some(state.deposit_token.clone()),
+                0,
+                amount,
+                amount,
+                accounting::OperationResources::new(6, 5, 2, 1),
+            )?;
             events::emit_withdraw(&e, to.clone(), amount, position.balance);
 
             CrossContractClient::token_transfer(
@@ -155,6 +211,17 @@ impl VaultContract {
             )?;
 
             let next_state = storage::store_reward_distribution(&e, amount)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Rewards,
+                accounting::AccountingOperation::RewardDistribute,
+                Some(admin.clone()),
+                Some(reward_token_id.clone()),
+                amount,
+                0,
+                amount,
+                accounting::OperationResources::new(4, 2, 2, 1),
+            )?;
             events::emit_distribute(&e, admin.clone(), amount);
             Ok(next_state.reward_index)
         })
@@ -181,6 +248,18 @@ impl VaultContract {
                 .checked_add(duration_seconds)
                 .ok_or(VaultError::MathOverflow)?;
             storage::store_lock(&e, &from, amount, duration_seconds)?;
+            let deposit_token = storage::get_deposit_token(&e)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::VaultLock,
+                Some(from.clone()),
+                Some(deposit_token),
+                0,
+                0,
+                amount,
+                accounting::OperationResources::new(4, 3, 2, 0),
+            )?;
             events::emit_lock(&e, from, amount, unlock_timestamp);
             Ok(())
         })
@@ -200,6 +279,18 @@ impl VaultContract {
         with_non_reentrant(&e, || {
             let unlocked_amount = storage::unlock_expired_locks(&e, &user, limit)?;
             if unlocked_amount > 0 {
+                let deposit_token = storage::get_deposit_token(&e)?;
+                account_operation(
+                    &e,
+                    accounting::AccountingCategory::Vault,
+                    accounting::AccountingOperation::VaultUnlock,
+                    Some(user.clone()),
+                    Some(deposit_token),
+                    0,
+                    0,
+                    unlocked_amount,
+                    accounting::OperationResources::new(3, 2, 2, 0),
+                )?;
                 events::emit_unlock(&e, user, unlocked_amount);
             }
             Ok(unlocked_amount)
@@ -232,6 +323,17 @@ impl VaultContract {
                 amt,
             )?;
 
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Rewards,
+                accounting::AccountingOperation::RewardClaim,
+                Some(user.clone()),
+                Some(reward_token_id),
+                0,
+                amt,
+                amt,
+                accounting::OperationResources::new(5, 3, 2, 1),
+            )?;
             events::emit_claim_rewards(&e, user, amt);
             Ok(amt)
         })
@@ -290,6 +392,17 @@ impl VaultContract {
         let admin = storage::get_admin(&e)?;
         admin.require_auth();
         storage::set_paused(&e, true);
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernancePause,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(2, 1, 2, 0),
+        )?;
         events::emit_pause(&e, admin);
         Ok(())
     }
@@ -299,6 +412,17 @@ impl VaultContract {
         let admin = storage::get_admin(&e)?;
         admin.require_auth();
         storage::set_paused(&e, false);
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernanceUnpause,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(2, 1, 2, 0),
+        )?;
         events::emit_unpause(&e, admin);
         Ok(())
     }
@@ -314,6 +438,17 @@ impl VaultContract {
             return Err(ValidationError::InvalidPenaltyRate.into());
         }
         storage::set_penalty_rate_bps(&e, rate_bps);
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernanceSetParameter,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(2, 1, 1, 0),
+        )?;
         Ok(())
     }
 
@@ -336,8 +471,32 @@ impl VaultContract {
         to.require_auth();
 
         with_non_reentrant(&e, || {
-            let (state, position, net_amount, _penalty) =
+            let (state, position, net_amount, penalty) =
                 storage::store_early_withdraw_locked(&e, &to, amount)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::VaultEarlyWithdraw,
+                Some(to.clone()),
+                Some(state.deposit_token.clone()),
+                0,
+                net_amount,
+                amount,
+                accounting::OperationResources::new(7, 6, if penalty > 0 { 3 } else { 2 }, 1),
+            )?;
+            if penalty > 0 {
+                account_operation(
+                    &e,
+                    accounting::AccountingCategory::Treasury,
+                    accounting::AccountingOperation::TreasuryPenalty,
+                    Some(to.clone()),
+                    Some(state.deposit_token.clone()),
+                    penalty,
+                    0,
+                    penalty,
+                    accounting::OperationResources::new(2, 2, 1, 0),
+                )?;
+            }
             events::emit_withdraw(&e, to.clone(), net_amount, position.balance);
             CrossContractClient::token_transfer(
                 &e,
@@ -357,6 +516,17 @@ impl VaultContract {
 
         e.deployer()
             .update_current_contract_wasm(new_wasm_hash.clone());
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::GovernanceUpgrade,
+            Some(admin.clone()),
+            None,
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(2, 1, 2, 0),
+        )?;
         events::emit_upgrade(&e, admin, new_wasm_hash);
 
         Ok(())
@@ -375,6 +545,17 @@ impl VaultContract {
         admin.require_auth();
 
         storage::add_supported_asset(&e, &asset)?;
+        account_operation(
+            &e,
+            accounting::AccountingCategory::Governance,
+            accounting::AccountingOperation::AssetAdded,
+            Some(admin.clone()),
+            Some(asset.clone()),
+            0,
+            0,
+            0,
+            accounting::OperationResources::new(3, 2, 2, 0),
+        )?;
         events::emit_asset_added(&e, asset);
         Ok(())
     }
@@ -404,6 +585,17 @@ impl VaultContract {
             )?;
 
             let _position = storage::store_asset_deposit(&e, &from, &asset, amount)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::AssetDeposit,
+                Some(from.clone()),
+                Some(asset.clone()),
+                amount,
+                0,
+                amount,
+                accounting::OperationResources::new(5, 4, 2, 1),
+            )?;
             events::emit_asset_deposit(&e, from.clone(), asset.clone(), amount);
             Ok(())
         })
@@ -427,6 +619,17 @@ impl VaultContract {
         with_non_reentrant(&e, || {
             let position = storage::store_asset_withdraw(&e, &to, &asset, amount)?;
 
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Vault,
+                accounting::AccountingOperation::AssetWithdraw,
+                Some(to.clone()),
+                Some(asset.clone()),
+                0,
+                amount,
+                amount,
+                accounting::OperationResources::new(5, 4, 2, 1),
+            )?;
             events::emit_asset_withdraw(&e, to.clone(), asset.clone(), amount, position.balance);
 
             CrossContractClient::token_transfer(
@@ -478,6 +681,17 @@ impl VaultContract {
             )?;
 
             let next_reward_index = storage::store_asset_reward_distribution(&e, &asset, amount)?;
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Rewards,
+                accounting::AccountingOperation::AssetRewardDistribute,
+                Some(admin.clone()),
+                Some(asset.clone()),
+                amount,
+                0,
+                amount,
+                accounting::OperationResources::new(5, 3, 2, 1),
+            )?;
             events::emit_asset_distribute(&e, admin.clone(), asset.clone(), amount);
             Ok(next_reward_index)
         })
@@ -517,6 +731,17 @@ impl VaultContract {
                 amt,
             )?;
 
+            account_operation(
+                &e,
+                accounting::AccountingCategory::Rewards,
+                accounting::AccountingOperation::AssetRewardClaim,
+                Some(user.clone()),
+                Some(asset.clone()),
+                0,
+                amt,
+                amt,
+                accounting::OperationResources::new(5, 3, 2, 1),
+            )?;
             events::emit_asset_claim_rewards(&e, user, asset, amt);
             Ok(amt)
         })
@@ -552,6 +777,40 @@ impl VaultContract {
 
     pub fn is_asset_supported(e: Env, asset: Address) -> bool {
         storage::is_asset_supported(&e, &asset)
+    }
+
+    // ---------------------------------------------------------------------------
+    // Accounting Views
+    // ---------------------------------------------------------------------------
+
+    pub fn accounting_report(e: Env) -> accounting::AccountingReport {
+        accounting::accounting_report(&e)
+    }
+
+    pub fn accounting_totals(e: Env) -> accounting::ResourceTotals {
+        accounting::get_total_usage(&e)
+    }
+
+    pub fn accounting_category(
+        e: Env,
+        category: accounting::AccountingCategory,
+    ) -> accounting::ResourceTotals {
+        accounting::get_category_usage(&e, category)
+    }
+
+    pub fn accounting_operation(
+        e: Env,
+        operation: accounting::AccountingOperation,
+    ) -> accounting::ResourceTotals {
+        accounting::get_operation_usage(&e, operation)
+    }
+
+    pub fn accounting_asset(e: Env, asset: Address) -> accounting::ResourceTotals {
+        accounting::get_asset_usage(&e, &asset)
+    }
+
+    pub fn accounting_is_consistent(e: Env) -> bool {
+        accounting::validate_accounting(&e)
     }
 }
 
@@ -609,6 +868,41 @@ where
     let result = f();
     storage::exit_non_reentrant(e);
     result
+}
+
+fn account_operation(
+    e: &Env,
+    category: accounting::AccountingCategory,
+    operation: accounting::AccountingOperation,
+    actor: Option<Address>,
+    asset: Option<Address>,
+    amount_in: i128,
+    amount_out: i128,
+    amount_processed: i128,
+    resources: accounting::OperationResources,
+) -> Result<(), VaultError> {
+    accounting::record_operation(
+        e,
+        accounting::AccountingEntry {
+            category,
+            operation,
+            actor,
+            asset,
+            amount_in,
+            amount_out,
+            amount_processed,
+            resources,
+        },
+    )
+    .map_err(accounting_error_to_vault_error)
+}
+
+fn accounting_error_to_vault_error(error: accounting::AccountingError) -> VaultError {
+    match error {
+        accounting::AccountingError::NegativeAmount => VaultError::NegativeAmount,
+        accounting::AccountingError::Overflow => VaultError::MathOverflow,
+        accounting::AccountingError::InconsistentTotals => VaultError::InvalidState,
+    }
 }
 
 #[cfg(test)]

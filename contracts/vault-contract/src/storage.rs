@@ -63,10 +63,6 @@ pub enum DataKey {
     ReentrancyGuard,
     /// Pause flag
     IsPaused,
-    /// User liquid balance (unlocked deposits)
-    UserLiquidBalance(Address),
-    /// User lock entries
-    UserLocks(Address),
     /// User balance (legacy, kept for backwards compatibility)
     UserBalance(Address),
     /// User's last synced reward index (legacy, kept for backwards compatibility)
@@ -139,28 +135,6 @@ pub struct UserPosition {
     pub accrued_rewards: i128,
     /// The timestamp of the last reward distribution affecting this user.
     pub last_reward_timestamp: u64,
-}
-
-/// A single time-locked deposit entry.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Lock {
-    /// The amount locked in this entry.
-    pub amount: i128,
-    /// The earliest timestamp when these funds may be unlocked without penalty.
-    pub unlock_timestamp: u64,
-    /// A placeholder for future locked-reward multiplier support.
-    pub reward_multiplier: u32,
-}
-
-/// A reward multiplier entry used to compute dynamic reward curves.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MultiplierPoint {
-    /// Utilization threshold in basis points.
-    pub utilization_bps: u32,
-    /// Reward multiplier in basis points.
-    pub multiplier_bps: u32,
 }
 
 /// Snapshot of a user's position across multiple assets.
