@@ -10,7 +10,9 @@ mod test;
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use crate::cross_contract::CrossContractClient;
-use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
+use crate::errors::{
+    AuthorizationError, BalanceError, DelegationError, StateError, ValidationError, VaultError,
+};
 
 #[contract]
 pub struct VaultContract;
@@ -552,6 +554,265 @@ impl VaultContract {
 
     pub fn is_asset_supported(e: Env, asset: Address) -> bool {
         storage::is_asset_supported(&e, &asset)
+    }
+
+    // -----------------------------------------------------------------------
+    // Delegation Management
+    // -----------------------------------------------------------------------
+
+    /// Grant `permissions` to `operator` for the caller's vault positions.
+    /// The delegation optionally expires at `expires_at` (0 = never).
+    pub fn delegate(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        permissions: u32,
+        expires_at: u64,
+    ) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        delegator.require_auth();
+
+        if operator == delegator {
+            return Err(DelegationError::CannotDelegateToSelf.into());
+        }
+        if expires_at != 0 && expires_at <= e.ledger().timestamp() {
+            return Err(DelegationError::InvalidExpiration.into());
+        }
+
+        // Enforce max delegations limit.
+        let max = storage::get_max_delegations(&e);
+        let current_count = storage::delegation_count(&e, &delegator);
+        // Allow updating an existing delegation without counting toward the limit.
+        let exists = storage::get_delegation(&e, &delegator, &operator).is_some();
+        if !exists && current_count >= max {
+            return Err(DelegationError::MaxDelegationsExceeded.into());
+        }
+
+        storage::set_delegation(&e, &delegator, &operator, permissions, expires_at);
+        events::emit_delegate(&e, delegator, operator, permissions, expires_at);
+        Ok(())
+    }
+
+    /// Revoke a previously granted delegation.
+    pub fn revoke_delegation(e: Env, delegator: Address, operator: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        delegator.require_auth();
+
+        storage::remove_delegation(&e, &delegator, &operator);
+        events::emit_revoke_delegation(&e, delegator, operator);
+        Ok(())
+    }
+
+    /// Query a specific delegation entry.
+    pub fn get_delegation(e: Env, delegator: Address, operator: Address) -> Option<storage::Delegation> {
+        storage::get_delegation(&e, &delegator, &operator)
+    }
+
+    /// List all operators a delegator has granted permissions to, along with their delegation info.
+    pub fn get_delegations(e: Env, delegator: Address) -> soroban_sdk::Vec<storage::Delegation> {
+        let operators = storage::get_delegation_operators(&e, &delegator);
+        let mut result: soroban_sdk::Vec<storage::Delegation> = soroban_sdk::Vec::new(&e);
+        for op in operators.iter() {
+            if let Some(d) = storage::get_delegation(&e, &delegator, &op) {
+                result.push_back(d);
+            }
+        }
+        result
+    }
+
+    // -----------------------------------------------------------------------
+    // Delegated Actions
+    // -----------------------------------------------------------------------
+
+    /// Deposit on behalf of a delegator. The caller must have Deposit permission.
+    pub fn delegated_deposit(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_DEPOSIT)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &operator,
+                &e.current_contract_address(),
+                amount,
+            )?;
+
+            let (_state, _position) = storage::store_deposit(&e, &delegator, amount)?;
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_DEPOSIT,
+                axionvera_events::ACT_DEPOSIT,
+            );
+            events::emit_deposit(&e, delegator.clone(), amount);
+            Ok(())
+        })
+    }
+
+    /// Withdraw from a delegator's balance. The caller must have Withdraw permission.
+    pub fn delegated_withdraw(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_WITHDRAW)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let (state, position) = storage::store_withdraw(&e, &delegator, amount)?;
+
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_WITHDRAW,
+                axionvera_events::ACT_WITHDRAW,
+            );
+            events::emit_withdraw(&e, delegator.clone(), amount, position.balance);
+
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &e.current_contract_address(),
+                &operator,
+                amount,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Lock tokens in a delegator's vault. The caller must have Lock permission.
+    pub fn delegated_lock(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+        duration_seconds: u64,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        if duration_seconds == 0 {
+            return Err(ValidationError::InvalidLockDuration.into());
+        }
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_LOCK)?;
+
+        with_non_reentrant(&e, || {
+            let unlock_timestamp = e
+                .ledger()
+                .timestamp()
+                .checked_add(duration_seconds)
+                .ok_or(VaultError::MathOverflow)?;
+            storage::store_lock(&e, &delegator, amount, duration_seconds)?;
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_LOCK,
+                axionvera_events::ACT_LOCK,
+            );
+            events::emit_lock(&e, delegator, amount, unlock_timestamp);
+            Ok(())
+        })
+    }
+
+    /// Unlock expired locks for a delegator. The caller must have Unlock permission.
+    pub fn delegated_unlock_expired(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        limit: u32,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_UNLOCK)?;
+
+        const MAX_UNLOCK_LIMIT: u32 = 50;
+        if limit > MAX_UNLOCK_LIMIT {
+            return Err(VaultError::OperationLimitExceeded);
+        }
+
+        with_non_reentrant(&e, || {
+            let unlocked_amount = storage::unlock_expired_locks(&e, &delegator, limit)?;
+            if unlocked_amount > 0 {
+                events::emit_delegated_action(
+                    &e,
+                    delegator.clone(),
+                    operator.clone(),
+                    storage::PERMISSION_UNLOCK,
+                    axionvera_events::ACT_UNLOCK,
+                );
+                events::emit_unlock(&e, delegator, unlocked_amount);
+            }
+            Ok(unlocked_amount)
+        })
+    }
+
+    /// Claim rewards for a delegator. The caller must have Claim permission.
+    pub fn delegated_claim_rewards(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_CLAIM)?;
+
+        with_non_reentrant(&e, || {
+            let amt = storage::store_claimable_rewards(&e, &delegator)?;
+            if amt <= 0 {
+                return Ok(0);
+            }
+
+            let reward_token_id = storage::get_reward_token(&e)?;
+            let contract_balance = CrossContractClient::token_balance(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+            )?;
+            ensure_contract_balance(contract_balance, amt)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+                &operator,
+                amt,
+            )?;
+
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_CLAIM,
+                axionvera_events::ACT_CLAIM,
+            );
+            events::emit_claim_rewards(&e, delegator, amt);
+            Ok(amt)
+        })
+    }
+
+    /// Set the maximum number of delegations allowed per user (admin only).
+    pub fn set_max_delegations(e: Env, max: u32) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let admin = storage::get_admin(&e)?;
+        admin.require_auth();
+        storage::set_max_delegations(&e, max);
+        Ok(())
     }
 }
 
