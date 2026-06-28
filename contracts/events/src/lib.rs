@@ -28,6 +28,10 @@ pub const ACT_ASSET_DEPOSIT: Symbol = symbol_short!("asset_dep");
 pub const ACT_ASSET_WITHDRAW: Symbol = symbol_short!("asset_wd");
 pub const ACT_ASSET_DISTRIBUTE: Symbol = symbol_short!("ast_dist");
 pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
+pub const ACT_ORCH_VALIDATED: Symbol = symbol_short!("orc_val");
+pub const ACT_ORCH_EXECUTED: Symbol = symbol_short!("orc_exec");
+pub const ACT_ORCH_ROLLBACK: Symbol = symbol_short!("orc_rb");
+pub const ACT_ORCH_FAILED: Symbol = symbol_short!("orc_fail");
 
 // ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
@@ -204,6 +208,46 @@ pub struct UnlockEvent {
     pub event_version: u32,
     pub user: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationValidatedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub operation_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationExecutedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub executed_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationRollbackEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub operation_id: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationFailedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub failed_operation: u32,
+    pub rollback_count: u32,
     pub timestamp: u64,
 }
 
