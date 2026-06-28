@@ -28,6 +28,9 @@ pub const ACT_ASSET_DEPOSIT: Symbol = symbol_short!("asset_dep");
 pub const ACT_ASSET_WITHDRAW: Symbol = symbol_short!("asset_wd");
 pub const ACT_ASSET_DISTRIBUTE: Symbol = symbol_short!("ast_dist");
 pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
+pub const ACT_DELEGATE_AUTH: Symbol = symbol_short!("del_auth");
+pub const ACT_DELEGATE_REVOKE: Symbol = symbol_short!("del_rvk");
+pub const ACT_DELEGATE_ACTION: Symbol = symbol_short!("del_act");
 
 // ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
@@ -204,6 +207,35 @@ pub struct UnlockEvent {
     pub event_version: u32,
     pub user: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorizedEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateRevokedEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateActionEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub action: Symbol,
     pub timestamp: u64,
 }
 

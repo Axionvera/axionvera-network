@@ -265,6 +265,50 @@ fn test_set_penalty_rate_rejected_when_above_max() {
     assert_eq!(result, Err(Ok(VaultError::InvalidPenaltyRate)));
 }
 
+#[test]
+fn test_delegate_authorization_and_revocation() {
+    let e = Env::default();
+    e.mock_all_auths();
+
+    let contract_id = e.register_contract(None, VaultContract {});
+    let client = VaultContractClient::new(&e, &contract_id);
+
+    let admin = Address::generate(&e);
+    let deposit_token = Address::generate(&e);
+    let reward_token = Address::generate(&e);
+    let vesting_period = 86400u64;
+    let owner = Address::generate(&e);
+    let delegate = Address::generate(&e);
+
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
+
+    e.as_contract(&deposit_token, || {
+        e.storage().instance().set(&token::DataKey::Admin, &admin);
+        e.storage()
+            .instance()
+            .set(&token::DataKey::Balance(owner.clone()), &1000i128);
+        e.storage()
+            .instance()
+            .set(&token::DataKey::Balance(contract_id.clone()), &0i128);
+    });
+
+    client.authorize_delegate(&owner, &delegate, &DELEGATE_PERM_DEPOSIT);
+    client.deposit_as_delegate(&owner, &delegate, &100i128);
+
+    assert_eq!(client.balance(&owner), 100);
+
+    client.revoke_delegate(&owner, &delegate);
+    let revoked = client.try_deposit_as_delegate(&owner, &delegate, &50i128);
+    assert_eq!(revoked, Err(Ok(VaultError::Unauthorized)));
+}
+
 // ---------------------------------------------------------------------------
 // Multi-Asset Tests
 // ---------------------------------------------------------------------------

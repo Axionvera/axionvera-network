@@ -7,10 +7,14 @@ mod storage;
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, BytesN, Env};
 
 use crate::cross_contract::CrossContractClient;
 use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
+
+const DELEGATE_PERM_DEPOSIT: u32 = 1 << 0;
+const DELEGATE_PERM_WITHDRAW: u32 = 1 << 1;
+const DELEGATE_PERM_CLAIM: u32 = 1 << 2;
 
 #[contract]
 pub struct VaultContract;
@@ -106,6 +110,52 @@ impl VaultContract {
         })
     }
 
+    pub fn authorize_delegate(e: Env, owner: Address, delegate: Address, permissions: u32) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        owner.require_auth();
+        if permissions == 0 {
+            return Err(ValidationError::InvalidAddress.into());
+        }
+
+        storage::authorize_delegate(&e, &owner, &delegate, permissions)?;
+        events::emit_delegate_authorized(&e, owner, delegate, permissions);
+        Ok(())
+    }
+
+    pub fn revoke_delegate(e: Env, owner: Address, delegate: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        owner.require_auth();
+
+        storage::revoke_delegate(&e, &owner, &delegate)?;
+        events::emit_delegate_revoked(&e, owner, delegate);
+        Ok(())
+    }
+
+    pub fn deposit_as_delegate(e: Env, owner: Address, delegate: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_DEPOSIT)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &delegate,
+                &e.current_contract_address(),
+                amount,
+            )?;
+
+            let (_state, _position) = storage::store_deposit(&e, &owner, amount)?;
+            events::emit_deposit(&e, owner.clone(), amount);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("deposit"));
+            Ok(())
+        })
+    }
+
     pub fn withdraw(e: Env, to: Address, amount: i128) -> Result<(), VaultError> {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
@@ -117,6 +167,39 @@ impl VaultContract {
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
 
             events::emit_withdraw(&e, to.clone(), amount, position.balance);
+
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &e.current_contract_address(),
+                &to,
+                amount,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    pub fn withdraw_as_delegate(
+        e: Env,
+        owner: Address,
+        delegate: Address,
+        to: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_WITHDRAW)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let (state, position) = storage::store_withdraw(&e, &owner, amount)?;
+
+            events::emit_withdraw(&e, owner.clone(), amount, position.balance);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("withdraw"));
 
             CrossContractClient::token_transfer(
                 &e,
@@ -237,6 +320,44 @@ impl VaultContract {
         })
     }
 
+    pub fn claim_rewards_as_delegate(
+        e: Env,
+        owner: Address,
+        delegate: Address,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_CLAIM)?;
+
+        with_non_reentrant(&e, || {
+            let amt = storage::store_claimable_rewards(&e, &owner)?;
+            if amt <= 0 {
+                return Ok(0);
+            }
+
+            let reward_token_id = storage::get_reward_token(&e)?;
+            let contract_balance = CrossContractClient::token_balance(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+            )?;
+            ensure_contract_balance(contract_balance, amt)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+                &owner,
+                amt,
+            )?;
+
+            events::emit_claim_rewards(&e, owner.clone(), amt);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("claim"));
+            Ok(amt)
+        })
+    }
+
     pub fn balance(e: Env, user: Address) -> Result<i128, VaultError> {
         storage::get_user_balance(&e, &user)
     }
@@ -255,6 +376,10 @@ impl VaultContract {
 
     pub fn reward_index(e: Env) -> Result<i128, VaultError> {
         storage::get_reward_index(&e)
+    }
+
+    pub fn delegate_permissions(e: Env, owner: Address, delegate: Address) -> Result<u32, VaultError> {
+        storage::get_delegate_permissions(&e, &owner, &delegate)
     }
 
     pub fn pending_rewards(e: Env, user: Address) -> Result<i128, VaultError> {
