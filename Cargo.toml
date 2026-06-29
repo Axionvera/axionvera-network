@@ -9,13 +9,21 @@ members = [
   "contracts/core",
   "contracts/features",
   "contracts/interfaces",
+  "contracts/integrations",
   "contracts/orchestrator",
-  "contracts/context",
-  "contracts/capabilities",
+  "contracts/rewards",
   "network-node",
   "tests/security",
-  "tests/capabilities",
+  "tests/risk",
 ]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+soroban-sdk = "22.0.0"
 
 [workspace.package]
 version = "0.1.0"
