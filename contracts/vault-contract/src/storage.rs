@@ -1,8 +1,8 @@
 use soroban_sdk::{contracttype, Address, Env, Map};
 
 use crate::errors::{
-    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError, ValidationError,
-    VaultError,
+    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError,
+    ValidationError, VaultError,
 };
 
 pub const PRECISION_FACTOR: i128 = 1_000_000_000;
@@ -481,42 +481,46 @@ pub fn get_penalty_rate_bps(e: &Env) -> Result<u32, VaultError> {
     Ok(rate)
 }
 
-pub fn authorize_delegate(e: &Env, owner: &Address, delegate: &Address, permissions: u32) -> Result<(), VaultError> {
+pub fn authorize_delegate(
+    e: &Env,
+    owner: &Address,
+    delegate: &Address,
+    permissions: u32,
+) -> Result<(), VaultError> {
     require_initialized(e)?;
-    let record = DelegateAuthorization {
-        owner: owner.clone(),
-        delegate: delegate.clone(),
-        permissions,
-        created_at: e.ledger().timestamp(),
-        active: true,
-    };
-    e.storage().instance().set(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()), &record);
-    bump_instance_ttl(e);
+    if owner == delegate {
+        return Err(DelegationError::CannotDelegateToSelf.into());
+    }
+    let allowed = PERMISSION_DEPOSIT | PERMISSION_WITHDRAW | PERMISSION_CLAIM;
+    if permissions == 0 || permissions & !allowed != 0 {
+        return Err(DelegationError::InsufficientPermissions.into());
+    }
+    if get_delegation(e, owner, delegate).is_none()
+        && delegation_count(e, owner) >= get_max_delegations(e)
+    {
+        return Err(DelegationError::MaxDelegationsExceeded.into());
+    }
+    set_delegation(e, owner, delegate, permissions, 0);
     Ok(())
 }
 
 pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
     require_initialized(e)?;
-    e.storage().instance().remove(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
-    bump_instance_ttl(e);
+    remove_delegation(e, owner, delegate);
     Ok(())
 }
 
-pub fn get_delegate_permissions(e: &Env, owner: &Address, delegate: &Address) -> Result<u32, VaultError> {
+pub fn get_delegate_permissions(
+    e: &Env,
+    owner: &Address,
+    delegate: &Address,
+) -> Result<u32, VaultError> {
     require_initialized(e)?;
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
-    match record {
-        Some(auth) if auth.active => {
-            bump_instance_ttl(e);
+    match get_delegation(e, owner, delegate) {
+        Some(auth) if auth.expires_at == 0 || e.ledger().timestamp() < auth.expires_at => {
             Ok(auth.permissions)
         }
-        _ => {
-            bump_instance_ttl(e);
-            Ok(0)
-        }
+        _ => Ok(0),
     }
 }
 
@@ -526,14 +530,7 @@ pub fn require_delegate_permission(
     delegate: &Address,
     permission: u32,
 ) -> Result<(), VaultError> {
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
-    match record {
-        Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
-        _ => Err(AuthorizationError::Unauthorized.into()),
-    }
+    check_delegation_permission(e, owner, delegate, permission)
 }
 
 pub fn set_penalty_rate_bps(e: &Env, rate_bps: u32) {
@@ -1755,8 +1752,7 @@ pub fn check_delegation_permission(
     operator: &Address,
     permission: u32,
 ) -> Result<(), VaultError> {
-    let delegation = get_delegation(e, delegator, operator)
-        .ok_or(DelegationError::NotFound)?;
+    let delegation = get_delegation(e, delegator, operator).ok_or(DelegationError::NotFound)?;
 
     // Check expiration.
     let current_ts = e.ledger().timestamp();
