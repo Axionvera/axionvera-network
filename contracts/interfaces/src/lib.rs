@@ -124,3 +124,44 @@ pub trait TransactionOrchestrator {
     fn execute_plan(e: Env, plan: ExecutionPlan) -> Result<ExecutionReceipt, OrchestrationError>;
     fn execution_receipt(e: Env, plan_id: BytesN<32>) -> Option<ExecutionReceipt>;
 }
+
+// ---------------------------------------------------------------------------
+// Capability Discovery
+// ---------------------------------------------------------------------------
+
+/// Interface for contracts that want to expose discoverable capabilities.
+pub trait CapabilityDiscovery {
+    /// Return the full list of capability identifiers.
+    fn query_capabilities(e: Env) -> Vec<Symbol>;
+    /// Return metadata for a specific capability.
+    fn query_capability(e: Env, id: Symbol) -> Option<CapabilityInfo>;
+    /// Check whether a given capability is available at or above min_version.
+    fn supports_capability(e: Env, id: Symbol, major: u32, minor: u32, patch: u32) -> bool;
+    /// Return protocol-level metadata (name, version, counts).
+    fn query_metadata(e: Env) -> ProtocolMeta;
+    /// Check whether the protocol supports a given major.minor version.
+    fn supports_protocol_version(e: Env, major: u32, minor: u32) -> bool;
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CapabilityInfo {
+    pub id: Symbol,
+    pub major: u32,
+    pub minor: u32,
+    pub patch: u32,
+    pub name: Symbol,
+    pub description: Symbol,
+    pub interfaces: Vec<Symbol>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProtocolMeta {
+    pub name: Symbol,
+    pub major: u32,
+    pub minor: u32,
+    pub patch: u32,
+    pub capabilities_count: u32,
+    pub interfaces_count: u32,
+}

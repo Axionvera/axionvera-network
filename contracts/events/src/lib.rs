@@ -242,6 +242,17 @@ pub struct DelegatedActionEvent {
 }
 
 // ---------------------------------------------------------------------------
+// Capabilities — protocol identifier and action symbols
+// ---------------------------------------------------------------------------
+
+/// Protocol identifier used as Topic 1 for all capability events.
+pub const PROTOCOL_CAPABILITIES: Symbol = symbol_short!("AxCaps");
+
+pub const ACT_CAP_REGISTERED: Symbol = symbol_short!("cap_reg");
+pub const ACT_CAP_UPDATED: Symbol = symbol_short!("cap_upd");
+pub const ACT_CAP_REMOVED: Symbol = symbol_short!("cap_rem");
+
+// ---------------------------------------------------------------------------
 // Helper: get the ledger timestamp
 // ---------------------------------------------------------------------------
 
@@ -471,6 +482,133 @@ pub struct AssetRegistryPausedEvent {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AssetRegistryUnpausedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+// ---------------------------------------------------------------------------
+// Accounting — protocol identifier, action symbols, and event payloads
+// ---------------------------------------------------------------------------
+
+/// Action symbol used as Topic 2 for accounting events.
+pub const ACT_ACCOUNTING: Symbol = symbol_short!("account");
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingEvent {
+    pub event_version: u32,
+    pub category: Symbol,
+    pub operation: Symbol,
+    pub actor: Option<Address>,
+    pub asset: Option<Address>,
+    pub amount_in: i128,
+    pub amount_out: i128,
+    pub amount_processed: i128,
+    pub storage_reads: u32,
+    pub storage_writes: u32,
+    pub events_emitted: u32,
+    pub token_transfers: u32,
+    pub timestamp: u64,
+    pub ledger: u32,
+}
+
+// ---------------------------------------------------------------------------
+// Feature flags — protocol identifier and action symbols
+// ---------------------------------------------------------------------------
+
+/// Protocol identifier used as Topic 1 for all feature flag events.
+pub const PROTOCOL_FEATURES: Symbol = symbol_short!("AxFeat");
+
+pub const ACT_FEAT_INIT: Symbol = symbol_short!("feat_init");
+pub const ACT_FEAT_REG: Symbol = symbol_short!("feat_reg");
+pub const ACT_FEAT_EN: Symbol = symbol_short!("feat_en");
+pub const ACT_FEAT_DIS: Symbol = symbol_short!("feat_dis");
+pub const ACT_FEAT_ROLL: Symbol = symbol_short!("feat_roll");
+pub const ACT_FEAT_ADM_P: Symbol = symbol_short!("feat_ap");
+pub const ACT_FEAT_ADM_A: Symbol = symbol_short!("feat_aa");
+pub const ACT_FEAT_PAUSE: Symbol = symbol_short!("feat_pau");
+pub const ACT_FEAT_UNPAU: Symbol = symbol_short!("feat_unp");
+
+// ---------------------------------------------------------------------------
+// Feature flag event payload structs
+// ---------------------------------------------------------------------------
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureInitializedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureRegisteredEvent {
+    pub event_version: u32,
+    pub name: Symbol,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureEnabledEvent {
+    pub event_version: u32,
+    pub name: Symbol,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureDisabledEvent {
+    pub event_version: u32,
+    pub name: Symbol,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureRolloutUpdatedEvent {
+    pub event_version: u32,
+    pub name: Symbol,
+    pub admin: Address,
+    pub old_pct: u32,
+    pub new_pct: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureAdminTransferProposedEvent {
+    pub event_version: u32,
+    pub current_admin: Address,
+    pub pending_admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureAdminTransferAcceptedEvent {
+    pub event_version: u32,
+    pub previous_admin: Address,
+    pub new_admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeaturePausedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeatureUnpausedEvent {
     pub event_version: u32,
     pub admin: Address,
     pub timestamp: u64,
