@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "axionvera-upgrades"
 version.workspace = true
 edition.workspace = true
