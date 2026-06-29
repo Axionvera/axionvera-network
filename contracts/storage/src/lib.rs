@@ -1,84 +1,103 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, Address, Env, Symbol};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
 
 use axionvera_state::{
-    GovernanceState, RewardState, StakingState, StateError, TreasuryState, VaultState,
+    self as state, GovernanceState, RewardState, StakingState, StateError, TreasuryState,
+    VaultState,
 };
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-enum DataKey {
+pub enum DataKey {
     VaultState,
     StakingState,
     RewardState,
     TreasuryState,
     GovernanceState(Symbol),
+    ProtocolAdmin,
 }
 
-fn extend(e: &Env) {
-    e.storage().instance().extend_ttl(518_400, 518_400);
-}
+const INSTANCE_TTL_THRESHOLD: u32 = 518_400;
+const INSTANCE_TTL_EXTEND_TO: u32 = 518_400;
 
-pub fn get_vault_state(e: &Env) -> VaultState {
+pub fn initialize_admin(e: &Env, admin: &Address) -> Result<(), StateError> {
+    if e.storage().instance().has(&DataKey::ProtocolAdmin) {
+        return Err(StateError::AlreadyInState);
+    }
+    admin.require_auth();
+    e.storage().instance().set(&DataKey::ProtocolAdmin, admin);
     e.storage()
         .instance()
-        .get(&DataKey::VaultState)
-        .unwrap_or(VaultState::Uninitialized)
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
+    Ok(())
 }
 
-pub fn set_vault_state(e: &Env, new_state: VaultState, _caller: Address) -> Result<VaultState, StateError> {
-    let current = get_vault_state(e);
-    current.transition(new_state)?;
-    e.storage().instance().set(&DataKey::VaultState, &new_state);
-    extend(e);
-    Ok(new_state)
-}
-
-pub fn get_staking_state(e: &Env) -> StakingState {
-    e.storage()
+fn require_admin(e: &Env, caller: &Address) -> Result<(), StateError> {
+    caller.require_auth();
+    match e
+        .storage()
         .instance()
-        .get(&DataKey::StakingState)
-        .unwrap_or(StakingState::Uninitialized)
+        .get::<_, Address>(&DataKey::ProtocolAdmin)
+    {
+        Some(admin) if admin == *caller => Ok(()),
+        None => Ok(()),
+        _ => Err(StateError::Unauthorized),
+    }
 }
 
-pub fn set_staking_state(e: &Env, new_state: StakingState, _caller: Address) -> Result<StakingState, StateError> {
-    let current = get_staking_state(e);
-    current.transition(new_state)?;
-    e.storage().instance().set(&DataKey::StakingState, &new_state);
-    extend(e);
-    Ok(new_state)
+macro_rules! transition_store {
+    ($fn_set:ident, $fn_get:ident, $key:expr, $default:expr, $module:expr, $ty:ty) => {
+        pub fn $fn_get(e: &Env) -> $ty {
+            e.storage().instance().get(&$key).unwrap_or($default)
+        }
+
+        pub fn $fn_set(e: &Env, new_state: $ty, caller: Address) -> Result<$ty, StateError> {
+            require_admin(e, &caller)?;
+            let current = $fn_get(e);
+            let next = current.transition(new_state)?;
+            e.storage().instance().set(&$key, &next);
+            e.storage()
+                .instance()
+                .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
+            state::emit_state_transition(e, $module, current as u32, next as u32, caller);
+            Ok(next)
+        }
+    };
 }
 
-pub fn get_reward_state(e: &Env) -> RewardState {
-    e.storage()
-        .instance()
-        .get(&DataKey::RewardState)
-        .unwrap_or(RewardState::Idle)
-}
-
-pub fn set_reward_state(e: &Env, new_state: RewardState, _caller: Address) -> Result<RewardState, StateError> {
-    let current = get_reward_state(e);
-    current.transition(new_state)?;
-    e.storage().instance().set(&DataKey::RewardState, &new_state);
-    extend(e);
-    Ok(new_state)
-}
-
-pub fn get_treasury_state(e: &Env) -> TreasuryState {
-    e.storage()
-        .instance()
-        .get(&DataKey::TreasuryState)
-        .unwrap_or(TreasuryState::Normal)
-}
-
-pub fn set_treasury_state(e: &Env, new_state: TreasuryState, _caller: Address) -> Result<TreasuryState, StateError> {
-    let current = get_treasury_state(e);
-    current.transition(new_state)?;
-    e.storage().instance().set(&DataKey::TreasuryState, &new_state);
-    extend(e);
-    Ok(new_state)
-}
+transition_store!(
+    set_vault_state,
+    get_vault_state,
+    DataKey::VaultState,
+    VaultState::Uninitialized,
+    symbol_short!("vault"),
+    VaultState
+);
+transition_store!(
+    set_staking_state,
+    get_staking_state,
+    DataKey::StakingState,
+    StakingState::Uninitialized,
+    symbol_short!("staking"),
+    StakingState
+);
+transition_store!(
+    set_reward_state,
+    get_reward_state,
+    DataKey::RewardState,
+    RewardState::Idle,
+    symbol_short!("rewards"),
+    RewardState
+);
+transition_store!(
+    set_treasury_state,
+    get_treasury_state,
+    DataKey::TreasuryState,
+    TreasuryState::Normal,
+    symbol_short!("treasury"),
+    TreasuryState
+);
 
 pub fn get_governance_state(e: &Env, proposal_id: Symbol) -> GovernanceState {
     e.storage()
@@ -91,11 +110,23 @@ pub fn set_governance_state(
     e: &Env,
     proposal_id: Symbol,
     new_state: GovernanceState,
-    _caller: Address,
+    caller: Address,
 ) -> Result<GovernanceState, StateError> {
+    require_admin(e, &caller)?;
     let current = get_governance_state(e, proposal_id.clone());
-    current.transition(new_state)?;
-    e.storage().instance().set(&DataKey::GovernanceState(proposal_id), &new_state);
-    extend(e);
-    Ok(new_state)
+    let next = current.transition(new_state)?;
+    e.storage()
+        .instance()
+        .set(&DataKey::GovernanceState(proposal_id), &next);
+    e.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
+    state::emit_state_transition(
+        e,
+        symbol_short!("govern"),
+        current as u32,
+        next as u32,
+        caller,
+    );
+    Ok(next)
 }
