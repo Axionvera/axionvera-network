@@ -960,7 +960,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "axionvera-treasury"
+name = "axionvera-orchestrator"
 version = "0.1.0"
 dependencies = [
  "axionvera-events",

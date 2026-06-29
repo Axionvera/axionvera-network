@@ -6,7 +6,7 @@ members = [
   "contracts/events",
   "contracts/core",
   "contracts/interfaces",
-  "contracts/treasury",
+  "contracts/orchestrator",
   "network-node",
 ]
 
