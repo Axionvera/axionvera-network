@@ -270,7 +270,7 @@ pub enum ReplayError {
 pub trait EventReplayEngine {
     /// Initializes the replay engine with an admin.
     fn initialize(e: Env, admin: Address) -> Result<(), ReplayError>;
-    
+
     /// Adds a historical event to the replay log.
     fn add_event(
         e: Env,
@@ -279,19 +279,145 @@ pub trait EventReplayEngine {
         timestamp: u64,
         payload: Val,
     ) -> Result<u64, ReplayError>;
-    
+
     /// Starts replaying events from the beginning or last checkpoint.
     fn start_replay(e: Env) -> Result<ReplayReport, ReplayError>;
-    
+
     /// Gets a replay event by ID.
     fn get_event(e: Env, event_id: u64) -> Result<ReplayEvent, ReplayError>;
-    
+
     /// Lists all replay events.
     fn list_events(e: Env) -> Result<Vec<ReplayEvent>, ReplayError>;
-    
+
     /// Gets a replay report by run ID.
     fn get_report(e: Env, run_id: BytesN<32>) -> Result<ReplayReport, ReplayError>;
-    
+
     /// Gets the current admin.
     fn admin(e: Env) -> Result<Address, ReplayError>;
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling Engine Types
+// ---------------------------------------------------------------------------
+
+/// The status of a scheduled task.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ScheduledTaskStatus {
+    /// Task is scheduled but not yet executed.
+    Pending,
+    /// Task is currently executing.
+    Executing,
+    /// Task executed successfully.
+    Success,
+    /// Task execution failed.
+    Failed,
+    /// Task was canceled.
+    Canceled,
+}
+
+/// An execution window that defines when a task can run.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExecutionWindow {
+    /// Start timestamp (inclusive) of the window.
+    pub start_time: u64,
+    /// End timestamp (inclusive) of the window.
+    pub end_time: u64,
+    /// Optional: recurrence interval (for recurring tasks).
+    pub recurrence_interval: Option<u64>,
+    /// Optional: maximum number of recurrences.
+    pub max_recurrences: Option<u32>,
+}
+
+/// A scheduled task that coordinates protocol operations.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ScheduledTask {
+    /// Unique identifier for the task.
+    pub id: BytesN<32>,
+    /// Human-readable name for the task.
+    pub name: Bytes,
+    /// Priority (higher = executed first when multiple tasks are ready).
+    pub priority: u32,
+    /// Execution window for the task.
+    pub window: ExecutionWindow,
+    /// Contract address to call.
+    pub target_contract: Address,
+    /// Function symbol to call.
+    pub target_function: Symbol,
+    /// Arguments for the function.
+    pub args: Vec<Val>,
+    /// List of task IDs that must complete before this task runs.
+    pub dependencies: Vec<BytesN<32>>,
+    /// Current status of the task.
+    pub status: ScheduledTaskStatus,
+    /// Number of times the task has executed.
+    pub execution_count: u32,
+    /// Timestamp when the task was created.
+    pub created_at: u64,
+    /// Timestamp when the task was last executed (if any).
+    pub last_executed_at: Option<u64>,
+}
+
+/// Errors returned by the scheduling engine.
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum SchedulerError {
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
+    Unauthorized = 3,
+    TaskAlreadyExists = 4,
+    TaskNotFound = 5,
+    InvalidTaskName = 6,
+    InvalidExecutionWindow = 7,
+    TaskNotPending = 8,
+    ConflictingTasks = 9,
+    DependenciesNotMet = 10,
+    NotInExecutionWindow = 11,
+    ContractPaused = 12,
+    NoPendingAdmin = 13,
+}
+
+/// Interface implemented by the scheduling engine.
+pub trait SchedulerEngine {
+    /// Initializes the scheduler with an admin.
+    fn initialize(e: Env, admin: Address) -> Result<(), SchedulerError>;
+
+    /// Schedules a new task.
+    fn schedule_task(e: Env, task: ScheduledTask) -> Result<(), SchedulerError>;
+
+    /// Updates an existing task.
+    fn update_task(e: Env, task: ScheduledTask) -> Result<(), SchedulerError>;
+
+    /// Cancels a pending task.
+    fn cancel_task(e: Env, task_id: BytesN<32>) -> Result<(), SchedulerError>;
+
+    /// Executes all ready tasks (in priority order).
+    fn execute_ready_tasks(e: Env) -> Result<Vec<BytesN<32>>, SchedulerError>;
+
+    /// Gets a task by ID.
+    fn get_task(e: Env, task_id: BytesN<32>) -> Result<ScheduledTask, SchedulerError>;
+
+    /// Lists all tasks.
+    fn list_tasks(e: Env) -> Result<Vec<ScheduledTask>, SchedulerError>;
+
+    /// Gets the current admin.
+    fn admin(e: Env) -> Result<Address, SchedulerError>;
+
+    /// Proposes a new admin.
+    fn propose_new_admin(e: Env, new_admin: Address) -> Result<(), SchedulerError>;
+
+    /// Accepts the admin role.
+    fn accept_admin(e: Env, new_admin: Address) -> Result<(), SchedulerError>;
+
+    /// Pauses the scheduler.
+    fn pause_contract(e: Env) -> Result<(), SchedulerError>;
+
+    /// Unpauses the scheduler.
+    fn unpause_contract(e: Env) -> Result<(), SchedulerError>;
+
+    /// Checks if the scheduler is paused.
+    fn is_paused(e: Env) -> bool;
 }

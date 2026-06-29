@@ -621,3 +621,116 @@ pub struct ReplayCompletedEvent {
     pub successful_events: u64,
     pub timestamp: u64,
 }
+
+// ---------------------------------------------------------------------------
+// Scheduler Engine — protocol identifier and action symbols
+// ---------------------------------------------------------------------------
+
+/// Protocol identifier used as Topic 1 for all scheduler events.
+pub const PROTOCOL_SCHEDULER: Symbol = symbol_short!("AxSched");
+
+pub const ACT_SCHED_INIT: Symbol = symbol_short!("sched_init");
+pub const ACT_SCHED_TASK_SCHEDULED: Symbol = symbol_short!("task_sched");
+pub const ACT_SCHED_TASK_UPDATED: Symbol = symbol_short!("task_upd");
+pub const ACT_SCHED_TASK_CANCELED: Symbol = symbol_short!("task_cancel");
+pub const ACT_SCHED_TASK_EXECUTED: Symbol = symbol_short!("task_exec");
+pub const ACT_SCHED_TASK_FAILED: Symbol = symbol_short!("task_fail");
+pub const ACT_SCHED_ADMIN_P: Symbol = symbol_short!("sched_adm_p");
+pub const ACT_SCHED_ADMIN_A: Symbol = symbol_short!("sched_adm_a");
+pub const ACT_SCHED_PAUSE: Symbol = symbol_short!("sched_pause");
+pub const ACT_SCHED_UNPAUSE: Symbol = symbol_short!("sched_unpau");
+
+// ---------------------------------------------------------------------------
+// Scheduler event payload structs
+// ---------------------------------------------------------------------------
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SchedulerInitializedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaskScheduledEvent {
+    pub event_version: u32,
+    pub task_id: BytesN<32>,
+    pub task_name: Bytes,
+    pub priority: u32,
+    pub created_by: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaskUpdatedEvent {
+    pub event_version: u32,
+    pub task_id: BytesN<32>,
+    pub task_name: Bytes,
+    pub updated_by: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaskCanceledEvent {
+    pub event_version: u32,
+    pub task_id: BytesN<32>,
+    pub canceled_by: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaskExecutedEvent {
+    pub event_version: u32,
+    pub task_id: BytesN<32>,
+    pub task_name: Bytes,
+    pub execution_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TaskFailedEvent {
+    pub event_version: u32,
+    pub task_id: BytesN<32>,
+    pub task_name: Bytes,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SchedulerAdminTransferProposedEvent {
+    pub event_version: u32,
+    pub current_admin: Address,
+    pub pending_admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SchedulerAdminTransferAcceptedEvent {
+    pub event_version: u32,
+    pub previous_admin: Address,
+    pub new_admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SchedulerPausedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SchedulerUnpausedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
