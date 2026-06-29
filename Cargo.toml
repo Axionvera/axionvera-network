@@ -8,7 +8,9 @@ members = [
   "contracts/accounting",
   "contracts/core",
   "contracts/interfaces",
+  "contracts/integrations",
   "contracts/orchestrator",
+  "contracts/rewards",
   "network-node",
   "tests/security",
 ]
@@ -17,7 +19,6 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
 
 [workspace.dependencies]
 soroban-sdk = "22.0.0"

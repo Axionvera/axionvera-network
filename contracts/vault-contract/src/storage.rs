@@ -66,6 +66,10 @@ pub enum DataKey {
     IsPaused,
     /// User balance (legacy, kept for backwards compatibility)
     UserBalance(Address),
+    /// User liquid balance separated from locked funds
+    UserLiquidBalance(Address),
+    /// User lock entries
+    UserLocks(Address),
     /// User's last synced reward index (legacy, kept for backwards compatibility)
     UserRewardIndex(Address),
     /// User's accrued but unvested rewards (legacy, kept for backwards compatibility)
@@ -101,10 +105,8 @@ pub enum DataKey {
     DelegationOperators(Address),
     /// Maximum number of delegations allowed per user
     MaxDelegationsPerUser,
-    /// Reward vesting schedules for the legacy deposit asset.
-    UserRewardVestingSchedules(Address),
-    /// Reward vesting schedules for a specific deposited asset.
-    UserAssetRewardVestingSchedules(Address, Address),
+    /// Legacy/simple delegate authorization record
+    DelegatePermissions(Address, Address),
 }
 
 /// The global state of the vault contract.
@@ -163,6 +165,17 @@ pub struct UserPosition {
 pub struct MultiAssetPosition {
     /// Map of asset address to user position
     pub positions: Map<Address, UserPosition>,
+}
+
+/// Legacy delegate authorization used by delegate-specific entrypoints.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorization {
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub created_at: u64,
+    pub active: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -293,6 +306,21 @@ pub fn initialize_state(
         .instance()
         .set(&DataKey::ReentrancyGuard, &false);
     e.storage().instance().set(&DataKey::IsPaused, &false);
+
+    // Register the legacy deposit token as the first multi-asset vault asset so
+    // legacy and asset-scoped entrypoints share the same supported-asset registry.
+    let mut supported_assets = Map::new(e);
+    supported_assets.set(deposit_token.clone(), true);
+    e.storage()
+        .instance()
+        .set(&DataKey::SupportedAssets, &supported_assets);
+    e.storage()
+        .instance()
+        .set(&DataKey::AssetTotalDeposits(deposit_token.clone()), &0_i128);
+    e.storage()
+        .instance()
+        .set(&DataKey::AssetRewardIndex(deposit_token.clone()), &0_i128);
+
     bump_instance_ttl(e);
 }
 

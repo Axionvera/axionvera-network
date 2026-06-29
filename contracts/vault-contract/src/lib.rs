@@ -8,7 +8,7 @@ pub mod storage;
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, BytesN, Env};
 
 use axionvera_accounting as accounting;
 
@@ -138,7 +138,7 @@ impl VaultContract {
                 amount,
             )?;
 
-            let (_state, _position) = storage::store_deposit(&e, &from, amount)?;
+            let (state, _position) = storage::store_deposit(&e, &from, amount)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -240,7 +240,7 @@ impl VaultContract {
 
             CrossContractClient::token_transfer(
                 &e,
-                &deposit_token,
+                &state.deposit_token,
                 &e.current_contract_address(),
                 &to,
                 amount,
@@ -475,8 +475,6 @@ impl VaultContract {
             )?;
 
             events::emit_claim_rewards(&e, owner.clone(), amt);
-            let remaining = storage::pending_user_rewards_view(&e, &owner)?;
-            events::emit_vesting_claimed(&e, owner.clone(), None, amt, remaining);
             events::emit_delegate_action(
                 &e,
                 owner.clone(),
