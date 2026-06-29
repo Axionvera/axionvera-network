@@ -23,3 +23,8 @@ pub trait VaultEventEmitter {
     fn emit_asset_distribute(e: &Env, caller: Address, asset: Address, amount: i128);
     fn emit_asset_claim_rewards(e: &Env, user: Address, asset: Address, amount: i128);
 }
+
+pub trait RegistryEventEmitter {
+    fn emit_module_registered(e: &Env, admin: Address, name: soroban_sdk::Symbol, module_address: Address);
+    fn emit_module_status_changed(e: &Env, admin: Address, module_address: Address, is_active: bool);
+}

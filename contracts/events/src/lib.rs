@@ -28,6 +28,8 @@ pub const ACT_ASSET_DEPOSIT: Symbol = symbol_short!("asset_dep");
 pub const ACT_ASSET_WITHDRAW: Symbol = symbol_short!("asset_wd");
 pub const ACT_ASSET_DISTRIBUTE: Symbol = symbol_short!("ast_dist");
 pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
+pub const ACT_MOD_REGISTER: Symbol = symbol_short!("mod_reg");
+pub const ACT_MOD_STATUS_UPDATE: Symbol = symbol_short!("mod_stat");
 
 // ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
@@ -204,6 +206,24 @@ pub struct UnlockEvent {
     pub event_version: u32,
     pub user: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleRegisteredEvent {
+    pub admin: Address,
+    pub name: Symbol,
+    pub module_address: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleStatusChangedEvent {
+    pub admin: Address,
+    pub module_address: Address,
+    pub is_active: bool,
     pub timestamp: u64,
 }
 
