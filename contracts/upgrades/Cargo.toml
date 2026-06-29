@@ -2,12 +2,14 @@
 name = "axionvera-upgrades"
 version = "0.1.0"
 edition = "2021"
+
+[dependencies]
+soroban-sdk = "22.0.111"
 license = "Apache-2.0"
 publish = false
 
 [lib]
 crate-type = ["lib"]
 
-[dependencies]
 
 [workspace]
