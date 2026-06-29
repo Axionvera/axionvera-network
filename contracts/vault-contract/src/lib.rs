@@ -1,16 +1,25 @@
 #![no_std]
 
+mod access;
 pub mod cross_contract;
 pub mod errors;
-mod events;
-mod storage;
+pub mod events;
+pub mod storage;
 #[cfg(test)]
 mod test;
+
+
 
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use crate::cross_contract::CrossContractClient;
-use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
+use crate::errors::{
+    AuthorizationError, BalanceError, DelegationError, StateError, ValidationError, VaultError,
+};
+
+const DELEGATE_PERM_DEPOSIT: u32 = 1 << 0;
+const DELEGATE_PERM_WITHDRAW: u32 = 1 << 1;
+const DELEGATE_PERM_CLAIM: u32 = 1 << 2;
 
 #[contract]
 pub struct VaultContract;
@@ -38,7 +47,7 @@ impl VaultContract {
         validate_distinct_token_addresses(&deposit_token, &reward_token)?;
         validate_utilization_multipliers(&utilization_multipliers)?;
 
-        admin.require_auth();
+        access::require_actor(&admin)?;
 
         storage::initialize_state(
             &e,
@@ -58,7 +67,7 @@ impl VaultContract {
         storage::require_initialized(&e)?;
 
         let admin = storage::get_admin(&e)?;
-        admin.require_auth();
+        access::require_stored_admin(&admin)?;
 
         storage::set_pending_admin(&e, &new_admin);
         events::emit_admin_transfer_proposed(&e, admin, new_admin);
@@ -68,14 +77,10 @@ impl VaultContract {
 
     pub fn accept_admin(e: Env, new_admin: Address) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
-        new_admin.require_auth();
 
         let previous_admin = storage::get_admin(&e)?;
         let pending_admin = storage::get_pending_admin(&e)?.ok_or(StateError::NoPendingAdmin)?;
-
-        if pending_admin != new_admin {
-            return Err(AuthorizationError::Unauthorized.into());
-        }
+        access::require_pending_admin(&new_admin, Some(pending_admin.clone()))?;
 
         storage::set_admin(&e, &new_admin);
         storage::clear_pending_admin(&e);
@@ -88,7 +93,7 @@ impl VaultContract {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
-        from.require_auth();
+        access::require_actor(&from)?;
 
         with_non_reentrant(&e, || {
             let state = storage::get_state(&e)?;
@@ -106,17 +111,96 @@ impl VaultContract {
         })
     }
 
+    pub fn authorize_delegate(e: Env, owner: Address, delegate: Address, permissions: u32) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        owner.require_auth();
+        if permissions == 0 {
+            return Err(ValidationError::InvalidAddress.into());
+        }
+
+        storage::authorize_delegate(&e, &owner, &delegate, permissions)?;
+        events::emit_delegate_authorized(&e, owner, delegate, permissions);
+        Ok(())
+    }
+
+    pub fn revoke_delegate(e: Env, owner: Address, delegate: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        owner.require_auth();
+
+        storage::revoke_delegate(&e, &owner, &delegate)?;
+        events::emit_delegate_revoked(&e, owner, delegate);
+        Ok(())
+    }
+
+    pub fn deposit_as_delegate(e: Env, owner: Address, delegate: Address, amount: i128) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_DEPOSIT)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &delegate,
+                &e.current_contract_address(),
+                amount,
+            )?;
+
+            let (_state, _position) = storage::store_deposit(&e, &owner, amount)?;
+            events::emit_deposit(&e, owner.clone(), amount);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("deposit"));
+            Ok(())
+        })
+    }
+
     pub fn withdraw(e: Env, to: Address, amount: i128) -> Result<(), VaultError> {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
-        to.require_auth();
+        access::require_actor(&to)?;
 
         with_non_reentrant(&e, || {
             let state = storage::get_state(&e)?;
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
 
             events::emit_withdraw(&e, to.clone(), amount, position.balance);
+
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &e.current_contract_address(),
+                &to,
+                amount,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    pub fn withdraw_as_delegate(
+        e: Env,
+        owner: Address,
+        delegate: Address,
+        to: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_WITHDRAW)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let (state, position) = storage::store_withdraw(&e, &owner, amount)?;
+
+            events::emit_withdraw(&e, owner.clone(), amount, position.balance);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("withdraw"));
 
             CrossContractClient::token_transfer(
                 &e,
@@ -143,7 +227,7 @@ impl VaultContract {
         let admin = state.admin.clone();
         let reward_token_id = state.reward_token.clone();
 
-        admin.require_auth();
+        access::require_stored_admin(&admin)?;
 
         with_non_reentrant(&e, || {
             CrossContractClient::token_transfer(
@@ -172,7 +256,7 @@ impl VaultContract {
         if duration_seconds == 0 {
             return Err(ValidationError::InvalidLockDuration.into());
         }
-        from.require_auth();
+        access::require_actor(&from)?;
 
         with_non_reentrant(&e, || {
             let unlock_timestamp = e
@@ -189,7 +273,7 @@ impl VaultContract {
     pub fn unlock_expired(e: Env, user: Address, limit: u32) -> Result<i128, VaultError> {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
-        user.require_auth();
+        access::require_actor(&user)?;
 
         // Enforce a maximum limit to prevent budget exhaustion in a single call.
         const MAX_UNLOCK_LIMIT: u32 = 50;
@@ -209,7 +293,7 @@ impl VaultContract {
     pub fn claim_rewards(e: Env, user: Address) -> Result<i128, VaultError> {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
-        user.require_auth();
+        access::require_actor(&user)?;
 
         with_non_reentrant(&e, || {
             let amt = storage::store_claimable_rewards(&e, &user)?;
@@ -237,6 +321,44 @@ impl VaultContract {
         })
     }
 
+    pub fn claim_rewards_as_delegate(
+        e: Env,
+        owner: Address,
+        delegate: Address,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        delegate.require_auth();
+
+        storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_CLAIM)?;
+
+        with_non_reentrant(&e, || {
+            let amt = storage::store_claimable_rewards(&e, &owner)?;
+            if amt <= 0 {
+                return Ok(0);
+            }
+
+            let reward_token_id = storage::get_reward_token(&e)?;
+            let contract_balance = CrossContractClient::token_balance(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+            )?;
+            ensure_contract_balance(contract_balance, amt)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+                &owner,
+                amt,
+            )?;
+
+            events::emit_claim_rewards(&e, owner.clone(), amt);
+            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("claim"));
+            Ok(amt)
+        })
+    }
+
     pub fn balance(e: Env, user: Address) -> Result<i128, VaultError> {
         storage::get_user_balance(&e, &user)
     }
@@ -255,6 +377,10 @@ impl VaultContract {
 
     pub fn reward_index(e: Env) -> Result<i128, VaultError> {
         storage::get_reward_index(&e)
+    }
+
+    pub fn delegate_permissions(e: Env, owner: Address, delegate: Address) -> Result<u32, VaultError> {
+        storage::get_delegate_permissions(&e, &owner, &delegate)
     }
 
     pub fn pending_rewards(e: Env, user: Address) -> Result<i128, VaultError> {
@@ -288,7 +414,7 @@ impl VaultContract {
     pub fn pause_contract(e: Env) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         let admin = storage::get_admin(&e)?;
-        admin.require_auth();
+        access::require_stored_admin(&admin)?;
         storage::set_paused(&e, true);
         events::emit_pause(&e, admin);
         Ok(())
@@ -297,7 +423,7 @@ impl VaultContract {
     pub fn unpause_contract(e: Env) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         let admin = storage::get_admin(&e)?;
-        admin.require_auth();
+        access::require_stored_admin(&admin)?;
         storage::set_paused(&e, false);
         events::emit_unpause(&e, admin);
         Ok(())
@@ -306,10 +432,7 @@ impl VaultContract {
     pub fn set_penalty_rate(e: Env, admin: Address, rate_bps: u32) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         let stored_admin = storage::get_admin(&e)?;
-        if admin != stored_admin {
-            return Err(AuthorizationError::Unauthorized.into());
-        }
-        admin.require_auth();
+        access::require_admin(&admin, &stored_admin)?;
         if rate_bps > 10000 {
             return Err(ValidationError::InvalidPenaltyRate.into());
         }
@@ -333,7 +456,7 @@ impl VaultContract {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
-        to.require_auth();
+        access::require_actor(&to)?;
 
         with_non_reentrant(&e, || {
             let (state, position, net_amount, _penalty) =
@@ -353,7 +476,7 @@ impl VaultContract {
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         let admin = storage::get_admin(&e)?;
-        admin.require_auth();
+        access::require_stored_admin(&admin)?;
 
         e.deployer()
             .update_current_contract_wasm(new_wasm_hash.clone());
@@ -369,10 +492,7 @@ impl VaultContract {
     pub fn add_asset(e: Env, admin: Address, asset: Address) -> Result<(), VaultError> {
         storage::require_initialized(&e)?;
         let stored_admin = storage::get_admin(&e)?;
-        if admin != stored_admin {
-            return Err(AuthorizationError::Unauthorized.into());
-        }
-        admin.require_auth();
+        access::require_admin(&admin, &stored_admin)?;
 
         storage::add_supported_asset(&e, &asset)?;
         events::emit_asset_added(&e, asset);
@@ -388,7 +508,7 @@ impl VaultContract {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
-        from.require_auth();
+        access::require_actor(&from)?;
 
         if !storage::is_asset_supported(&e, &asset) {
             return Err(ValidationError::InvalidAddress.into());
@@ -418,7 +538,7 @@ impl VaultContract {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
         validate_positive_amount(amount)?;
-        to.require_auth();
+        access::require_actor(&to)?;
 
         if !storage::is_asset_supported(&e, &asset) {
             return Err(ValidationError::InvalidAddress.into());
@@ -461,12 +581,8 @@ impl VaultContract {
 
         let state = storage::get_state(&e)?;
         let stored_admin = state.admin.clone();
-        if admin != stored_admin {
-            return Err(AuthorizationError::Unauthorized.into());
-        }
-
         let reward_token_id = state.reward_token.clone();
-        admin.require_auth();
+        access::require_admin(&admin, &stored_admin)?;
 
         with_non_reentrant(&e, || {
             CrossContractClient::token_transfer(
@@ -490,7 +606,7 @@ impl VaultContract {
     ) -> Result<i128, VaultError> {
         storage::require_not_paused(&e)?;
         storage::require_initialized(&e)?;
-        user.require_auth();
+        access::require_actor(&user)?;
 
         if !storage::is_asset_supported(&e, &asset) {
             return Err(ValidationError::InvalidAddress.into());
@@ -552,6 +668,265 @@ impl VaultContract {
 
     pub fn is_asset_supported(e: Env, asset: Address) -> bool {
         storage::is_asset_supported(&e, &asset)
+    }
+
+    // -----------------------------------------------------------------------
+    // Delegation Management
+    // -----------------------------------------------------------------------
+
+    /// Grant `permissions` to `operator` for the caller's vault positions.
+    /// The delegation optionally expires at `expires_at` (0 = never).
+    pub fn delegate(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        permissions: u32,
+        expires_at: u64,
+    ) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        delegator.require_auth();
+
+        if operator == delegator {
+            return Err(DelegationError::CannotDelegateToSelf.into());
+        }
+        if expires_at != 0 && expires_at <= e.ledger().timestamp() {
+            return Err(DelegationError::InvalidExpiration.into());
+        }
+
+        // Enforce max delegations limit.
+        let max = storage::get_max_delegations(&e);
+        let current_count = storage::delegation_count(&e, &delegator);
+        // Allow updating an existing delegation without counting toward the limit.
+        let exists = storage::get_delegation(&e, &delegator, &operator).is_some();
+        if !exists && current_count >= max {
+            return Err(DelegationError::MaxDelegationsExceeded.into());
+        }
+
+        storage::set_delegation(&e, &delegator, &operator, permissions, expires_at);
+        events::emit_delegate(&e, delegator, operator, permissions, expires_at);
+        Ok(())
+    }
+
+    /// Revoke a previously granted delegation.
+    pub fn revoke_delegation(e: Env, delegator: Address, operator: Address) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        delegator.require_auth();
+
+        storage::remove_delegation(&e, &delegator, &operator);
+        events::emit_revoke_delegation(&e, delegator, operator);
+        Ok(())
+    }
+
+    /// Query a specific delegation entry.
+    pub fn get_delegation(e: Env, delegator: Address, operator: Address) -> Option<storage::Delegation> {
+        storage::get_delegation(&e, &delegator, &operator)
+    }
+
+    /// List all operators a delegator has granted permissions to, along with their delegation info.
+    pub fn get_delegations(e: Env, delegator: Address) -> soroban_sdk::Vec<storage::Delegation> {
+        let operators = storage::get_delegation_operators(&e, &delegator);
+        let mut result: soroban_sdk::Vec<storage::Delegation> = soroban_sdk::Vec::new(&e);
+        for op in operators.iter() {
+            if let Some(d) = storage::get_delegation(&e, &delegator, &op) {
+                result.push_back(d);
+            }
+        }
+        result
+    }
+
+    // -----------------------------------------------------------------------
+    // Delegated Actions
+    // -----------------------------------------------------------------------
+
+    /// Deposit on behalf of a delegator. The caller must have Deposit permission.
+    pub fn delegated_deposit(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_DEPOSIT)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &operator,
+                &e.current_contract_address(),
+                amount,
+            )?;
+
+            let (_state, _position) = storage::store_deposit(&e, &delegator, amount)?;
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_DEPOSIT,
+                axionvera_events::ACT_DEPOSIT,
+            );
+            events::emit_deposit(&e, delegator.clone(), amount);
+            Ok(())
+        })
+    }
+
+    /// Withdraw from a delegator's balance. The caller must have Withdraw permission.
+    pub fn delegated_withdraw(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_WITHDRAW)?;
+
+        with_non_reentrant(&e, || {
+            let state = storage::get_state(&e)?;
+            let (state, position) = storage::store_withdraw(&e, &delegator, amount)?;
+
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_WITHDRAW,
+                axionvera_events::ACT_WITHDRAW,
+            );
+            events::emit_withdraw(&e, delegator.clone(), amount, position.balance);
+
+            CrossContractClient::token_transfer(
+                &e,
+                &state.deposit_token,
+                &e.current_contract_address(),
+                &operator,
+                amount,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Lock tokens in a delegator's vault. The caller must have Lock permission.
+    pub fn delegated_lock(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        amount: i128,
+        duration_seconds: u64,
+    ) -> Result<(), VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        validate_positive_amount(amount)?;
+        if duration_seconds == 0 {
+            return Err(ValidationError::InvalidLockDuration.into());
+        }
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_LOCK)?;
+
+        with_non_reentrant(&e, || {
+            let unlock_timestamp = e
+                .ledger()
+                .timestamp()
+                .checked_add(duration_seconds)
+                .ok_or(VaultError::MathOverflow)?;
+            storage::store_lock(&e, &delegator, amount, duration_seconds)?;
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_LOCK,
+                axionvera_events::ACT_LOCK,
+            );
+            events::emit_lock(&e, delegator, amount, unlock_timestamp);
+            Ok(())
+        })
+    }
+
+    /// Unlock expired locks for a delegator. The caller must have Unlock permission.
+    pub fn delegated_unlock_expired(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+        limit: u32,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_UNLOCK)?;
+
+        const MAX_UNLOCK_LIMIT: u32 = 50;
+        if limit > MAX_UNLOCK_LIMIT {
+            return Err(VaultError::OperationLimitExceeded);
+        }
+
+        with_non_reentrant(&e, || {
+            let unlocked_amount = storage::unlock_expired_locks(&e, &delegator, limit)?;
+            if unlocked_amount > 0 {
+                events::emit_delegated_action(
+                    &e,
+                    delegator.clone(),
+                    operator.clone(),
+                    storage::PERMISSION_UNLOCK,
+                    axionvera_events::ACT_UNLOCK,
+                );
+                events::emit_unlock(&e, delegator, unlocked_amount);
+            }
+            Ok(unlocked_amount)
+        })
+    }
+
+    /// Claim rewards for a delegator. The caller must have Claim permission.
+    pub fn delegated_claim_rewards(
+        e: Env,
+        delegator: Address,
+        operator: Address,
+    ) -> Result<i128, VaultError> {
+        storage::require_not_paused(&e)?;
+        storage::require_initialized(&e)?;
+        storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_CLAIM)?;
+
+        with_non_reentrant(&e, || {
+            let amt = storage::store_claimable_rewards(&e, &delegator)?;
+            if amt <= 0 {
+                return Ok(0);
+            }
+
+            let reward_token_id = storage::get_reward_token(&e)?;
+            let contract_balance = CrossContractClient::token_balance(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+            )?;
+            ensure_contract_balance(contract_balance, amt)?;
+            CrossContractClient::token_transfer(
+                &e,
+                &reward_token_id,
+                &e.current_contract_address(),
+                &operator,
+                amt,
+            )?;
+
+            events::emit_delegated_action(
+                &e,
+                delegator.clone(),
+                operator.clone(),
+                storage::PERMISSION_CLAIM,
+                axionvera_events::ACT_CLAIM,
+            );
+            events::emit_claim_rewards(&e, delegator, amt);
+            Ok(amt)
+        })
+    }
+
+    /// Set the maximum number of delegations allowed per user (admin only).
+    pub fn set_max_delegations(e: Env, max: u32) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let admin = storage::get_admin(&e)?;
+        admin.require_auth();
+        storage::set_max_delegations(&e, max);
+        Ok(())
     }
 }
 
