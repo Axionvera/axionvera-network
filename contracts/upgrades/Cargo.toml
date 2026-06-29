@@ -1,5 +1,5 @@
 ﻿[package]
-name = "axionvera-security"
+name = "axionvera-upgrades"
 version.workspace = true
 edition.workspace = true
 

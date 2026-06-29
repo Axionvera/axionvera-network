@@ -964,20 +964,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "axionvera-security"
+name = "axionvera-orchestrator"
 version = "0.1.0"
 dependencies = [
- "axionvera-auth",
- "soroban-sdk",
-]
-
-[[package]]
-name = "axionvera-security-tests"
-version = "0.1.0"
-dependencies = [
- "axionvera-auth",
- "axionvera-security",
- "axionvera-vault-contract",
+ "axionvera-events",
+ "axionvera-interfaces",
  "soroban-sdk",
 ]
 
