@@ -878,9 +878,17 @@ name = "axionvera-auth"
 version = "0.1.0"
 
 [[package]]
+name = "axionvera-context"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "axionvera-core"
 version = "0.1.0"
 dependencies = [
+ "axionvera-accounting",
  "axionvera-events",
  "axionvera-state",
  "axionvera-storage",
@@ -891,6 +899,18 @@ dependencies = [
 name = "axionvera-events"
 version = "0.1.0"
 dependencies = [
+ "axionvera-interfaces",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "axionvera-fees"
+version = "0.1.0"
+dependencies = [
+ "axionvera-accounting",
+ "axionvera-events",
+ "axionvera-interfaces",
+ "axionvera-storage",
  "soroban-sdk",
 ]
 
@@ -898,7 +918,28 @@ dependencies = [
 name = "axionvera-interfaces"
 version = "0.1.0"
 dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "axionvera-metrics"
+version = "0.1.0"
+dependencies = [
+ "axionvera-accounting",
+ "axionvera-core",
  "axionvera-events",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "axionvera-invariant-tests"
+version = "0.1.0"
+dependencies = [
+ "axionvera-accounting",
+ "axionvera-core",
+ "axionvera-state",
+ "axionvera-storage",
+ "axionvera-validator",
  "soroban-sdk",
 ]
 
@@ -1002,6 +1043,7 @@ dependencies = [
 name = "axionvera-security"
 version = "0.1.0"
 dependencies = [
+ "axionvera-auth",
  "soroban-sdk",
 ]
 
@@ -1033,6 +1075,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "axionvera-validator"
+version = "0.1.0"
+dependencies = [
+ "axionvera-accounting",
+ "axionvera-core",
+ "axionvera-events",
+ "axionvera-resources",
+ "axionvera-state",
+ "axionvera-storage",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "axionvera-vault-contract"
 version = "0.1.0"
 dependencies = [
@@ -1040,8 +1095,11 @@ dependencies = [
  "axionvera-auth",
  "axionvera-core",
  "axionvera-events",
+ "axionvera-fees",
  "axionvera-interfaces",
+ "axionvera-risk",
  "axionvera-security",
+ "axionvera-storage",
  "axionvera-vault-contract-v2",
  "proptest",
  "soroban-sdk",
@@ -6329,6 +6387,21 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
+
+[[package]]
+name = "tests-risk"
+version = "0.1.0"
+dependencies = [
+ "axionvera-accounting",
+ "axionvera-auth",
+ "axionvera-events",
+ "axionvera-risk",
+ "axionvera-security",
+ "axionvera-state",
+ "axionvera-storage",
+ "axionvera-vault-contract",
+ "soroban-sdk",
+]
 
 [[package]]
 name = "thiserror"

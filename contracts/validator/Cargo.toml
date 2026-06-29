@@ -1,0 +1,21 @@
+[package]
+name = "axionvera-validator"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+soroban-sdk = "22.0.0"
+axionvera-state = { path = "../state" }
+axionvera-storage = { path = "../storage" }
+axionvera-core = { path = "../core" }
+axionvera-resources = { path = "../resources" }
+axionvera-events = { path = "../events" }
+axionvera-accounting = { path = "../accounting" }
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils"] }

@@ -12,6 +12,7 @@
     "deploy": "tsx scripts/deploy.ts",
     "deploy:testnet": "bash scripts/deploy_testnet.sh",
     "initialize": "tsx scripts/initialize.ts",
+    "analyze:dependencies": "tsx scripts/analyze-dependencies.ts",
     "format": "prettier --write . && cargo fmt --all",
     "lint": "eslint . --fix && cargo clippy --all-targets --all-features -- -D warnings",
     "prepare": "husky"

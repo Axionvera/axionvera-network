@@ -383,3 +383,142 @@ describe('Protocol State Machine Framework', () => {
     });
   });
 });
+
+// ===========================================================================
+// PROTOCOL STATE CONSISTENCY VALIDATOR (Mirrors contracts/validator/)
+// ===========================================================================
+
+export enum ValidationStatus {
+  Passed = 'Passed',
+  Failed = 'Failed',
+  Warning = 'Warning',
+}
+
+export interface RuleResult {
+  name: string;
+  status: ValidationStatus;
+  message: string;
+}
+
+export interface ValidationReport {
+  timestamp: number;
+  overall: ValidationStatus;
+  rules: RuleResult[];
+  passed: number;
+  failed: number;
+  warnings: number;
+}
+
+export class ProtocolStateConsistencyValidator {
+  // Rule: vault should be Active whenever staking is past Uninitialized
+  ruleVaultStakingConsistency(vault: VaultState, staking: StakingState): RuleResult {
+    const ok = vault === VaultState.Active || staking === StakingState.Uninitialized;
+    return { name: 'vault_stk', status: ok ? ValidationStatus.Passed : ValidationStatus.Failed, message: ok ? 'ok' : 'fail' };
+  }
+
+  // Rule: if vault is terminated, treasury must be insolvent or emergency-restricted
+  ruleVaultTreasuryConsistency(vault: VaultState, treasury: TreasuryState): RuleResult {
+    const ok = vault !== VaultState.Terminated
+      || treasury === TreasuryState.Insolvent
+      || treasury === TreasuryState.EmergencyRestricted;
+    return { name: 'vault_trs', status: ok ? ValidationStatus.Passed : ValidationStatus.Failed, message: ok ? 'ok' : 'fail' };
+  }
+
+  // Rule: if reward is past Idle, vault must not be Uninitialized
+  ruleRewardVaultConsistency(vault: VaultState, reward: RewardState): RuleResult {
+    const ok = reward === RewardState.Idle || vault !== VaultState.Uninitialized;
+    return { name: 'reward_vlt', status: ok ? ValidationStatus.Passed : ValidationStatus.Failed, message: ok ? 'ok' : 'fail' };
+  }
+
+  // Rule: if vault is paused, reward should not be Distributing
+  ruleVaultRewardConsistency(vault: VaultState, reward: RewardState): RuleResult {
+    const ok = !(vault === VaultState.Paused && reward === RewardState.Distributing);
+    return { name: 'vault_rwd', status: ok ? ValidationStatus.Passed : ValidationStatus.Warning, message: ok ? 'ok' : 'warn' };
+  }
+
+  // Rule: if treasury is emergency-restricted, vault must be paused or locked
+  ruleTreasuryVaultConsistency(vault: VaultState, treasury: TreasuryState): RuleResult {
+    const ok = treasury !== TreasuryState.EmergencyRestricted
+      || vault === VaultState.Paused
+      || vault === VaultState.Locked;
+    return { name: 'treas_vlt', status: ok ? ValidationStatus.Passed : ValidationStatus.Failed, message: ok ? 'ok' : 'fail' };
+  }
+
+  validateAll(vault: VaultState, staking: StakingState, reward: RewardState, treasury: TreasuryState): ValidationReport {
+    const rules: RuleResult[] = [
+      this.ruleVaultStakingConsistency(vault, staking),
+      this.ruleVaultTreasuryConsistency(vault, treasury),
+      this.ruleRewardVaultConsistency(vault, reward),
+      this.ruleVaultRewardConsistency(vault, reward),
+      this.ruleTreasuryVaultConsistency(vault, treasury),
+    ];
+    let passed = 0, failed = 0, warnings = 0;
+    for (const r of rules) {
+      if (r.status === ValidationStatus.Passed) passed++;
+      else if (r.status === ValidationStatus.Failed) failed++;
+      else warnings++;
+    }
+    const overall = failed > 0 ? ValidationStatus.Failed : warnings > 0 ? ValidationStatus.Warning : ValidationStatus.Passed;
+    return { timestamp: Date.now(), overall, rules, passed, failed, warnings };
+  }
+}
+
+describe('Protocol State Consistency Validator', () => {
+  let validator: ProtocolStateConsistencyValidator;
+
+  beforeEach(() => {
+    validator = new ProtocolStateConsistencyValidator();
+  });
+
+  it('default states should pass all rules', () => {
+    const report = validator.validateAll(VaultState.Uninitialized, StakingState.Uninitialized, RewardState.Idle, TreasuryState.Normal);
+    expect(report.overall).toBe(ValidationStatus.Passed);
+    expect(report.failed).toBe(0);
+  });
+
+  it('paused vault with active staking should fail vault_stk', () => {
+    const report = validator.validateAll(VaultState.Paused, StakingState.Active, RewardState.Idle, TreasuryState.Normal);
+    const rule = report.rules.find(r => r.name === 'vault_stk')!;
+    expect(rule.status).toBe(ValidationStatus.Failed);
+    expect(report.overall).toBe(ValidationStatus.Failed);
+  });
+
+  it('terminated vault with normal treasury should fail vault_trs', () => {
+    const report = validator.validateAll(VaultState.Terminated, StakingState.Uninitialized, RewardState.Idle, TreasuryState.Normal);
+    const rule = report.rules.find(r => r.name === 'vault_trs')!;
+    expect(rule.status).toBe(ValidationStatus.Failed);
+  });
+
+  it('active states should pass all consistency rules', () => {
+    const report = validator.validateAll(VaultState.Active, StakingState.Active, RewardState.Accruing, TreasuryState.Normal);
+    expect(report.overall).toBe(ValidationStatus.Passed);
+  });
+
+  it('paused vault with distributing reward should warn', () => {
+    const report = validator.validateAll(VaultState.Paused, StakingState.Uninitialized, RewardState.Distributing, TreasuryState.Normal);
+    const rule = report.rules.find(r => r.name === 'vault_rwd')!;
+    expect(rule.status).toBe(ValidationStatus.Warning);
+    expect(report.overall).toBe(ValidationStatus.Warning);
+  });
+
+  it('active vault with emergency treasury should fail treas_vlt', () => {
+    const report = validator.validateAll(VaultState.Active, StakingState.Uninitialized, RewardState.Idle, TreasuryState.EmergencyRestricted);
+    const rule = report.rules.find(r => r.name === 'treas_vlt')!;
+    expect(rule.status).toBe(ValidationStatus.Failed);
+  });
+
+  it('report should contain all 5 rule names', () => {
+    const report = validator.validateAll(VaultState.Uninitialized, StakingState.Uninitialized, RewardState.Idle, TreasuryState.Normal);
+    const expected = ['vault_stk', 'vault_trs', 'reward_vlt', 'vault_rwd', 'treas_vlt'];
+    for (const name of expected) {
+      expect(report.rules.find(r => r.name === name)).toBeDefined();
+    }
+  });
+
+  it('inconsistencies detected with full report', () => {
+    const report = validator.validateAll(VaultState.Terminated, StakingState.Active, RewardState.Accruing, TreasuryState.Normal);
+    expect(report.overall).toBe(ValidationStatus.Failed);
+    expect(report.failed).toBeGreaterThanOrEqual(2);
+    expect(report.passed + report.failed + report.warnings).toBe(report.rules.length);
+  });
+});
