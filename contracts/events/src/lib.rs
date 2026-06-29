@@ -31,6 +31,8 @@ pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
 pub const ACT_DELEGATE: Symbol = symbol_short!("delegate");
 pub const ACT_REVOKE_DELEGATION: Symbol = symbol_short!("rvk_dlg");
 pub const ACT_DELEGATED_ACTION: Symbol = symbol_short!("deleg_act");
+pub const ACT_VESTING_CREATED: Symbol = symbol_short!("vest_new");
+pub const ACT_VESTING_CLAIMED: Symbol = symbol_short!("vest_clm");
 
 // ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
@@ -96,6 +98,29 @@ pub struct ClaimEvent {
     pub event_version: u32,
     pub user: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingCreatedEvent {
+    pub event_version: u32,
+    pub user: Address,
+    pub asset: Option<Address>,
+    pub amount: i128,
+    pub start_timestamp: u64,
+    pub duration: u64,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingClaimedEvent {
+    pub event_version: u32,
+    pub user: Address,
+    pub asset: Option<Address>,
+    pub amount: i128,
+    pub remaining_unclaimed: i128,
     pub timestamp: u64,
 }
 
