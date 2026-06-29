@@ -16,6 +16,13 @@ members = [
   "tests/risk",
 ]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+soroban-sdk = "22.0.0"
 
 [workspace.package]
 version = "0.1.0"
