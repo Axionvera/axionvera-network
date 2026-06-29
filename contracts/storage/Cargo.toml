@@ -6,7 +6,10 @@ license = "Apache-2.0"
 publish = false
 
 [lib]
-crate-type = ["lib"]
+crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils"] }
 
 [dependencies]
 soroban-sdk = "22.0.111"
@@ -17,3 +20,5 @@ axionvera-state = { path = "../state" }
 [dev-dependencies]
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
 axionvera-state = { path = "../state" }
+axionvera-resources = { path = "../resources" }
+

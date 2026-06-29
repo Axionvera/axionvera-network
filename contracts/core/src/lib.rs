@@ -1,14 +1,18 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, Address, Env, Map, Symbol, Vec};
+use soroban_sdk::{contracttype, Address, Bytes, Env, Map, Symbol, Vec};
 
 use axionvera_events as events;
+use axionvera_resources::{ResourceError, ResourceInfo, ResourceState};
 use axionvera_state::{
     GovernanceState, RewardState, StateError, StakingState, TreasuryState, VaultState,
 };
 use axionvera_storage::{
-    get_governance_state, get_reward_state, get_staking_state, get_treasury_state, get_vault_state,
+    create_resource as storage_create_resource, get_governance_state, get_reward_state,
+    get_staking_state, get_treasury_state, get_vault_state, list_resources as storage_list_resources,
+    resource_exists as storage_resource_exists, resource_count as storage_resource_count,
     set_governance_state, set_reward_state, set_staking_state, set_treasury_state, set_vault_state,
+    transition_resource as storage_transition_resource,
 };
 use axionvera_snapshots as snapshots;
 
