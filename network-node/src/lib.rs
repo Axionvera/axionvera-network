@@ -36,6 +36,7 @@ pub mod metrics;
 pub mod pb;
 pub mod p2p;
 pub mod rate_limiter;
+pub mod service_registry;
 pub mod shutdown;
 pub mod signing;
 pub mod stellar_service;

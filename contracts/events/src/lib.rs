@@ -33,6 +33,12 @@ pub const ACT_REVOKE_DELEGATION: Symbol = symbol_short!("rvk_dlg");
 pub const ACT_DELEGATED_ACTION: Symbol = symbol_short!("deleg_act");
 
 // ---------------------------------------------------------------------------
+// Module registry action symbols
+// ---------------------------------------------------------------------------
+pub const ACT_MOD_REGISTER: Symbol = symbol_short!("mod_reg");
+pub const ACT_MOD_STATUS_UPDATE: Symbol = symbol_short!("mod_stat");
+
+// ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
 // ---------------------------------------------------------------------------
 #[contracttype]
@@ -238,6 +244,28 @@ pub struct DelegatedActionEvent {
     pub operator: Address,
     pub permission: u32,
     pub action: Symbol,
+    pub timestamp: u64,
+}
+
+// ---------------------------------------------------------------------------
+// Module registry event payload structs
+// ---------------------------------------------------------------------------
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleRegisteredEvent {
+    pub admin: Address,
+    pub name: Symbol,
+    pub module_address: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleStatusChangedEvent {
+    pub admin: Address,
+    pub module_address: Address,
+    pub is_active: bool,
     pub timestamp: u64,
 }
 
