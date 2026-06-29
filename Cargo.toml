@@ -15,6 +15,7 @@ members = [
   "contracts/state",
   "contracts/storage",
   "network-node",
+  "tests/security", "contracts/admin",
   "tests/auth",
   "tests/security",
   "tests/risk",

@@ -102,3 +102,41 @@ pub fn require_admin(caller: &Address, admin: &Address) -> Result<(), ()> {
     }
     Err(())
 }
+
+#[contract]
+pub struct SecurityContract;
+
+#[contractimpl]
+impl SecurityContract {
+    /// Initializes the security contract with an admin address.
+    pub fn init(env: Env, admin: Address) {
+        assert!(!env.storage().instance().has(&DataKey::Admin), "Already initialized");
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::IsPaused, &false);
+    }
+
+    /// Pauses all critical protocol functions. Only accessible by Admin.
+    pub fn pause(env: Env) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).expect("Not initialized");
+        admin.require_auth();
+        
+        env.storage().instance().set(&DataKey::IsPaused, &true);
+        env.events().publish((symbol_short!("security"), symbol_short!("pause")), true);
+    }
+
+    /// Unpauses protocol functions. Only accessible by Admin.
+    pub fn unpause(env: Env) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).expect("Not initialized");
+        admin.require_auth();
+        
+        env.storage().instance().set(&DataKey::IsPaused, &false);
+        env.events().publish((symbol_short!("security"), symbol_short!("unpause")), false);
+    }
+
+    /// Read-only check for the current pause state.
+    pub fn is_paused(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::IsPaused).unwrap_or(false)
+    }
+}
+
+mod test;

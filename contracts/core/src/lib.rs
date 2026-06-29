@@ -202,6 +202,25 @@ pub fn current_governance_state(e: &Env, proposal_id: Symbol) -> GovernanceState
     get_governance_state(e, proposal_id)
 }
 
+#[contract]
+pub struct CoreContract;
+
+#[contractimpl]
+impl CoreContract {
+    /// Example of a critical function restricted by the emergency pause
+    pub fn critical_action(env: Env, security_contract: Address, /* other args */) {
+        // 1. Cross-contract call to check if paused
+        let is_paused: bool = env.invoke_contract(
+            &security_contract,
+            &soroban_sdk::Symbol::new(&env, "is_paused"),
+            soroban_sdk::vec![&env]
+        );
+        
+        assert!(!is_paused, "Emergency: Protocol is currently paused.");
+
+        // 2. Continue with normal critical action...
+    }
+}
 // ===========================================================================
 // SNAPSHOT INTEGRATION
 // ===========================================================================
