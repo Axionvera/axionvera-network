@@ -250,6 +250,63 @@ pub fn ledger_timestamp(e: &Env) -> u64 {
 }
 
 // ---------------------------------------------------------------------------
+// Registry contract — protocol identifier and action symbols
+// ---------------------------------------------------------------------------
+
+/// Protocol identifier used as Topic 1 for all registry events.
+pub const PROTOCOL_REGISTRY: Symbol = symbol_short!("AxReg");
+
+pub const ACT_MOD_REGISTER: Symbol = symbol_short!("mod_reg");
+pub const ACT_MOD_STATUS_UPDATE: Symbol = symbol_short!("mod_stat");
+pub const ACT_CTRT_INDEX: Symbol = symbol_short!("ctrt_idx");
+pub const ACT_CTRT_META: Symbol = symbol_short!("ctrt_meta");
+
+// ---------------------------------------------------------------------------
+// Registry event payload structs
+// ---------------------------------------------------------------------------
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleRegisteredEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub name: Symbol,
+    pub module_address: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModuleStatusChangedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub module_address: Address,
+    pub is_active: bool,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ContractIndexedEvent {
+    pub event_version: u32,
+    pub registered_by: Address,
+    pub contract_address: Address,
+    pub name: Symbol,
+    pub version: Symbol,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ContractMetadataUpdatedEvent {
+    pub event_version: u32,
+    pub updated_by: Address,
+    pub contract_address: Address,
+    pub version: Symbol,
+    pub timestamp: u64,
+}
+
+// ---------------------------------------------------------------------------
 // Config contract — protocol identifier and action symbols
 // ---------------------------------------------------------------------------
 
