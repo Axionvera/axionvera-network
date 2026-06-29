@@ -443,6 +443,61 @@ pub fn get_penalty_rate_bps(e: &Env) -> Result<u32, VaultError> {
     Ok(rate)
 }
 
+pub fn authorize_delegate(e: &Env, owner: &Address, delegate: &Address, permissions: u32) -> Result<(), VaultError> {
+    require_initialized(e)?;
+    let record = DelegateAuthorization {
+        owner: owner.clone(),
+        delegate: delegate.clone(),
+        permissions,
+        created_at: e.ledger().timestamp(),
+        active: true,
+    };
+    e.storage().instance().set(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()), &record);
+    bump_instance_ttl(e);
+    Ok(())
+}
+
+pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
+    require_initialized(e)?;
+    e.storage().instance().remove(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+    bump_instance_ttl(e);
+    Ok(())
+}
+
+pub fn get_delegate_permissions(e: &Env, owner: &Address, delegate: &Address) -> Result<u32, VaultError> {
+    require_initialized(e)?;
+    let record = e
+        .storage()
+        .instance()
+        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+    match record {
+        Some(auth) if auth.active => {
+            bump_instance_ttl(e);
+            Ok(auth.permissions)
+        }
+        _ => {
+            bump_instance_ttl(e);
+            Ok(0)
+        }
+    }
+}
+
+pub fn require_delegate_permission(
+    e: &Env,
+    owner: &Address,
+    delegate: &Address,
+    permission: u32,
+) -> Result<(), VaultError> {
+    let record = e
+        .storage()
+        .instance()
+        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+    match record {
+        Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
+        _ => Err(AuthorizationError::Unauthorized.into()),
+    }
+}
+
 pub fn set_penalty_rate_bps(e: &Env, rate_bps: u32) {
     e.storage()
         .instance()
