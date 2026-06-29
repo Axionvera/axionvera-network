@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Map};
+use soroban_sdk::{contracttype, Address, Env, Map, Vec};
 
 use crate::errors::{
     ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError,
@@ -66,6 +66,10 @@ pub enum DataKey {
     IsPaused,
     /// User balance (legacy, kept for backwards compatibility)
     UserBalance(Address),
+    /// User liquid balance separated from locked funds
+    UserLiquidBalance(Address),
+    /// User lock entries
+    UserLocks(Address),
     /// User's last synced reward index (legacy, kept for backwards compatibility)
     UserRewardIndex(Address),
     /// User's accrued but unvested rewards (legacy, kept for backwards compatibility)
@@ -101,6 +105,8 @@ pub enum DataKey {
     DelegationOperators(Address),
     /// Maximum number of delegations allowed per user
     MaxDelegationsPerUser,
+    /// Legacy/simple delegate authorization record
+    DelegatePermissions(Address, Address),
 }
 
 /// The global state of the vault contract.
@@ -129,6 +135,16 @@ pub struct VaultState {
     pub utilization_multipliers: soroban_sdk::Vec<MultiplierPoint>,
 }
 
+/// A tranche of rewards that vests linearly from `start_timestamp`.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingSchedule {
+    pub amount: i128,
+    pub claimed: i128,
+    pub start_timestamp: u64,
+    pub duration: u64,
+}
+
 /// Snapshot of a user's position in the vault for a specific asset.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -149,6 +165,17 @@ pub struct UserPosition {
 pub struct MultiAssetPosition {
     /// Map of asset address to user position
     pub positions: Map<Address, UserPosition>,
+}
+
+/// Legacy delegate authorization used by delegate-specific entrypoints.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorization {
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub created_at: u64,
+    pub active: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +234,8 @@ pub struct UserRewardSnapshot {
     pub rewards: i128,
     /// The amount of vested rewards available to claim.
     pub vested_rewards: i128,
+    /// Number of active vesting schedules included in the snapshot.
+    pub vesting_schedule_count: u32,
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +306,21 @@ pub fn initialize_state(
         .instance()
         .set(&DataKey::ReentrancyGuard, &false);
     e.storage().instance().set(&DataKey::IsPaused, &false);
+
+    // Register the legacy deposit token as the first multi-asset vault asset so
+    // legacy and asset-scoped entrypoints share the same supported-asset registry.
+    let mut supported_assets = Map::new(e);
+    supported_assets.set(deposit_token.clone(), true);
+    e.storage()
+        .instance()
+        .set(&DataKey::SupportedAssets, &supported_assets);
+    e.storage()
+        .instance()
+        .set(&DataKey::AssetTotalDeposits(deposit_token.clone()), &0_i128);
+    e.storage()
+        .instance()
+        .set(&DataKey::AssetRewardIndex(deposit_token.clone()), &0_i128);
+
     bump_instance_ttl(e);
 }
 
@@ -488,25 +532,28 @@ pub fn authorize_delegate(
     permissions: u32,
 ) -> Result<(), VaultError> {
     require_initialized(e)?;
-    if owner == delegate {
-        return Err(DelegationError::CannotDelegateToSelf.into());
-    }
-    let allowed = PERMISSION_DEPOSIT | PERMISSION_WITHDRAW | PERMISSION_CLAIM;
-    if permissions == 0 || permissions & !allowed != 0 {
-        return Err(DelegationError::InsufficientPermissions.into());
-    }
-    if get_delegation(e, owner, delegate).is_none()
-        && delegation_count(e, owner) >= get_max_delegations(e)
-    {
-        return Err(DelegationError::MaxDelegationsExceeded.into());
-    }
-    set_delegation(e, owner, delegate, permissions, 0);
+    let record = DelegateAuthorization {
+        owner: owner.clone(),
+        delegate: delegate.clone(),
+        permissions,
+        created_at: e.ledger().timestamp(),
+        active: true,
+    };
+    e.storage().instance().set(
+        &DataKey::DelegatePermissions(owner.clone(), delegate.clone()),
+        &record,
+    );
+    bump_instance_ttl(e);
     Ok(())
 }
 
 pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
     require_initialized(e)?;
-    remove_delegation(e, owner, delegate);
+    e.storage().instance().remove(&DataKey::DelegatePermissions(
+        owner.clone(),
+        delegate.clone(),
+    ));
+    bump_instance_ttl(e);
     Ok(())
 }
 
@@ -516,8 +563,16 @@ pub fn get_delegate_permissions(
     delegate: &Address,
 ) -> Result<u32, VaultError> {
     require_initialized(e)?;
-    match get_delegation(e, owner, delegate) {
-        Some(auth) if auth.expires_at == 0 || e.ledger().timestamp() < auth.expires_at => {
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
+    match record {
+        Some(auth) if auth.active => {
+            bump_instance_ttl(e);
             Ok(auth.permissions)
         }
         _ => Ok(0),
@@ -530,7 +585,17 @@ pub fn require_delegate_permission(
     delegate: &Address,
     permission: u32,
 ) -> Result<(), VaultError> {
-    check_delegation_permission(e, owner, delegate, permission)
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
+    match record {
+        Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
+        _ => Err(AuthorizationError::Unauthorized.into()),
+    }
 }
 
 pub fn set_penalty_rate_bps(e: &Env, rate_bps: u32) {
@@ -1071,7 +1136,6 @@ pub fn calculate_vested_rewards(
     vesting_period: u64,
 ) -> Result<i128, VaultError> {
     if vesting_period == 0 {
-        // No vesting period, all rewards are immediately vested
         return Ok(position.accrued_rewards);
     }
 
@@ -1079,41 +1143,160 @@ pub fn calculate_vested_rewards(
         return Ok(0);
     }
 
-    let time_elapsed = current_timestamp
-        .checked_sub(position.last_reward_timestamp)
-        .unwrap_or(0);
+    let schedule = VestingSchedule {
+        amount: position.accrued_rewards,
+        claimed: 0,
+        start_timestamp: position.last_reward_timestamp,
+        duration: vesting_period,
+    };
+    calculate_schedule_claimable(current_timestamp, &schedule)
+}
 
-    if time_elapsed >= vesting_period {
-        // All rewards are vested
-        Ok(position.accrued_rewards)
+fn vesting_schedules(e: &Env, key: &DataKey) -> Vec<VestingSchedule> {
+    e.storage()
+        .persistent()
+        .get::<_, Vec<VestingSchedule>>(key)
+        .unwrap_or_else(|| Vec::new(e))
+}
+
+fn set_vesting_schedules(e: &Env, key: &DataKey, schedules: &Vec<VestingSchedule>) {
+    if schedules.is_empty() {
+        e.storage().persistent().remove(key);
     } else {
-        // Calculate partial vesting
-        let vested = (position.accrued_rewards as u128)
-            .checked_mul(time_elapsed as u128)
-            .ok_or(ArithmeticError::Overflow)?
-            .checked_div(vesting_period as u128)
-            .ok_or(ArithmeticError::RewardCalculationFailed)? as i128;
-        Ok(vested)
+        e.storage().persistent().set(key, schedules);
+        bump_persistent_ttl(e, key);
     }
+}
+
+fn calculate_schedule_claimable(
+    current_timestamp: u64,
+    schedule: &VestingSchedule,
+) -> Result<i128, VaultError> {
+    if schedule.amount <= schedule.claimed {
+        return Ok(0);
+    }
+    if schedule.duration == 0 {
+        return schedule
+            .amount
+            .checked_sub(schedule.claimed)
+            .ok_or(ArithmeticError::Overflow.into());
+    }
+
+    let elapsed = current_timestamp
+        .checked_sub(schedule.start_timestamp)
+        .unwrap_or(0);
+    let vested = if elapsed >= schedule.duration {
+        schedule.amount
+    } else {
+        (schedule.amount as u128)
+            .checked_mul(elapsed as u128)
+            .ok_or(ArithmeticError::Overflow)?
+            .checked_div(schedule.duration as u128)
+            .ok_or(ArithmeticError::RewardCalculationFailed)? as i128
+    };
+
+    vested
+        .checked_sub(schedule.claimed)
+        .ok_or(ArithmeticError::Overflow.into())
+}
+
+fn append_vesting_schedule(
+    e: &Env,
+    key: &DataKey,
+    amount: i128,
+    duration: u64,
+) -> Result<(), VaultError> {
+    if amount <= 0 {
+        return Ok(());
+    }
+
+    let mut schedules = vesting_schedules(e, key);
+    schedules.push_back(VestingSchedule {
+        amount,
+        claimed: 0,
+        start_timestamp: e.ledger().timestamp(),
+        duration,
+    });
+    set_vesting_schedules(e, key, &schedules);
+    Ok(())
+}
+
+pub fn active_vesting_schedule_count(e: &Env, user: &Address) -> u32 {
+    vesting_schedules(e, &DataKey::UserRewardVestingSchedules(user.clone())).len()
+}
+
+fn claim_from_schedules(
+    e: &Env,
+    key: &DataKey,
+    current_timestamp: u64,
+) -> Result<i128, VaultError> {
+    let schedules = vesting_schedules(e, key);
+    let mut next = Vec::new(e);
+    let mut total = 0_i128;
+
+    for mut schedule in schedules.iter() {
+        let claimable = calculate_schedule_claimable(current_timestamp, &schedule)?;
+        if claimable > 0 {
+            schedule.claimed = schedule
+                .claimed
+                .checked_add(claimable)
+                .ok_or(ArithmeticError::Overflow)?;
+            total = total
+                .checked_add(claimable)
+                .ok_or(ArithmeticError::Overflow)?;
+        }
+        if schedule.claimed < schedule.amount {
+            next.push_back(schedule);
+        }
+    }
+
+    set_vesting_schedules(e, key, &next);
+    Ok(total)
+}
+
+fn preview_schedules(
+    e: &Env,
+    key: &DataKey,
+    current_timestamp: u64,
+) -> Result<(i128, i128, u32), VaultError> {
+    let schedules = vesting_schedules(e, key);
+    let mut unclaimed = 0_i128;
+    let mut claimable = 0_i128;
+    for schedule in schedules.iter() {
+        unclaimed = unclaimed
+            .checked_add(
+                schedule
+                    .amount
+                    .checked_sub(schedule.claimed)
+                    .ok_or(ArithmeticError::Overflow)?,
+            )
+            .ok_or(ArithmeticError::Overflow)?;
+        claimable = claimable
+            .checked_add(calculate_schedule_claimable(current_timestamp, &schedule)?)
+            .ok_or(ArithmeticError::Overflow)?;
+    }
+    Ok((unclaimed, claimable, schedules.len()))
 }
 
 pub fn store_claimable_rewards(e: &Env, user: &Address) -> Result<i128, VaultError> {
     let state = get_state(e)?;
     let mut position = get_user_position_unchecked(e, user)?;
 
-    // Accrue all rewards earned up to the current global index.
+    let before_accrued = position.accrued_rewards;
     accrue_position_rewards(e, &state, &mut position)?;
+    let newly_accrued = position
+        .accrued_rewards
+        .checked_sub(before_accrued)
+        .ok_or(ArithmeticError::Overflow)?;
+    let key = DataKey::UserRewardVestingSchedules(user.clone());
+    append_vesting_schedule(e, &key, newly_accrued, state.vesting_period)?;
 
-    // Calculate vested rewards
     let current_timestamp = e.ledger().timestamp();
-    let vested = calculate_vested_rewards(current_timestamp, &position, state.vesting_period)?;
-
-    // Update position with remaining accrued rewards
+    let vested = claim_from_schedules(e, &key, current_timestamp)?;
     position.accrued_rewards = position
         .accrued_rewards
         .checked_sub(vested)
         .ok_or(ArithmeticError::Overflow)?;
-
     set_user_position(e, user, &position);
 
     Ok(vested)
@@ -1132,12 +1315,29 @@ pub fn preview_user_rewards(e: &Env, user: &Address) -> Result<UserRewardSnapsho
     accrue_position_rewards(e, &state, &mut position)?;
 
     let current_timestamp = e.ledger().timestamp();
-    let vested = calculate_vested_rewards(current_timestamp, &position, state.vesting_period)?;
+    let key = DataKey::UserRewardVestingSchedules(user.clone());
+    let (scheduled_unclaimed, vested, vesting_schedule_count) =
+        preview_schedules(e, &key, current_timestamp)?;
+
+    let unscheduled = position
+        .accrued_rewards
+        .checked_sub(scheduled_unclaimed)
+        .ok_or(ArithmeticError::Overflow)?;
 
     Ok(UserRewardSnapshot {
         reward_index: position.reward_index,
         rewards: position.accrued_rewards,
-        vested_rewards: vested,
+        vested_rewards: vested
+            .checked_add(calculate_vested_rewards(
+                current_timestamp,
+                &UserPosition {
+                    accrued_rewards: unscheduled,
+                    ..position.clone()
+                },
+                state.vesting_period,
+            )?)
+            .ok_or(ArithmeticError::Overflow)?,
+        vesting_schedule_count,
     })
 }
 
@@ -1594,6 +1794,7 @@ pub fn preview_user_asset_rewards(
         reward_index: position.reward_index,
         rewards: position.accrued_rewards,
         vested_rewards: vested,
+        vesting_schedule_count: 0,
     })
 }
 
@@ -1784,4 +1985,34 @@ pub fn authorize_for_user(
         check_delegation_permission(e, user, operator, permission)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod vesting_schedule_tests {
+    use super::*;
+
+    #[test]
+    fn schedule_claimable_is_linear_and_partial_claim_aware() {
+        let schedule = VestingSchedule {
+            amount: 1_000,
+            claimed: 250,
+            start_timestamp: 100,
+            duration: 100,
+        };
+
+        assert_eq!(calculate_schedule_claimable(150, &schedule).unwrap(), 250);
+        assert_eq!(calculate_schedule_claimable(200, &schedule).unwrap(), 750);
+    }
+
+    #[test]
+    fn zero_duration_schedule_is_immediately_claimable() {
+        let schedule = VestingSchedule {
+            amount: 1_000,
+            claimed: 400,
+            start_timestamp: 100,
+            duration: 0,
+        };
+
+        assert_eq!(calculate_schedule_claimable(100, &schedule).unwrap(), 600);
+    }
 }
