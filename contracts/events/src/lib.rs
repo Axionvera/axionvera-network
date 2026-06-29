@@ -394,6 +394,17 @@ pub struct DelegateActionEvent {
 }
 
 // ---------------------------------------------------------------------------
+// Capabilities — protocol identifier and action symbols
+// ---------------------------------------------------------------------------
+
+/// Protocol identifier used as Topic 1 for all capability events.
+pub const PROTOCOL_CAPABILITIES: Symbol = symbol_short!("AxCaps");
+
+pub const ACT_CAP_REGISTERED: Symbol = symbol_short!("cap_reg");
+pub const ACT_CAP_UPDATED: Symbol = symbol_short!("cap_upd");
+pub const ACT_CAP_REMOVED: Symbol = symbol_short!("cap_rem");
+
+// ---------------------------------------------------------------------------
 // Helper: get the ledger timestamp
 // ---------------------------------------------------------------------------
 
