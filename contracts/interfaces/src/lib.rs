@@ -17,6 +17,14 @@ pub trait VaultEventEmitter {
     fn emit_upgrade(e: &Env, admin: Address, new_wasm_hash: BytesN<32>);
     fn emit_pause(e: &Env, admin: Address);
     fn emit_unpause(e: &Env, admin: Address);
+    fn emit_delegation_granted(
+        e: &Env,
+        delegator: Address,
+        delegatee: Address,
+        operation: Symbol,
+        expiration: u64,
+    );
+    fn emit_delegation_revoked(e: &Env, delegator: Address, delegatee: Address, operation: Symbol);
     fn emit_asset_added(e: &Env, asset: Address);
     fn emit_asset_deposit(e: &Env, user: Address, asset: Address, amount: i128);
     fn emit_asset_withdraw(
@@ -123,4 +131,62 @@ pub trait TransactionOrchestrator {
     fn validate_plan(e: Env, plan: ExecutionPlan) -> Result<(), OrchestrationError>;
     fn execute_plan(e: Env, plan: ExecutionPlan) -> Result<ExecutionReceipt, OrchestrationError>;
     fn execution_receipt(e: Env, plan_id: BytesN<32>) -> Option<ExecutionReceipt>;
+}
+
+/// Rule defining a specific permission delegation.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegationRule {
+    pub delegator: Address,
+    pub delegatee: Address,
+    pub operation: Symbol,
+    pub expiration: u64,
+}
+
+/// Errors returned by the delegation layer.
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum DelegationError {
+    Unauthorized = 100,
+    InvalidExpiration = 101,
+    DelegationNotFound = 102,
+    AlreadyDelegated = 103,
+    PrivilegeEscalation = 104,
+}
+
+/// Interface for managing secure contract operation delegation.
+pub trait ContractDelegation {
+    /// Delegate a specific operation to a trusted address.
+    fn delegate(
+        e: Env,
+        delegator: Address,
+        delegatee: Address,
+        operation: Symbol,
+        expiration: u64,
+    ) -> Result<(), DelegationError>;
+
+    /// Revoke a previously granted delegation.
+    fn revoke_delegation(
+        e: Env,
+        delegator: Address,
+        delegatee: Address,
+        operation: Symbol,
+    ) -> Result<(), DelegationError>;
+
+    /// Retrieve the delegation rule for a specific delegator, delegatee, and operation.
+    fn get_delegation(
+        e: Env,
+        delegator: Address,
+        delegatee: Address,
+        operation: Symbol,
+    ) -> Option<DelegationRule>;
+
+    /// Check if a delegatee is authorized to perform an operation on behalf of a delegator.
+    fn is_authorized(
+        e: Env,
+        delegator: Address,
+        delegatee: Address,
+        operation: Symbol,
+    ) -> bool;
 }
