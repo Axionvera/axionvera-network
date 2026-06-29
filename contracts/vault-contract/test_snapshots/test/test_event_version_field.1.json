@@ -25,6 +25,15 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 0
+                  }
+                },
+                {
+                  "vec": []
                 }
               ]
             }
@@ -120,6 +129,7 @@
                           "vec": [
                             {
                               "symbol": "LockDurationModels"
+                              "symbol": "PenaltyRateBps"
                             }
                           ]
                         },
@@ -186,6 +196,7 @@
                               ]
                             }
                           ]
+                          "u32": 0
                         }
                       },
                       {
@@ -262,11 +273,16 @@
                           "vec": [
                             {
                               "symbol": "UtilizationMultipliers"
+                              "symbol": "TotalPenalties"
                             }
                           ]
                         },
                         "val": {
                           "vec": []
+                          "i128": {
+                            "hi": 0,
+                            "lo": 0
+                          }
                         }
                       },
                       {
@@ -274,11 +290,13 @@
                           "vec": [
                             {
                               "symbol": "VestingPeriod"
+                              "symbol": "UtilizationMultipliers"
                             }
                           ]
                         },
                         "val": {
                           "u64": 0
+                          "vec": []
                         }
                       },
                       {
@@ -286,6 +304,7 @@
                           "vec": [
                             {
                               "symbol": "WeightedTotalDeposits"
+                              "symbol": "VestingPeriod"
                             }
                           ]
                         },
@@ -294,6 +313,7 @@
                             "hi": 0,
                             "lo": 0
                           }
+                          "u64": 0
                         }
                       }
                     ]

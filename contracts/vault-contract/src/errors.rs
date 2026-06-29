@@ -55,6 +55,8 @@ pub enum ValidationError {
     UnsupportedLockDuration,
     /// Thrown when the lock duration model configuration is malformed.
     InvalidLockConfiguration,
+    /// Thrown when a penalty rate is invalid (e.g., above 100%).
+    InvalidPenaltyRate,
     /// Thrown when utilization parameters are invalid (e.g., not sorted).
     InvalidUtilizationParameters,
 }
@@ -98,6 +100,23 @@ pub enum AuthorizationError {
     UpgradeFailed,
     /// Thrown when an operation would exceed the budget (e.g., too many locks to process).
     OperationLimitExceeded,
+}
+
+/// Specific errors related to delegation.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DelegationError {
+    /// Thrown when a delegation does not exist.
+    NotFound,
+    /// Thrown when a delegation has expired.
+    Expired,
+    /// Thrown when the operator lacks the required permission.
+    InsufficientPermissions,
+    /// Thrown when the maximum number of delegations per user is exceeded.
+    MaxDelegationsExceeded,
+    /// Thrown when trying to delegate to self.
+    CannotDelegateToSelf,
+    /// Thrown when expires_at is in the past.
+    InvalidExpiration,
 }
 
 /// The primary error type for the Vault contract.
@@ -156,6 +175,28 @@ pub enum VaultError {
     InvalidUtilizationParameters = 24,
     /// Cross-contract call failed
     CrossContractCallFailed = 25,
+    /// Penalty rate must be a valid basis point value
+    InvalidPenaltyRate = 20,
+    /// Contract upgrade failed
+    UpgradeFailed = 21,
+    /// The operation would exceed the per-transaction budget limit
+    OperationLimitExceeded = 22,
+    /// Cross-contract call failed
+    CrossContractCallFailed = 23,
+    /// Utilization parameters are invalid (e.g., not sorted)
+    InvalidUtilizationParameters = 24,
+    /// Delegation not found
+    DelegationNotFound = 25,
+    /// Delegation has expired
+    DelegationExpired = 26,
+    /// Operator lacks required permission for this action
+    InsufficientDelegationPermissions = 27,
+    /// Maximum number of delegations per user exceeded
+    MaxDelegationsExceeded = 28,
+    /// Cannot delegate to self
+    CannotDelegateToSelf = 29,
+    /// Delegation expiration is in the past
+    InvalidDelegationExpiration = 30,
 }
 
 impl VaultError {
@@ -244,6 +285,9 @@ impl VaultError {
             Self::InvalidLockConfiguration => ErrorInfo {
                 category: ErrorCategory::Validation,
                 message: "lock duration models are invalid",
+            Self::InvalidPenaltyRate => ErrorInfo {
+                category: ErrorCategory::Validation,
+                message: "penalty rate must be between 0 and 10000 basis points",
             },
             Self::UpgradeFailed => ErrorInfo {
                 category: ErrorCategory::Authorization,
@@ -256,6 +300,30 @@ impl VaultError {
             Self::InvalidUtilizationParameters => ErrorInfo {
                 category: ErrorCategory::Validation,
                 message: "utilization parameters are invalid (e.g., not sorted)",
+            },
+            Self::DelegationNotFound => ErrorInfo {
+                category: ErrorCategory::Authorization,
+                message: "delegation not found",
+            },
+            Self::DelegationExpired => ErrorInfo {
+                category: ErrorCategory::Authorization,
+                message: "delegation has expired",
+            },
+            Self::InsufficientDelegationPermissions => ErrorInfo {
+                category: ErrorCategory::Authorization,
+                message: "operator lacks required permission for this action",
+            },
+            Self::MaxDelegationsExceeded => ErrorInfo {
+                category: ErrorCategory::Validation,
+                message: "maximum number of delegations per user exceeded",
+            },
+            Self::CannotDelegateToSelf => ErrorInfo {
+                category: ErrorCategory::Validation,
+                message: "cannot delegate to self",
+            },
+            Self::InvalidDelegationExpiration => ErrorInfo {
+                category: ErrorCategory::Validation,
+                message: "delegation expiration is in the past",
             },
             Self::CrossContractCallFailed => ErrorInfo {
                 category: ErrorCategory::State,
@@ -308,6 +376,7 @@ impl From<ValidationError> for VaultError {
             ValidationError::InvalidLockDuration => Self::InvalidLockDuration,
             ValidationError::UnsupportedLockDuration => Self::UnsupportedLockDuration,
             ValidationError::InvalidLockConfiguration => Self::InvalidLockConfiguration,
+            ValidationError::InvalidPenaltyRate => Self::InvalidPenaltyRate,
             ValidationError::InvalidUtilizationParameters => Self::InvalidUtilizationParameters,
         }
     }
@@ -348,6 +417,19 @@ impl From<VestingError> for VaultError {
     fn from(error: VestingError) -> Self {
         match error {
             VestingError::RewardsNotVested => Self::RewardsNotVested,
+        }
+    }
+}
+
+impl From<DelegationError> for VaultError {
+    fn from(error: DelegationError) -> Self {
+        match error {
+            DelegationError::NotFound => Self::DelegationNotFound,
+            DelegationError::Expired => Self::DelegationExpired,
+            DelegationError::InsufficientPermissions => Self::InsufficientDelegationPermissions,
+            DelegationError::MaxDelegationsExceeded => Self::MaxDelegationsExceeded,
+            DelegationError::CannotDelegateToSelf => Self::CannotDelegateToSelf,
+            DelegationError::InvalidExpiration => Self::InvalidDelegationExpiration,
         }
     }
 }
