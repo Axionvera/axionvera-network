@@ -1,5 +1,4 @@
 [workspace]
-resolver = "2"
 members = [
   "contracts/auth",
   "contracts/vault-contract",
@@ -9,10 +8,19 @@ members = [
   "contracts/core",
   "contracts/interfaces",
   "contracts/orchestrator",
+  "contracts/metrics",
+  "contracts/storage",
   "network-node",
   "tests/security",
 ]
+resolver = "2"
 
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+soroban-sdk = "22.0.0"
 
 [profile.release]
 opt-level = "z"

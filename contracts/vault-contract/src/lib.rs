@@ -10,9 +10,10 @@ mod test;
 
 
 
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, symbol_short};
 
 use axionvera_accounting as accounting;
+use axionvera_metrics as metrics;
 
 use crate::cross_contract::CrossContractClient;
 use crate::errors::{
@@ -140,7 +141,8 @@ impl VaultContract {
                 amount,
             )?;
 
-            let (_state, _position) = storage::store_deposit(&e, &from, amount)?;
+            let (state, _position) = storage::store_deposit(&e, &from, amount)?;
+            update_protocol_metrics(&e, state.total_deposits, 0)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -211,6 +213,7 @@ impl VaultContract {
 
         with_non_reentrant(&e, || {
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
+            update_protocol_metrics(&e, state.total_deposits, 0)?;
 
             account_operation(
                 &e,
@@ -225,6 +228,7 @@ impl VaultContract {
             )?;
             events::emit_withdraw(&e, to.clone(), amount, position.balance);
 
+            let deposit_token = storage::get_deposit_token(&e)?;
             CrossContractClient::token_transfer(
                 &e,
                 &deposit_token,
@@ -294,6 +298,7 @@ impl VaultContract {
             )?;
 
             let next_state = storage::store_reward_distribution(&e, amount)?;
+            update_protocol_metrics(&e, next_state.total_deposits, amount)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Rewards,
@@ -391,6 +396,9 @@ impl VaultContract {
                 return Ok(0);
             }
 
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
+
             let reward_token_id = storage::get_reward_token(&e)?;
             let contract_balance = CrossContractClient::token_balance(
                 &e,
@@ -438,6 +446,9 @@ impl VaultContract {
             if amt <= 0 {
                 return Ok(0);
             }
+
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
 
             let reward_token_id = storage::get_reward_token(&e)?;
             let contract_balance = CrossContractClient::token_balance(
@@ -595,6 +606,7 @@ impl VaultContract {
         with_non_reentrant(&e, || {
             let (state, position, net_amount, penalty) =
                 storage::store_early_withdraw_locked(&e, &to, amount)?;
+            update_protocol_metrics(&e, state.total_deposits, 0)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -704,6 +716,8 @@ impl VaultContract {
             )?;
 
             let _position = storage::store_asset_deposit(&e, &from, &asset, amount)?;
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -737,6 +751,8 @@ impl VaultContract {
 
         with_non_reentrant(&e, || {
             let position = storage::store_asset_withdraw(&e, &to, &asset, amount)?;
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
 
             account_operation(
                 &e,
@@ -796,6 +812,8 @@ impl VaultContract {
             )?;
 
             let next_reward_index = storage::store_asset_reward_distribution(&e, &asset, amount)?;
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, amount)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Rewards,
@@ -830,6 +848,9 @@ impl VaultContract {
             if amt <= 0 {
                 return Ok(0);
             }
+
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
 
             let reward_token_id = storage::get_reward_token(&e)?;
             let contract_balance = CrossContractClient::token_balance(
@@ -1117,6 +1138,9 @@ impl VaultContract {
                 return Ok(0);
             }
 
+            let total_deposits = storage::get_total_deposits(&e)?;
+            update_protocol_metrics(&e, total_deposits, 0)?;
+
             let reward_token_id = storage::get_reward_token(&e)?;
             let contract_balance = CrossContractClient::token_balance(
                 &e,
@@ -1151,6 +1175,31 @@ impl VaultContract {
         admin.require_auth();
         storage::set_max_delegations(&e, max);
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Analytics & Metrics
+    // -----------------------------------------------------------------------
+
+    pub fn get_protocol_metrics(e: Env) -> metrics::ProtocolMetrics {
+        metrics::get_metrics(&e)
+    }
+
+    pub fn get_historical_metrics(e: Env) -> soroban_sdk::Vec<metrics::MetricSnapshot> {
+        metrics::get_historical_metrics(&e)
+    }
+
+    pub fn take_metrics_snapshot(e: Env) -> Result<(), VaultError> {
+        storage::require_initialized(&e)?;
+        let admin = storage::get_admin(&e)?;
+        admin.require_auth();
+        metrics::take_snapshot(&e);
+        Ok(())
+    }
+
+    pub fn protocol_utilization(e: Env) -> Result<u32, VaultError> {
+        let state = storage::get_state(&e)?;
+        Ok(metrics::calculate_utilization(state.total_deposits, state.target_deposits))
     }
 }
 
@@ -1208,6 +1257,16 @@ where
     let result = f();
     storage::exit_non_reentrant(e);
     result
+}
+
+fn update_protocol_metrics(
+    e: &Env,
+    total_deposits: i128,
+    reward_volume_delta: i128,
+) -> Result<(), VaultError> {
+    let total_users = axionvera_core::get_interacting_users(e).len();
+    metrics::update_metrics(e, total_deposits, total_users, reward_volume_delta);
+    Ok(())
 }
 
 fn account_operation(
