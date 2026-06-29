@@ -10,13 +10,14 @@ mod test;
 
 
 
+use soroban_sdk::symbol_short;
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use axionvera_accounting as accounting;
 
 use crate::cross_contract::CrossContractClient;
 use crate::errors::{
-    AuthorizationError, BalanceError, DelegationError, StateError, ValidationError, VaultError,
+     BalanceError, DelegationError, StateError, ValidationError, VaultError,
 };
 
 const DELEGATE_PERM_DEPOSIT: u32 = 1 << 0;
@@ -140,7 +141,7 @@ impl VaultContract {
                 amount,
             )?;
 
-            let (_state, _position) = storage::store_deposit(&e, &from, amount)?;
+            let (state, _position) = storage::store_deposit(&e, &from, amount)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -227,7 +228,7 @@ impl VaultContract {
 
             CrossContractClient::token_transfer(
                 &e,
-                &deposit_token,
+                &state.deposit_token,
                 &e.current_contract_address(),
                 &to,
                 amount,
@@ -252,7 +253,7 @@ impl VaultContract {
         storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_WITHDRAW)?;
 
         with_non_reentrant(&e, || {
-            let state = storage::get_state(&e)?;
+            let _state = storage::get_state(&e)?;
             let (state, position) = storage::store_withdraw(&e, &owner, amount)?;
 
             events::emit_withdraw(&e, owner.clone(), amount, position.balance);
@@ -1010,7 +1011,7 @@ impl VaultContract {
         storage::authorize_for_user(&e, &delegator, &operator, storage::PERMISSION_WITHDRAW)?;
 
         with_non_reentrant(&e, || {
-            let state = storage::get_state(&e)?;
+            let _state = storage::get_state(&e)?;
             let (state, position) = storage::store_withdraw(&e, &delegator, amount)?;
 
             events::emit_delegated_action(

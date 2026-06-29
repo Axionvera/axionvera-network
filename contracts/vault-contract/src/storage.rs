@@ -101,6 +101,8 @@ pub enum DataKey {
     DelegationOperators(Address),
     /// Maximum number of delegations allowed per user
     MaxDelegationsPerUser,
+    UserLiquidBalance(Address),
+    UserLocks(Address),
 }
 
 /// The global state of the vault contract.
@@ -490,14 +492,14 @@ pub fn authorize_delegate(e: &Env, owner: &Address, delegate: &Address, permissi
         created_at: e.ledger().timestamp(),
         active: true,
     };
-    e.storage().instance().set(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()), &record);
+    e.storage().instance().set(&DataKey::delegate_permissions(owner.clone(), delegate.clone()), &record);
     bump_instance_ttl(e);
     Ok(())
 }
 
 pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
     require_initialized(e)?;
-    e.storage().instance().remove(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+    e.storage().instance().remove(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
     bump_instance_ttl(e);
     Ok(())
 }
@@ -507,7 +509,7 @@ pub fn get_delegate_permissions(e: &Env, owner: &Address, delegate: &Address) ->
     let record = e
         .storage()
         .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
     match record {
         Some(auth) if auth.active => {
             bump_instance_ttl(e);
@@ -529,7 +531,7 @@ pub fn require_delegate_permission(
     let record = e
         .storage()
         .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::DelegatePermissions(owner.clone(), delegate.clone()));
+        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
     match record {
         Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
         _ => Err(AuthorizationError::Unauthorized.into()),
@@ -1788,4 +1790,20 @@ pub fn authorize_for_user(
         check_delegation_permission(e, user, operator, permission)?;
     }
     Ok(())
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorization {
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub created_at: u64,
+    pub active: bool,
+}
+
+impl DataKey {
+    pub const fn delegate_permissions(owner: Address, delegate: Address) -> Self {
+        DataKey::Delegation(owner, delegate)
+    }
 }

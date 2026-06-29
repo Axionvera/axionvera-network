@@ -1,15 +1,16 @@
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{Address, BytesN, Env, Symbol};
 
 use axionvera_core;
 use axionvera_events::{
     self, AdminTransferAcceptedEvent, AdminTransferProposedEvent, AssetAddedEvent, AssetClaimEvent,
     AssetDepositEvent, AssetDistributeEvent, AssetWithdrawEvent, ClaimEvent, DepositEvent,
     DistributeEvent, InitializeEvent, LockEvent, PauseEvent, UnlockEvent, UnpauseEvent,
-    UpgradeEvent, WithdrawEvent, EVENT_VERSION,
-    PROTOCOL, ACT_ADMIN_ACCEPTED, ACT_ADMIN_PROPOSED, ACT_ASSET_ADDED, ACT_ASSET_CLAIM,
+    UpgradeEvent, WithdrawEvent, DelegateAuthorizedEvent, DelegateRevokedEvent, DelegateActionEvent,
+    EVENT_VERSION, PROTOCOL, ACT_ADMIN_ACCEPTED, ACT_ADMIN_PROPOSED, ACT_ASSET_ADDED, ACT_ASSET_CLAIM,
     ACT_ASSET_DEPOSIT, ACT_ASSET_DISTRIBUTE, ACT_ASSET_WITHDRAW, ACT_CLAIM, ACT_DELEGATE,
     ACT_DELEGATED_ACTION, ACT_DEPOSIT, ACT_DISTRIBUTE, ACT_INIT, ACT_LOCK, ACT_PAUSE,
     ACT_REVOKE_DELEGATION, ACT_UNLOCK, ACT_UNPAUSE, ACT_UPGRADE, ACT_WITHDRAW,
+    ACT_DELEGATE_AUTH, ACT_DELEGATE_REVOKE, ACT_DELEGATE_ACTION
 };
 
 pub fn emit_initialize(e: &Env, admin: Address, deposit_token: Address, reward_token: Address) {
@@ -331,7 +332,7 @@ pub fn emit_delegate_revoked(e: &Env, owner: Address, delegate: Address) {
     axionvera_core::index_event(e, ACT_DELEGATE_REVOKE, Some(owner), Some(delegate), 0);
 }
 
-pub fn emit_delegate_action(e: &Env, owner: Address, delegate: Address, action: soroban_sdk::Symbol) {
+pub fn emit_delegate_action(e: &Env, owner: Address, delegate: Address, action: Symbol) {
     let ts = axionvera_events::ledger_timestamp(e);
     e.events().publish(
         (PROTOCOL, ACT_DELEGATE_ACTION),
