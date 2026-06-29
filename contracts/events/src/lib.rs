@@ -475,3 +475,53 @@ pub struct AssetRegistryUnpausedEvent {
     pub admin: Address,
     pub timestamp: u64,
 }
+
+// ---------------------------------------------------------------------------
+// Treasury contract events
+// ---------------------------------------------------------------------------
+
+pub const ACT_TREASURY_INIT: Symbol = symbol_short!("try_init");
+pub const ACT_TREASURY_STRATEGY: Symbol = symbol_short!("try_str");
+pub const ACT_TREASURY_FEE: Symbol = symbol_short!("try_fee");
+pub const ACT_TREASURY_DISTRIBUTE: Symbol = symbol_short!("try_dist");
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryInitializedEvent {
+    pub event_version: u32,
+    pub admin: Address,
+    pub asset: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryStrategyConfiguredEvent {
+    pub event_version: u32,
+    pub strategy_id: BytesN<32>,
+    pub rule_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryFeeRecordedEvent {
+    pub event_version: u32,
+    pub fee_id: BytesN<32>,
+    pub payer: Address,
+    pub asset: Address,
+    pub amount: i128,
+    pub treasury_balance: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryDistributionEvent {
+    pub event_version: u32,
+    pub distribution_id: BytesN<32>,
+    pub strategy_id: BytesN<32>,
+    pub asset: Address,
+    pub total_amount: i128,
+    pub timestamp: u64,
+}
