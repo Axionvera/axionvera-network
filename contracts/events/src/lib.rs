@@ -266,6 +266,54 @@ pub struct DelegatedActionEvent {
     pub timestamp: u64,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountingEvent {
+    pub event_version: u32,
+    pub category: Symbol,
+    pub operation: Symbol,
+    pub actor: Option<Address>,
+    pub asset: Option<Address>,
+    pub amount_in: i128,
+    pub amount_out: i128,
+    pub amount_processed: i128,
+    pub storage_reads: u32,
+    pub storage_writes: u32,
+    pub events_emitted: u32,
+    pub token_transfers: u32,
+    pub timestamp: u64,
+    pub ledger: u32,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorizedEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateRevokedEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateActionEvent {
+    pub event_version: u32,
+    pub owner: Address,
+    pub delegate: Address,
+    pub action: Symbol,
+    pub timestamp: u64,
+}
+
 // ---------------------------------------------------------------------------
 // Helper: get the ledger timestamp
 // ---------------------------------------------------------------------------

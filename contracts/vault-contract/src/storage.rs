@@ -950,6 +950,16 @@ pub fn get_liquid_balance_unchecked(e: &Env, user: &Address) -> i128 {
     balance
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegateAuthorization {
+    pub owner: Address,
+    pub delegate: Address,
+    pub permissions: u32,
+    pub created_at: u64,
+    pub active: bool,
+}
+
 fn set_liquid_balance(e: &Env, user: &Address, amount: i128) {
     let key = DataKey::UserLiquidBalance(user.clone());
     if amount == 0 {

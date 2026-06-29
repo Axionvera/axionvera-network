@@ -13,6 +13,7 @@ members = [
   "contracts/rewards",
   "network-node",
   "tests/security",
+  "tests/risk",
 ]
 
 

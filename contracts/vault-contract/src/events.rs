@@ -3,7 +3,8 @@ use soroban_sdk::{Address, BytesN, Env};
 use axionvera_core;
 use axionvera_events::{
     self, AdminTransferAcceptedEvent, AdminTransferProposedEvent, AssetAddedEvent, AssetClaimEvent,
-    AssetDepositEvent, AssetDistributeEvent, AssetWithdrawEvent, ClaimEvent, DepositEvent,
+    AssetDepositEvent, AssetDistributeEvent, AssetWithdrawEvent, ClaimEvent,
+    DelegateActionEvent, DelegateAuthorizedEvent, DelegateRevokedEvent, DepositEvent,
     DistributeEvent, InitializeEvent, LockEvent, PauseEvent, UnlockEvent, UnpauseEvent,
     UpgradeEvent, WithdrawEvent, ACT_ADMIN_ACCEPTED, ACT_ADMIN_PROPOSED, ACT_ASSET_ADDED,
     ACT_ASSET_CLAIM, ACT_ASSET_DEPOSIT, ACT_ASSET_DISTRIBUTE, ACT_ASSET_WITHDRAW, ACT_CLAIM,
@@ -407,7 +408,7 @@ pub fn emit_delegate_action(
 ) {
     let ts = axionvera_events::ledger_timestamp(e);
     e.events().publish(
-        (PROTOCOL, ACT_DELEGATE_ACTION),
+        (PROTOCOL, ACT_DELEGATED_ACTION),
         DelegateActionEvent {
             event_version: EVENT_VERSION,
             owner: owner.clone(),
@@ -416,5 +417,5 @@ pub fn emit_delegate_action(
             timestamp: ts,
         },
     );
-    axionvera_core::index_event(e, ACT_DELEGATE_ACTION, Some(owner), Some(delegate), 1);
+    axionvera_core::index_event(e, ACT_DELEGATED_ACTION, Some(owner), Some(delegate), 1);
 }
