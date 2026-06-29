@@ -20,7 +20,7 @@ npm test
 - Read [docs/contributing-guide.md](file:///Users/boufdaddy/Documents/trae_projects/axionvera-network/docs/contributing-guide.md)
 - Check the GitHub issue templates in `.github/ISSUE_TEMPLATE`
 
-## Pull Request Expectations
+## Pull Request Expectation
 
 - Describe the problem and approach.
 - Include tests for new behavior.
