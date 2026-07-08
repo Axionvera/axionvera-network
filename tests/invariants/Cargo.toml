@@ -11,4 +11,4 @@ axionvera-state = { path = "../../contracts/state" }
 axionvera-storage = { path = "../../contracts/storage" }
 axionvera-core = { path = "../../contracts/core" }
 axionvera-accounting = { path = "../../contracts/accounting" }
-soroban-sdk = { version = "22.0.0", features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }

@@ -9,11 +9,11 @@ publish = false
 crate-type = ["lib"]
 
 [dependencies]
-soroban-sdk = "22.0.0"
+soroban-sdk = { workspace = true }
 axionvera-events = { path = "../events" }
 axionvera-state = { path = "../state" }
 axionvera-accounting = { path = "../accounting" }
 axionvera-storage = { path = "../storage" }
 
 [dev-dependencies]
-soroban-sdk = { version = "22.0.0", features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }

@@ -8,5 +8,5 @@ license = "Apache-2.0"
 crate-type = ["lib"]
 
 [dependencies]
-soroban-sdk = "22.0.0"
+soroban-sdk = { workspace = true }
 axionvera-auth = { path = "../auth" }

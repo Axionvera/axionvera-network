@@ -9,7 +9,7 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-soroban-sdk = "22.0.1111"
+soroban-sdk = { workspace = true }
 axionvera-auth = { path = "../auth" }
 axionvera-events = { path = "../events" }
 axionvera-accounting = { path = "../accounting" }
@@ -22,5 +22,5 @@ axionvera-risk = { path = "../risk" }
 
 [dev-dependencies]
 proptest = "1.11.0"
-soroban-sdk = { version = "22.0.1111", features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }
 axionvera-vault-contract-v2 = { path = "../vault-contract-v2" }

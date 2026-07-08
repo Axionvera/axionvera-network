@@ -1,10 +1,8 @@
 use soroban_sdk::{Address, Env, Map, Vec, contracttype};
 
 use crate::errors::{
-    ArithmeticError, ArithmeticError, ArithmeticError, AuthorizationError, AuthorizationError,
-    AuthorizationError, BalanceError, BalanceError, BalanceError, DelegationError, DelegationError,
-    StateError, StateError, StateError, ValidationError, ValidationError, ValidationError,
-    VaultError, VaultError, VaultError,
+    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError,
+    ValidationError, VaultError,
 };
 
 pub const PRECISION_FACTOR: i128 = 1_000_000_000;
@@ -124,8 +122,10 @@ pub enum DataKey {
     DelegationOperators(Address),
     /// Maximum number of delegations allowed per user
     MaxDelegationsPerUser,
-    UserLiquidBalance(Address),
-    UserLocks(Address),
+    /// Legacy delegate permissions (for backwards compatibility)
+    delegate_permissions(Address, Address),
+    /// User reward vesting schedules
+    UserRewardVestingSchedules(Address),
 }
 
 /// The global state of the vault contract.
@@ -781,8 +781,9 @@ pub fn store_early_withdraw_locked(
         if remaining_lock_amount > 0 {
             next_locks.push_back(Lock {
                 amount: remaining_lock_amount,
+                duration_seconds: lock.duration_seconds,
                 unlock_timestamp: lock.unlock_timestamp,
-                reward_multiplier: lock.reward_multiplier,
+                reward_multiplier_bps: lock.reward_multiplier_bps,
             });
         }
 
@@ -949,16 +950,6 @@ pub fn get_liquid_balance_unchecked(e: &Env, user: &Address) -> i128 {
         bump_persistent_ttl(e, &key);
     }
     balance
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DelegateAuthorization {
-    pub owner: Address,
-    pub delegate: Address,
-    pub permissions: u32,
-    pub created_at: u64,
-    pub active: bool,
 }
 
 fn set_liquid_balance(e: &Env, user: &Address, amount: i128) {
