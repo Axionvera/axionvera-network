@@ -5,7 +5,7 @@ use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
 use crate::database::ConnectionPool;
-use crate::grpc::network::{vault_service_server::VaultService, GetTvlRequest, GetTvlResponse};
+use crate::grpc::network::{GetTvlRequest, GetTvlResponse, vault_service_server::VaultService};
 
 pub struct VaultServiceImpl {
     connection_pool: Arc<RwLock<ConnectionPool>>,

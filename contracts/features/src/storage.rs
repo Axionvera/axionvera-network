@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{Address, Env, Symbol, Vec, contracttype};
 
 use crate::errors::FeatureError;
 use crate::types::FeatureFlag;
