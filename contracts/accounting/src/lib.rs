@@ -3,9 +3,9 @@
 #[cfg(test)]
 extern crate std;
 
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{Address, Env, Symbol, contracttype, symbol_short};
 
-use axionvera_events::{self, AccountingEvent, ACT_ACCOUNTING, EVENT_VERSION, PROTOCOL};
+use axionvera_events::{self, ACT_ACCOUNTING, AccountingEvent, EVENT_VERSION, PROTOCOL};
 
 const INSTANCE_TTL_THRESHOLD: u32 = 518_400;
 const INSTANCE_TTL_EXTEND_TO: u32 = 518_400;
@@ -296,24 +296,21 @@ fn update_bucket(e: &Env, key: DataKey, entry: &AccountingEntry) -> Result<(), A
     Ok(())
 }
 
-fn apply_entry(totals: &mut ResourceTotals, entry: &AccountingEntry) -> Result<(), AccountingError> {
+fn apply_entry(
+    totals: &mut ResourceTotals,
+    entry: &AccountingEntry,
+) -> Result<(), AccountingError> {
     totals.operation_count = checked_add_u64(totals.operation_count, 1)?;
     totals.amount_in = checked_add_i128(totals.amount_in, entry.amount_in)?;
     totals.amount_out = checked_add_i128(totals.amount_out, entry.amount_out)?;
     totals.amount_processed = checked_add_i128(totals.amount_processed, entry.amount_processed)?;
     totals.net_amount = checked_sub_i128(totals.amount_in, totals.amount_out)?;
-    totals.storage_reads = checked_add_u64(
-        totals.storage_reads,
-        entry.resources.storage_reads as u64,
-    )?;
-    totals.storage_writes = checked_add_u64(
-        totals.storage_writes,
-        entry.resources.storage_writes as u64,
-    )?;
-    totals.events_emitted = checked_add_u64(
-        totals.events_emitted,
-        entry.resources.events_emitted as u64,
-    )?;
+    totals.storage_reads =
+        checked_add_u64(totals.storage_reads, entry.resources.storage_reads as u64)?;
+    totals.storage_writes =
+        checked_add_u64(totals.storage_writes, entry.resources.storage_writes as u64)?;
+    totals.events_emitted =
+        checked_add_u64(totals.events_emitted, entry.resources.events_emitted as u64)?;
     totals.token_transfers = checked_add_u64(
         totals.token_transfers,
         entry.resources.token_transfers as u64,
@@ -340,14 +337,20 @@ fn sum_categories(
 }
 
 fn add_saturating(target: &mut ResourceTotals, source: ResourceTotals) {
-    target.operation_count = target.operation_count.saturating_add(source.operation_count);
+    target.operation_count = target
+        .operation_count
+        .saturating_add(source.operation_count);
     target.amount_in = target.amount_in.saturating_add(source.amount_in);
     target.amount_out = target.amount_out.saturating_add(source.amount_out);
-    target.amount_processed = target.amount_processed.saturating_add(source.amount_processed);
+    target.amount_processed = target
+        .amount_processed
+        .saturating_add(source.amount_processed);
     target.storage_reads = target.storage_reads.saturating_add(source.storage_reads);
     target.storage_writes = target.storage_writes.saturating_add(source.storage_writes);
     target.events_emitted = target.events_emitted.saturating_add(source.events_emitted);
-    target.token_transfers = target.token_transfers.saturating_add(source.token_transfers);
+    target.token_transfers = target
+        .token_transfers
+        .saturating_add(source.token_transfers);
 }
 
 fn totals_equal(a: ResourceTotals, b: ResourceTotals) -> bool {
@@ -518,7 +521,10 @@ mod tests {
 
             assert_eq!(get_total_usage(&e), expected);
             assert_eq!(get_category_usage(&e, AccountingCategory::Vault), expected);
-            assert_eq!(get_operation_usage(&e, AccountingOperation::VaultDeposit), expected);
+            assert_eq!(
+                get_operation_usage(&e, AccountingOperation::VaultDeposit),
+                expected
+            );
             assert_eq!(get_asset_usage(&e, &asset), expected);
             assert!(validate_accounting(&e));
         });
@@ -590,7 +596,10 @@ mod tests {
             assert_eq!(report.governance.operation_count, 1);
 
             let same_report = accounting_report(&e);
-            assert_eq!(report.deterministic_checksum, same_report.deterministic_checksum);
+            assert_eq!(
+                report.deterministic_checksum,
+                same_report.deterministic_checksum
+            );
         });
     }
 

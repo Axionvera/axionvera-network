@@ -1,11 +1,10 @@
-use soroban_sdk::{contracttype, Address, Env, Map, Vec};
+use soroban_sdk::{Address, Env, Map, Vec, contracttype};
 
 use crate::errors::{
-    ArithmeticError, AuthorizationError, BalanceError, StateError, ValidationError, VaultError,
-    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError, ValidationError,
-    VaultError,
-    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError,
-    ValidationError, VaultError,
+    ArithmeticError, ArithmeticError, ArithmeticError, AuthorizationError, AuthorizationError,
+    AuthorizationError, BalanceError, BalanceError, BalanceError, DelegationError, DelegationError,
+    StateError, StateError, StateError, ValidationError, ValidationError, ValidationError,
+    VaultError, VaultError, VaultError,
 };
 
 pub const PRECISION_FACTOR: i128 = 1_000_000_000;
@@ -607,14 +606,22 @@ pub fn authorize_delegate(
         created_at: e.ledger().timestamp(),
         active: true,
     };
-    e.storage().instance().set(&DataKey::delegate_permissions(owner.clone(), delegate.clone()), &record);
+    e.storage().instance().set(
+        &DataKey::delegate_permissions(owner.clone(), delegate.clone()),
+        &record,
+    );
     bump_instance_ttl(e);
     Ok(())
 }
 
 pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
     require_initialized(e)?;
-    e.storage().instance().remove(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    e.storage()
+        .instance()
+        .remove(&DataKey::delegate_permissions(
+            owner.clone(),
+            delegate.clone(),
+        ));
     bump_instance_ttl(e);
     Ok(())
 }
@@ -625,10 +632,13 @@ pub fn get_delegate_permissions(
     delegate: &Address,
 ) -> Result<u32, VaultError> {
     require_initialized(e)?;
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
     match record {
         Some(auth) if auth.active => {
             bump_instance_ttl(e);
@@ -644,10 +654,13 @@ pub fn require_delegate_permission(
     delegate: &Address,
     permission: u32,
 ) -> Result<(), VaultError> {
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
     match record {
         Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
         _ => Err(AuthorizationError::Unauthorized.into()),

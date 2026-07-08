@@ -1,10 +1,15 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, Address, Env};
+use soroban_sdk::{Address, Env, contract, contractimpl};
 
-use axionvera_accounting::{self as accounting, AccountingCategory, AccountingOperation, AccountingEntry, OperationResources};
+use axionvera_accounting::{
+    self as accounting, AccountingCategory, AccountingEntry, AccountingOperation,
+    OperationResources,
+};
 use axionvera_events as events;
-use axionvera_interfaces::{FeeConfig, FeeError, FeeReceipt, FeeTotals, FeeType, TREASURY_BPS_DENOMINATOR};
+use axionvera_interfaces::{
+    FeeConfig, FeeError, FeeReceipt, FeeTotals, FeeType, TREASURY_BPS_DENOMINATOR,
+};
 use axionvera_storage as storage;
 
 #[contract]

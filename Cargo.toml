@@ -16,7 +16,7 @@ members = [
   "contracts/storage",
   "contracts/validator",
   "network-node",
-  "tests/security", "contracts/admin",
+  "contracts/admin",
   "tests/auth",
   "tests/security",
   "tests/risk",
@@ -26,18 +26,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-
-[workspace.package]
-version = "0.1.0"
-edition = "2021"
 publish = false
-
-[workspace.dependencies]
-soroban-sdk = "22.0.0"
-
-[workspace.package]
-version = "0.1.0"
-edition = "2021"
 
 [workspace.dependencies]
 soroban-sdk = "22.0.0"

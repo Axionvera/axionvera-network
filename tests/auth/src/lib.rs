@@ -1,8 +1,11 @@
 #![cfg(test)]
 
-use soroban_sdk::{testutils::{Address as _, Ledger}, Address, Env, Symbol};
 use axionvera_auth::delegation::DelegationManager;
 use axionvera_interfaces::DelegationError;
+use soroban_sdk::{
+    Address, Env, Symbol,
+    testutils::{Address as _, Ledger},
+};
 
 #[test]
 fn test_successful_delegation() {
@@ -16,10 +19,21 @@ fn test_successful_delegation() {
 
     e.ledger().set_timestamp(500);
 
-    let result = DelegationManager::delegate(&e, delegator.clone(), delegatee.clone(), operation.clone(), expiration);
+    let result = DelegationManager::delegate(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone(),
+        expiration,
+    );
     assert!(result.is_ok());
 
-    assert!(DelegationManager::is_authorized(&e, delegator.clone(), delegatee.clone(), operation.clone()));
+    assert!(DelegationManager::is_authorized(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone()
+    ));
 }
 
 #[test]
@@ -29,7 +43,9 @@ fn test_rejection_unauthorized() {
     let delegatee = Address::generate(&e);
     let operation = Symbol::new(&e, "transfer");
 
-    assert!(!DelegationManager::is_authorized(&e, delegator, delegatee, operation));
+    assert!(!DelegationManager::is_authorized(
+        &e, delegator, delegatee, operation
+    ));
 }
 
 #[test]
@@ -44,13 +60,32 @@ fn test_revocation() {
 
     e.ledger().set_timestamp(500);
 
-    DelegationManager::delegate(&e, delegator.clone(), delegatee.clone(), operation.clone(), expiration).unwrap();
-    assert!(DelegationManager::is_authorized(&e, delegator.clone(), delegatee.clone(), operation.clone()));
+    DelegationManager::delegate(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone(),
+        expiration,
+    )
+    .unwrap();
+    assert!(DelegationManager::is_authorized(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone()
+    ));
 
-    let result = DelegationManager::revoke_delegation(&e, delegator.clone(), delegatee.clone(), operation.clone());
+    let result = DelegationManager::revoke_delegation(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone(),
+    );
     assert!(result.is_ok());
 
-    assert!(!DelegationManager::is_authorized(&e, delegator, delegatee, operation));
+    assert!(!DelegationManager::is_authorized(
+        &e, delegator, delegatee, operation
+    ));
 }
 
 #[test]
@@ -64,10 +99,19 @@ fn test_expired_delegation() {
     let expiration = 1000;
 
     e.ledger().set_timestamp(500);
-    DelegationManager::delegate(&e, delegator.clone(), delegatee.clone(), operation.clone(), expiration).unwrap();
+    DelegationManager::delegate(
+        &e,
+        delegator.clone(),
+        delegatee.clone(),
+        operation.clone(),
+        expiration,
+    )
+    .unwrap();
 
     e.ledger().set_timestamp(1001);
-    assert!(!DelegationManager::is_authorized(&e, delegator, delegatee, operation));
+    assert!(!DelegationManager::is_authorized(
+        &e, delegator, delegatee, operation
+    ));
 }
 
 #[test]

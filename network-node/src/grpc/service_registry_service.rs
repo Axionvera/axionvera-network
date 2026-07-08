@@ -7,9 +7,9 @@ use tonic::{Request, Response, Status};
 use tracing::info;
 
 use crate::grpc::network::{
-    service_registry_server::ServiceRegistry, DeregisterServiceRequest, DeregisterServiceResponse,
-    ListServicesResponse, LookupServiceRequest, LookupServiceResponse, RegisterServiceRequest,
-    RegisterServiceResponse, ServiceInfo,
+    DeregisterServiceRequest, DeregisterServiceResponse, ListServicesResponse,
+    LookupServiceRequest, LookupServiceResponse, RegisterServiceRequest, RegisterServiceResponse,
+    ServiceInfo, service_registry_server::ServiceRegistry,
 };
 use crate::service_registry::ServiceDiscoveryRegistry;
 
@@ -28,7 +28,10 @@ fn now_timestamp() -> Option<Timestamp> {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0);
-    Some(Timestamp { seconds: secs, nanos: 0 })
+    Some(Timestamp {
+        seconds: secs,
+        nanos: 0,
+    })
 }
 
 fn entry_to_proto(entry: crate::service_registry::ServiceEntry) -> ServiceInfo {

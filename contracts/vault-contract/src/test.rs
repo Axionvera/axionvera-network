@@ -4,12 +4,11 @@
 
 use super::*;
 use soroban_sdk::{
-    contract, contractimpl, contracttype,
+    Address, Address, Env, Env, TryIntoVal, contract, contractimpl, contracttype, contracttype,
     testutils::{Address as _, Events, Ledger, LedgerInfo},
-    token, Address, Env, TryIntoVal,
-    contracttype,
     testutils::{Address as _, Events, Ledger, LedgerInfo},
-    token, xdr::ToXdr, Address, Env,
+    token, token,
+    xdr::ToXdr,
 };
 
 /// Minimal token DataKey for test storage mocking.
@@ -392,7 +391,14 @@ fn test_add_asset() {
     let reward_token = create_stellar_asset(&e, &admin);
     let vesting_period = 86400u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let new_asset = Address::generate(&e);
 
@@ -417,7 +423,14 @@ fn test_multiple_asset_deposits() {
     let reward_token = Address::generate(&e);
     let vesting_period = 86400u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let asset1 = create_stellar_asset(&e, &admin);
     let asset2 = create_stellar_asset(&e, &admin);
@@ -431,24 +444,20 @@ fn test_multiple_asset_deposits() {
     mint_stellar_asset(&e, &asset2, &user, 2000);
     // Mock token balances
     e.as_contract(&asset1, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &1000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &1000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&asset2, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &2000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &2000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
 
     // Deposit asset1
@@ -480,7 +489,14 @@ fn test_multiple_asset_withdrawals() {
     let reward_token = create_stellar_asset(&e, &admin);
     let vesting_period = 86400u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let asset1 = create_stellar_asset(&e, &admin);
     let asset2 = create_stellar_asset(&e, &admin);
@@ -494,24 +510,20 @@ fn test_multiple_asset_withdrawals() {
     mint_stellar_asset(&e, &asset2, &user, 2000);
     // Mock token balances
     e.as_contract(&asset1, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &1000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &1000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&asset2, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &2000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &2000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
 
     // Deposit assets
@@ -547,7 +559,14 @@ fn test_asset_reward_distribution() {
     let reward_token = create_stellar_asset(&e, &admin);
     let vesting_period = 86400u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let asset1 = create_stellar_asset(&e, &admin);
     let user1 = Address::generate(&e);
@@ -561,28 +580,23 @@ fn test_asset_reward_distribution() {
     mint_stellar_asset(&e, &reward_token, &admin, 1_000_000);
     // Mock token balances
     e.as_contract(&asset1, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user1.clone()),
-            &1000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user2.clone()),
-            &2000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user1.clone()), &1000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user2.clone()), &2000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&reward_token, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(admin.clone()),
-            &1000000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(admin.clone()), &1000000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
 
     // Users deposit
@@ -617,7 +631,14 @@ fn test_asset_reward_claiming() {
     let reward_token = Address::generate(&e);
     let vesting_period = 0u64; // No vesting for this test
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let asset1 = Address::generate(&e);
     let user = Address::generate(&e);
@@ -629,24 +650,20 @@ fn test_asset_reward_claiming() {
     mint_stellar_asset(&e, &reward_token, &admin, 1_000_000);
     // Mock token balances
     e.as_contract(&asset1, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &1000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &1000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&reward_token, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(admin.clone()),
-            &1000000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(admin.clone()), &1000000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
 
     // User deposits
@@ -845,7 +862,14 @@ fn test_independent_asset_tracking() {
     let reward_token = create_stellar_asset(&e, &admin);
     let vesting_period = 0u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let asset1 = create_stellar_asset(&e, &admin);
     let asset2 = create_stellar_asset(&e, &admin);
@@ -860,34 +884,28 @@ fn test_independent_asset_tracking() {
     mint_stellar_asset(&e, &reward_token, &admin, 2_000_000);
     // Mock token balances
     e.as_contract(&asset1, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &10000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &10000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&asset2, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(user.clone()),
-            &10000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &10000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&reward_token, || {
-        e.storage().instance().set(
-            &TokenDataKey::Balance(admin.clone()),
-            &2000000i128,
-        );
-        e.storage().instance().set(
-            &TokenDataKey::Balance(contract_id.clone()),
-            &0i128,
-        );
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(admin.clone()), &2000000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
 
     // Deposit different amounts to each asset
@@ -928,7 +946,14 @@ fn test_unsupported_asset_fails() {
     let reward_token = Address::generate(&e);
     let vesting_period = 86400u64;
 
-    client.initialize(&admin, &deposit_token, &reward_token, &vesting_period, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &vesting_period,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let unsupported_asset = Address::generate(&e);
     let user = Address::generate(&e);
@@ -1033,9 +1058,7 @@ fn test_deposit_event_indexing() {
 
     // Set up mock token
     e.as_contract(&deposit_token, || {
-        e.storage()
-            .instance()
-            .set(&TokenDataKey::Admin, &admin);
+        e.storage().instance().set(&TokenDataKey::Admin, &admin);
         e.storage()
             .instance()
             .set(&TokenDataKey::Balance(user.clone()), &1000i128);
@@ -1164,9 +1187,7 @@ fn test_event_version_field() {
 
     // Set up mock tokens
     e.as_contract(&deposit_token, || {
-        e.storage()
-            .instance()
-            .set(&TokenDataKey::Admin, &admin);
+        e.storage().instance().set(&TokenDataKey::Admin, &admin);
         e.storage()
             .instance()
             .set(&TokenDataKey::Balance(user.clone()), &1000i128);
@@ -1175,9 +1196,7 @@ fn test_event_version_field() {
             .set(&TokenDataKey::Balance(contract_id.clone()), &0i128);
     });
     e.as_contract(&reward_token, || {
-        e.storage()
-            .instance()
-            .set(&TokenDataKey::Admin, &admin);
+        e.storage().instance().set(&TokenDataKey::Admin, &admin);
         e.storage()
             .instance()
             .set(&TokenDataKey::Balance(admin.clone()), &200000i128);
@@ -1238,7 +1257,14 @@ fn test_create_delegation() {
     let user = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let permissions = storage::PERMISSION_DEPOSIT | storage::PERMISSION_WITHDRAW;
 
@@ -1269,7 +1295,14 @@ fn test_revoke_delegation() {
     let user = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Create delegation
     client.delegate(&user, &operator, &storage::PERMISSION_DEPOSIT, &0u64);
@@ -1294,7 +1327,14 @@ fn test_cannot_delegate_to_self() {
     let reward_token = Address::generate(&e);
     let user = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let result = client.try_delegate(&user, &user, &storage::PERMISSION_DEPOSIT, &0u64);
     assert_eq!(result, Err(Ok(VaultError::CannotDelegateToSelf)));
@@ -1325,10 +1365,22 @@ fn test_expired_delegation_rejected() {
     let vault_owner = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Create delegation that expires at timestamp 500 (already past at 1000)
-    let result = client.try_delegate(&vault_owner, &operator, &storage::PERMISSION_DEPOSIT, &500u64);
+    let result = client.try_delegate(
+        &vault_owner,
+        &operator,
+        &storage::PERMISSION_DEPOSIT,
+        &500u64,
+    );
     assert_eq!(result, Err(Ok(VaultError::InvalidDelegationExpiration)));
 }
 
@@ -1347,24 +1399,36 @@ fn test_delegated_action_requires_correct_permission() {
     let vault_owner = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Grant only DEPOSIT permission
     client.delegate(&vault_owner, &operator, &storage::PERMISSION_DEPOSIT, &0u64);
 
     // Set up mock token balances
     e.as_contract(&deposit_token, || {
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(vault_owner.clone()), &1000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(vault_owner.clone()),
+            &1000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
 
     // Try delegated withdraw (should fail - wrong permission)
     let result = client.try_delegated_withdraw(&vault_owner, &operator, &50i128);
-    assert_eq!(result, Err(Ok(VaultError::InsufficientDelegationPermissions)));
+    assert_eq!(
+        result,
+        Err(Ok(VaultError::InsufficientDelegationPermissions))
+    );
 }
 
 /// Tests delegated deposit flow.
@@ -1382,7 +1446,14 @@ fn test_delegated_deposit() {
     let vault_owner = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Grant DEPOSIT permission
     client.delegate(&vault_owner, &operator, &storage::PERMISSION_DEPOSIT, &0u64);
@@ -1392,12 +1463,14 @@ fn test_delegated_deposit() {
         e.storage()
             .instance()
             .set(&soroban_sdk::token::DataKey::Admin, &admin);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(operator.clone()), &1000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(operator.clone()),
+            &1000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
 
     // Operator deposits on behalf of vault_owner
@@ -1423,22 +1496,36 @@ fn test_delegated_withdraw() {
     let vault_owner = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Grant WITHDRAW permission
-    client.delegate(&vault_owner, &operator, storage::PERMISSION_DEPOSIT | storage::PERMISSION_WITHDRAW, 0u64);
+    client.delegate(
+        &vault_owner,
+        &operator,
+        storage::PERMISSION_DEPOSIT | storage::PERMISSION_WITHDRAW,
+        0u64,
+    );
 
     // Set up mock token balances
     e.as_contract(&deposit_token, || {
         e.storage()
             .instance()
             .set(&soroban_sdk::token::DataKey::Admin, &admin);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(vault_owner.clone()), &1000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(vault_owner.clone()),
+            &1000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
 
     // Owner deposits first
@@ -1476,33 +1563,49 @@ fn test_delegated_claim_rewards() {
     let vault_owner = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // Grant CLAIM permission
-    client.delegate(&vault_owner, &operator, storage::PERMISSION_CLAIM | storage::PERMISSION_DEPOSIT, 0u64);
+    client.delegate(
+        &vault_owner,
+        &operator,
+        storage::PERMISSION_CLAIM | storage::PERMISSION_DEPOSIT,
+        0u64,
+    );
 
     // Set up mock token balances
     e.as_contract(&deposit_token, || {
         e.storage()
             .instance()
             .set(&soroban_sdk::token::DataKey::Admin, &admin);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(vault_owner.clone()), &1000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(vault_owner.clone()),
+            &1000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
     e.as_contract(&reward_token, || {
         e.storage()
             .instance()
             .set(&soroban_sdk::token::DataKey::Admin, &admin);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(admin.clone()), &200000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(admin.clone()),
+            &200000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
 
     // Owner deposits
@@ -1535,7 +1638,14 @@ fn test_list_delegations() {
     let op1 = Address::generate(&e);
     let op2 = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     client.delegate(&user, &op1, &storage::PERMISSION_DEPOSIT, &0u64);
     client.delegate(&user, &op2, &storage::PERMISSION_WITHDRAW, &0u64);
@@ -1569,7 +1679,14 @@ fn test_delegation_events() {
     let user = Address::generate(&e);
     let operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     let prev_count = e.events().all().len();
 
@@ -1608,18 +1725,27 @@ fn test_unauthorized_operator_rejected() {
     let vault_owner = Address::generate(&e);
     let unauthorized_operator = Address::generate(&e);
 
-    client.initialize(&admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e));
+    client.initialize(
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
+    );
 
     // No delegation created for unauthorized_operator
 
     // Set up mock token balances
     e.as_contract(&deposit_token, || {
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(unauthorized_operator.clone()), &1000i128);
-        e.storage()
-            .instance()
-            .set(&soroban_sdk::token::DataKey::Balance(contract_id.clone()), &0i128);
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(unauthorized_operator.clone()),
+            &1000i128,
+        );
+        e.storage().instance().set(
+            &soroban_sdk::token::DataKey::Balance(contract_id.clone()),
+            &0i128,
+        );
     });
 
     // Operator tries to deposit without permission

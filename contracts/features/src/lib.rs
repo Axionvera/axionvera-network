@@ -3,11 +3,11 @@
 pub mod errors;
 mod events;
 mod storage;
-pub mod types;
 #[cfg(test)]
 mod test;
+pub mod types;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, Symbol, Vec};
+use soroban_sdk::{Address, Env, Symbol, Vec, contract, contractimpl};
 
 use crate::errors::FeatureError;
 use crate::types::{FeatureFlag, MAX_FEATURES, MAX_ROLLOUT_PCT};

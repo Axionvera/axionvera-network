@@ -6,12 +6,13 @@
 //! across all acceptance criteria.
 
 use soroban_sdk::{
+    Address, Env,
     testutils::{Address as _, Ledger, LedgerInfo},
-    token, Address, Env,
+    token,
 };
 
-use axionvera_vault_contract::{VaultContract, VaultContractClient};
 use axionvera_vault_contract::storage;
+use axionvera_vault_contract::{VaultContract, VaultContractClient};
 
 /// Tests that a delegation can be created and stored correctly.
 #[test]
@@ -29,7 +30,12 @@ fn test_create_delegation() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     let permissions = storage::PERMISSION_DEPOSIT | storage::PERMISSION_WITHDRAW;
@@ -62,7 +68,12 @@ fn test_revoke_delegation() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Create delegation
@@ -89,13 +100,20 @@ fn test_cannot_delegate_to_self() {
     let user = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     let result = client.try_delegate(&user, &user, &storage::PERMISSION_DEPOSIT, &0u64);
     assert_eq!(
         result,
-        Err(Ok(axionvera_vault_contract::errors::VaultError::CannotDelegateToSelf))
+        Err(Ok(
+            axionvera_vault_contract::errors::VaultError::CannotDelegateToSelf
+        ))
     );
 }
 
@@ -125,12 +143,20 @@ fn test_expired_delegation_rejected() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // expires_at=500 is before current timestamp=1000
     let result = client.try_delegate(
-        &vault_owner, &operator, &storage::PERMISSION_DEPOSIT, &500u64,
+        &vault_owner,
+        &operator,
+        &storage::PERMISSION_DEPOSIT,
+        &500u64,
     );
     assert_eq!(
         result,
@@ -156,7 +182,12 @@ fn test_delegated_action_requires_correct_permission() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Grant only DEPOSIT permission
@@ -188,7 +219,12 @@ fn test_unauthorized_operator_rejected() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // No delegation created for operator
@@ -220,7 +256,12 @@ fn test_delegated_deposit() {
     let sac = token::StellarAssetClient::new(&e, &deposit_token_id);
 
     client.initialize(
-        &admin, &deposit_token_id, &reward_token_id, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token_id,
+        &reward_token_id,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Grant DEPOSIT permission
@@ -256,7 +297,12 @@ fn test_delegated_withdraw() {
     let sac = token::StellarAssetClient::new(&e, &deposit_token_id);
 
     client.initialize(
-        &admin, &deposit_token_id, &reward_token_id, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token_id,
+        &reward_token_id,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Grant WITHDRAW permission
@@ -304,7 +350,12 @@ fn test_delegated_claim_rewards() {
     let reward_sac = token::StellarAssetClient::new(&e, &reward_token_id);
 
     client.initialize(
-        &admin, &deposit_token_id, &reward_token_id, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token_id,
+        &reward_token_id,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Grant required permissions
@@ -344,7 +395,12 @@ fn test_list_delegations() {
     let op2 = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     client.delegate(&user, &op1, &storage::PERMISSION_DEPOSIT, &0u64);
@@ -380,7 +436,12 @@ fn test_delegation_events() {
     let operator = Address::generate(&e);
 
     client.initialize(
-        &admin, &deposit_token, &reward_token, &0u64, &0, &soroban_sdk::Vec::new(&e),
+        &admin,
+        &deposit_token,
+        &reward_token,
+        &0u64,
+        &0,
+        &soroban_sdk::Vec::new(&e),
     );
 
     // Delegate - emits DelegateEvent

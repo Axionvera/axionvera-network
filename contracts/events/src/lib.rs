@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, symbol_short, Address, Bytes, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol, contracttype, symbol_short};
 
 use axionvera_interfaces::{FeeConfig, FeeReceipt, FeeType};
 
@@ -1050,7 +1050,6 @@ pub enum DataKey {
 // ---------------------------------------------------------------------------
 // Resource lifecycle event payload structs
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Resource lifecycle — protocol identifier and action symbols

@@ -4,9 +4,8 @@ use axionvera_accounting as accounting;
 use axionvera_accounting::{AccountingCategory, AccountingOperation, OperationResources};
 use axionvera_storage as storage;
 use soroban_sdk::{
-    contract, contractimpl,
+    Address, Env, contract, contractimpl,
     testutils::{Address as _, Ledger},
-    Address, Env,
 };
 
 #[contract]
@@ -83,7 +82,8 @@ fn records_fee_collection_and_updates_accounting() {
         assert_eq!(accounting.operation_count, 1);
         assert_eq!(accounting.amount_in, 500);
         assert_eq!(
-            accounting::get_operation_usage(&e, AccountingOperation::TreasuryDepositFee).operation_count,
+            accounting::get_operation_usage(&e, AccountingOperation::TreasuryDepositFee)
+                .operation_count,
             1
         );
     });

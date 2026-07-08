@@ -1,11 +1,11 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, Address, BytesN, Env, InvokeError, Vec};
+use soroban_sdk::{Address, BytesN, Env, InvokeError, Vec, contract, contractimpl, contracttype};
 
 use axionvera_events::{
-    self, OrchestrationExecutedEvent, OrchestrationFailedEvent, OrchestrationRollbackEvent,
-    OrchestrationValidatedEvent, ACT_ORCH_EXECUTED, ACT_ORCH_FAILED, ACT_ORCH_ROLLBACK,
-    ACT_ORCH_VALIDATED, EVENT_VERSION, PROTOCOL,
+    self, ACT_ORCH_EXECUTED, ACT_ORCH_FAILED, ACT_ORCH_ROLLBACK, ACT_ORCH_VALIDATED, EVENT_VERSION,
+    OrchestrationExecutedEvent, OrchestrationFailedEvent, OrchestrationRollbackEvent,
+    OrchestrationValidatedEvent, PROTOCOL,
 };
 use axionvera_interfaces::{
     ExecutionPlan, ExecutionReceipt, ExecutionStatus, OperationReceipt, OperationStatus,
@@ -91,9 +91,7 @@ impl TransactionOrchestrator for OrchestratorContract {
     }
 
     fn execution_receipt(e: Env, plan_id: BytesN<32>) -> Option<ExecutionReceipt> {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Receipt(plan_id))
+        e.storage().persistent().get(&DataKey::Receipt(plan_id))
     }
 }
 
@@ -162,7 +160,9 @@ fn rollback_executed(
 
     while index > 0 {
         index -= 1;
-        let receipt = executed.get(index).ok_or(OrchestrationError::RollbackFailed)?;
+        let receipt = executed
+            .get(index)
+            .ok_or(OrchestrationError::RollbackFailed)?;
         let operation = find_operation(operations, receipt.operation_id)
             .ok_or(OrchestrationError::RollbackFailed)?;
 

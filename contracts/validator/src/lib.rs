@@ -3,19 +3,28 @@
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contracttype, symbol_short, Env, Symbol, Vec};
-use axionvera_state::*;
-use axionvera_storage::{get_vault_state, get_staking_state, get_reward_state, get_treasury_state};
-use axionvera_core::get_global_event_log;
 use axionvera_accounting::validate_accounting;
+use axionvera_core::get_global_event_log;
+use axionvera_state::*;
+use axionvera_storage::{get_reward_state, get_staking_state, get_treasury_state, get_vault_state};
+use soroban_sdk::{Env, Symbol, Vec, contracttype, symbol_short};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Severity { Critical, Major, Minor, Info }
+pub enum Severity {
+    Critical,
+    Major,
+    Minor,
+    Info,
+}
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ValidationStatus { Passed, Failed, Warning }
+pub enum ValidationStatus {
+    Passed,
+    Failed,
+    Warning,
+}
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -59,7 +68,11 @@ pub fn rule_vault_staking_consistency(vault: VaultState, staking: StakingState) 
     let ok = vault == VaultState::Active || staking == StakingState::Uninitialized;
     RuleResult {
         name: R_VAULT_STAKING,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Critical,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -72,7 +85,11 @@ pub fn rule_vault_treasury_consistency(vault: VaultState, treasury: TreasuryStat
         || treasury == TreasuryState::EmergencyRestricted;
     RuleResult {
         name: R_VAULT_TREASURY,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Critical,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -83,7 +100,11 @@ pub fn rule_reward_vault_consistency(vault: VaultState, reward: RewardState) -> 
     let ok = reward == RewardState::Idle || vault != VaultState::Uninitialized;
     RuleResult {
         name: R_REWARD_VAULT,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Critical,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -94,7 +115,11 @@ pub fn rule_vault_reward_consistency(vault: VaultState, reward: RewardState) -> 
     let ok = !(vault == VaultState::Paused && reward == RewardState::Distributing);
     RuleResult {
         name: R_VAULT_REWARD,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Warning },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Warning
+        },
         severity: Severity::Major,
         message: if ok { MSG_OK } else { MSG_WARN },
     }
@@ -107,7 +132,11 @@ pub fn rule_treasury_vault_consistency(vault: VaultState, treasury: TreasuryStat
         || vault == VaultState::Locked;
     RuleResult {
         name: R_TREASURY_VAULT,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Critical,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -125,7 +154,11 @@ pub fn rule_resource_invariant(e: &Env) -> RuleResult {
     }
     RuleResult {
         name: R_RESOURCE_INV,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Major,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -136,7 +169,11 @@ pub fn rule_accounting_consistency(e: &Env) -> RuleResult {
     let ok = validate_accounting(e);
     RuleResult {
         name: R_ACCOUNTING,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Critical,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -148,7 +185,11 @@ pub fn rule_event_log_invariant(e: &Env) -> RuleResult {
     let ok = log.len() <= 200;
     RuleResult {
         name: R_EVENT_LOG,
-        status: if ok { ValidationStatus::Passed } else { ValidationStatus::Failed },
+        status: if ok {
+            ValidationStatus::Passed
+        } else {
+            ValidationStatus::Failed
+        },
         severity: Severity::Minor,
         message: if ok { MSG_OK } else { MSG_FAIL },
     }
@@ -161,8 +202,10 @@ pub fn rule_event_log_invariant(e: &Env) -> RuleResult {
 /// Run all pure-logic consistency rules given current states.
 pub fn validate_consistency_rules(
     e: &Env,
-    vault: VaultState, staking: StakingState,
-    reward: RewardState, treasury: TreasuryState,
+    vault: VaultState,
+    staking: StakingState,
+    reward: RewardState,
+    treasury: TreasuryState,
 ) -> Vec<RuleResult> {
     let mut v = Vec::new(e);
     v.push_back(rule_vault_staking_consistency(vault, staking));
@@ -207,9 +250,21 @@ pub fn generate_report(e: &Env) -> ValidationReport {
             ValidationStatus::Warning => warnings += 1,
         }
     }
-    let overall = if failed > 0 { ValidationStatus::Failed }
-        else if warnings > 0 { ValidationStatus::Warning }
-        else { ValidationStatus::Passed };
+    let overall = if failed > 0 {
+        ValidationStatus::Failed
+    } else if warnings > 0 {
+        ValidationStatus::Warning
+    } else {
+        ValidationStatus::Passed
+    };
 
-    ValidationReport { timestamp: e.ledger().timestamp(), ledger: e.ledger().sequence(), overall, rules: all, passed, failed, warnings }
+    ValidationReport {
+        timestamp: e.ledger().timestamp(),
+        ledger: e.ledger().sequence(),
+        overall,
+        rules: all,
+        passed,
+        failed,
+        warnings,
+    }
 }

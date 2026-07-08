@@ -1,16 +1,5 @@
 #![no_std]
 
-pub mod cross_contract;
-pub mod errors;
-mod events;
-mod storage;
-#[cfg(test)]
-mod test;
-
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
-
-use crate::cross_contract::CrossContractClient;
-use crate::errors::{AuthorizationError, BalanceError, StateError, ValidationError, VaultError};
 mod access;
 pub mod cross_contract;
 pub mod errors;
@@ -19,20 +8,17 @@ pub mod storage;
 #[cfg(test)]
 mod test;
 
-
-
-use soroban_sdk::symbol_short;
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
+use soroban_sdk::{Address, BytesN, Env, contract, contractimpl, symbol_short};
 
 use axionvera_accounting as accounting;
 use axionvera_fees as fee_framework;
 use axionvera_interfaces::{FeeConfig, FeeReceipt, FeeTotals, FeeType};
+use axionvera_risk::RiskParameters;
 use axionvera_storage as protocol_storage;
 
 use crate::cross_contract::CrossContractClient;
-use axionvera_risk::{RiskManagement, RiskManagementClient, RiskParameters};
 use crate::errors::{
-     BalanceError, DelegationError, StateError, ValidationError, VaultError,
+    AuthorizationError, BalanceError, DelegationError, StateError, ValidationError, VaultError,
 };
 
 const DELEGATE_PERM_DEPOSIT: u32 = 1 << 0;
@@ -50,8 +36,12 @@ impl VaultContract {
         if admin != admin_stored {
             panic!("Unauthorized");
         }
-        e.storage().instance().set(&axionvera_risk::DataKey::RiskParams, &params);
-        e.storage().instance().set(&axionvera_risk::DataKey::CurrentTotalDeposits, &0_i128);
+        e.storage()
+            .instance()
+            .set(&axionvera_risk::DataKey::RiskParams, &params);
+        e.storage()
+            .instance()
+            .set(&axionvera_risk::DataKey::CurrentTotalDeposits, &0_i128);
     }
 
     pub fn set_risk_params(e: Env, admin: Address, params: RiskParameters) {
@@ -60,21 +50,34 @@ impl VaultContract {
         if admin != stored_admin {
             panic!("Unauthorized");
         }
-        e.storage().instance().set(&axionvera_risk::DataKey::RiskParams, &params);
+        e.storage()
+            .instance()
+            .set(&axionvera_risk::DataKey::RiskParams, &params);
     }
 
     pub fn get_risk_params(e: Env) -> RiskParameters {
-        e.storage().instance().get(&axionvera_risk::DataKey::RiskParams).unwrap()
+        e.storage()
+            .instance()
+            .get(&axionvera_risk::DataKey::RiskParams)
+            .unwrap()
     }
 
     pub fn check_deposit(e: Env, amount: i128) -> Result<(), axionvera_risk::RiskError> {
-        let params: RiskParameters = e.storage().instance().get(&axionvera_risk::DataKey::RiskParams).unwrap_or(RiskParameters {
-            max_deposit_amount: 0,
-            min_deposit_amount: 0,
-            max_withdrawal_amount: 0,
-            global_cap: 0,
-        });
-        let current_total: i128 = e.storage().instance().get(&axionvera_risk::DataKey::CurrentTotalDeposits).unwrap_or(0);
+        let params: RiskParameters = e
+            .storage()
+            .instance()
+            .get(&axionvera_risk::DataKey::RiskParams)
+            .unwrap_or(RiskParameters {
+                max_deposit_amount: 0,
+                min_deposit_amount: 0,
+                max_withdrawal_amount: 0,
+                global_cap: 0,
+            });
+        let current_total: i128 = e
+            .storage()
+            .instance()
+            .get(&axionvera_risk::DataKey::CurrentTotalDeposits)
+            .unwrap_or(0);
 
         if amount < params.min_deposit_amount {
             return Err(axionvera_risk::RiskError::TooSmall);
@@ -89,12 +92,16 @@ impl VaultContract {
     }
 
     pub fn check_withdrawal(e: Env, amount: i128) -> Result<(), axionvera_risk::RiskError> {
-        let params: RiskParameters = e.storage().instance().get(&axionvera_risk::DataKey::RiskParams).unwrap_or(RiskParameters {
-            max_deposit_amount: 0,
-            min_deposit_amount: 0,
-            max_withdrawal_amount: 0,
-            global_cap: 0,
-        });
+        let params: RiskParameters = e
+            .storage()
+            .instance()
+            .get(&axionvera_risk::DataKey::RiskParams)
+            .unwrap_or(RiskParameters {
+                max_deposit_amount: 0,
+                min_deposit_amount: 0,
+                max_withdrawal_amount: 0,
+                global_cap: 0,
+            });
         if amount > params.max_withdrawal_amount && params.max_withdrawal_amount > 0 {
             return Err(axionvera_risk::RiskError::TooLarge);
         }
@@ -102,8 +109,15 @@ impl VaultContract {
     }
 
     pub fn update_total_deposits(e: Env, delta: i128) {
-        let current_total: i128 = e.storage().instance().get(&axionvera_risk::DataKey::CurrentTotalDeposits).unwrap_or(0);
-        e.storage().instance().set(&axionvera_risk::DataKey::CurrentTotalDeposits, &(current_total + delta));
+        let current_total: i128 = e
+            .storage()
+            .instance()
+            .get(&axionvera_risk::DataKey::CurrentTotalDeposits)
+            .unwrap_or(0);
+        e.storage().instance().set(
+            &axionvera_risk::DataKey::CurrentTotalDeposits,
+            &(current_total + delta),
+        );
     }
 
     pub fn version() -> u32 {
@@ -229,8 +243,8 @@ impl VaultContract {
             )?
             .unwrap_or(amount);
 
-            let (_state, _position) = storage::store_deposit(&e, &from, net_amount)?;
-            let (state, _position) = storage::store_deposit(&e, &from, amount)?;
+            let (state, _position) = storage::store_deposit(&e, &from, net_amount)?;
+            Self::update_total_deposits(e.clone(), net_amount);
             account_operation(
                 &e,
                 accounting::AccountingCategory::Vault,
@@ -309,11 +323,8 @@ impl VaultContract {
             .unwrap_or(amount);
 
             let (_state, _position) = storage::store_deposit(&e, &owner, net_amount)?;
+            Self::update_total_deposits(e.clone(), net_amount);
             events::emit_deposit(&e, owner.clone(), net_amount);
-            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("deposit"));
-            let (_state, _position) = storage::store_deposit(&e, &owner, amount)?;
-            Self::update_total_deposits(e.clone(), amount);
-            events::emit_deposit(&e, owner.clone(), amount);
             events::emit_delegate_action(
                 &e,
                 owner.clone(),
@@ -330,11 +341,15 @@ impl VaultContract {
         validate_positive_amount(amount)?;
         access::require_actor(&to)?;
 
-        Self::check_withdrawal(e.clone(), amount).map_err(|_| VaultError::OperationLimitExceeded)?;
+        Self::check_withdrawal(e.clone(), amount)
+            .map_err(|_| VaultError::OperationLimitExceeded)?;
 
         with_non_reentrant(&e, || {
             let (state, position) = storage::store_withdraw(&e, &to, amount)?;
             let deposit_token = state.deposit_token.clone();
+
+            // Calculate net amount (after fees, etc. - for now, assume full amount)
+            let net_amount = amount;
 
             account_operation(
                 &e,
@@ -350,7 +365,6 @@ impl VaultContract {
             Self::update_total_deposits(e.clone(), -amount);
             events::emit_withdraw(&e, to.clone(), amount, position.balance);
 
-            let deposit_token = storage::get_deposit_token(&e)?;
             CrossContractClient::token_transfer(
                 &e,
                 &state.deposit_token,
@@ -377,16 +391,17 @@ impl VaultContract {
 
         storage::require_delegate_permission(&e, &owner, &delegate, DELEGATE_PERM_WITHDRAW)?;
 
-        Self::check_withdrawal(e.clone(), amount).map_err(|_| VaultError::OperationLimitExceeded)?;
+        Self::check_withdrawal(e.clone(), amount)
+            .map_err(|_| VaultError::OperationLimitExceeded)?;
 
         with_non_reentrant(&e, || {
-            let _state = storage::get_state(&e)?;
             let (state, position) = storage::store_withdraw(&e, &owner, amount)?;
             Self::update_total_deposits(e.clone(), -amount);
 
+            // Calculate net amount (after fees, etc. - for now, assume full amount)
+            let net_amount = amount;
+
             events::emit_withdraw(&e, owner.clone(), net_amount, position.balance);
-            events::emit_delegate_action(&e, owner.clone(), delegate.clone(), symbol_short!("withdraw"));
-            events::emit_withdraw(&e, owner.clone(), amount, position.balance);
             events::emit_delegate_action(
                 &e,
                 owner.clone(),
@@ -783,7 +798,8 @@ impl VaultContract {
         validate_positive_amount(amount)?;
         access::require_actor(&to)?;
 
-        Self::check_withdrawal(e.clone(), amount).map_err(|_| VaultError::OperationLimitExceeded)?;
+        Self::check_withdrawal(e.clone(), amount)
+            .map_err(|_| VaultError::OperationLimitExceeded)?;
 
         with_non_reentrant(&e, || {
             let (state, position, net_amount, penalty) =
@@ -934,7 +950,8 @@ impl VaultContract {
             return Err(ValidationError::InvalidAddress.into());
         }
 
-        Self::check_withdrawal(e.clone(), amount).map_err(|_| VaultError::OperationLimitExceeded)?;
+        Self::check_withdrawal(e.clone(), amount)
+            .map_err(|_| VaultError::OperationLimitExceeded)?;
 
         with_non_reentrant(&e, || {
             let position = storage::store_asset_withdraw(&e, &to, &asset, amount)?;
@@ -1008,7 +1025,8 @@ impl VaultContract {
             )?
             .unwrap_or(amount);
 
-            let next_reward_index = storage::store_asset_reward_distribution(&e, &asset, net_amount)?;
+            let next_reward_index =
+                storage::store_asset_reward_distribution(&e, &asset, net_amount)?;
             account_operation(
                 &e,
                 accounting::AccountingCategory::Rewards,
@@ -1402,7 +1420,10 @@ impl VaultContract {
 
     pub fn protocol_utilization(e: Env) -> Result<u32, VaultError> {
         let state = storage::get_state(&e)?;
-        Ok(metrics::calculate_utilization(state.total_deposits, state.target_deposits))
+        Ok(metrics::calculate_utilization(
+            state.total_deposits,
+            state.target_deposits,
+        ))
     }
 }
 
@@ -1508,7 +1529,8 @@ fn collect_protocol_fee(
         &config.treasury,
         receipt.treasury_amount,
     )?;
-    fee_framework::record_fee_collection(e, &receipt, resources).map_err(fee_error_to_vault_error)?;
+    fee_framework::record_fee_collection(e, &receipt, resources)
+        .map_err(fee_error_to_vault_error)?;
     Ok(Some(receipt.net_amount))
 }
 
@@ -1559,7 +1581,7 @@ fn accounting_error_to_vault_error(error: accounting::AccountingError) -> VaultE
 mod precision_tests {
     use super::errors::VaultError;
     use super::storage::{
-        checked_accrued_rewards, checked_reward_index_increment, PRECISION_FACTOR,
+        PRECISION_FACTOR, checked_accrued_rewards, checked_reward_index_increment,
     };
 
     #[test]
