@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracterror, contracttype, Address, BytesN, Env, Symbol, Val, Vec};
+use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol, Val, Vec, contracterror, contracttype};
 
 // ---------------------------------------------------------------------------
 // Vault event emitter contract interface
