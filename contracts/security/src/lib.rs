@@ -1,7 +1,7 @@
 #![no_std]
 
 use axionvera_auth::{AccessPolicy, PolicyViolation};
-use soroban_sdk::{Address, Env};
+use soroban_sdk::{Address, Env, contract, contractimpl, contracttype, symbol_short};
 
 pub struct Authenticated<Context> {
     get_address: fn(&Context) -> Address,
@@ -104,6 +104,15 @@ pub fn require_admin(caller: &Address, admin: &Address) -> Result<(), ()> {
         return Ok(());
     }
     Err(())
+}
+
+/// Storage keys for the security contract instance state.
+#[contracttype]
+pub enum DataKey {
+    /// Admin address authorized to pause/unpause.
+    Admin,
+    /// Whether critical protocol functions are currently paused.
+    IsPaused,
 }
 
 #[contract]

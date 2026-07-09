@@ -382,8 +382,8 @@ pub struct ReplayEvent {
     pub action: Symbol,
     /// Timestamp of the original event.
     pub timestamp: u64,
-    /// Raw event payload (encoded as Val).
-    pub payload: Val,
+    /// Raw event payload (opaque, encoded as bytes).
+    pub payload: Bytes,
     /// Status of this event in the replay.
     pub status: ReplayEventStatus,
     /// Error message if replay failed (empty if success).
@@ -426,6 +426,36 @@ pub enum ReplayError {
     ReplayFailed = 7,
 }
 
+// ---------------------------------------------------------------------------
+// Permission delegation layer
+// ---------------------------------------------------------------------------
+
+/// Errors returned by the permission delegation manager.
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum DelegationError {
+    /// The requested delegation does not exist.
+    DelegationNotFound = 1,
+    /// The delegation expiration is not in the future.
+    InvalidExpiration = 2,
+}
+
+/// A stored delegation granting `delegatee` authority to perform `operation`
+/// on behalf of `delegator` until `expiration`.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DelegationRule {
+    /// Account granting the delegation.
+    pub delegator: Address,
+    /// Account receiving the delegated authority.
+    pub delegatee: Address,
+    /// Operation the delegatee is authorized to perform.
+    pub operation: Symbol,
+    /// Ledger timestamp after which the delegation is no longer valid.
+    pub expiration: u64,
+}
+
 /// Interface implemented by the event replay engine.
 pub trait EventReplayEngine {
     /// Initializes the replay engine with an admin.
@@ -437,7 +467,7 @@ pub trait EventReplayEngine {
         protocol: Symbol,
         action: Symbol,
         timestamp: u64,
-        payload: Val,
+        payload: Bytes,
     ) -> Result<u64, ReplayError>;
 
     /// Starts replaying events from the beginning or last checkpoint.

@@ -6,16 +6,16 @@ mod storage;
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Symbol, Val, Vec};
+use crate::errors::ReplayError as Error;
+use crate::storage;
+use axionvera_events::{
+    ACT_ASSET_REG, ACT_CFG_INIT, ACT_INIT, ACT_POL_INIT, PROTOCOL, PROTOCOL_ASSETS,
+    PROTOCOL_CONFIG, PROTOCOL_POLICY, PROTOCOL_REPLAY,
+};
 use axionvera_interfaces::{
     EventReplayEngine, ReplayError, ReplayEvent, ReplayEventStatus, ReplayReport,
 };
-use axionvera_events::{
-    PROTOCOL, PROTOCOL_CONFIG, PROTOCOL_ASSETS, PROTOCOL_POLICY, PROTOCOL_REPLAY,
-    ACT_INIT, ACT_CFG_INIT, ACT_ASSET_REG, ACT_POL_INIT,
-};
-use crate::errors::ReplayError as Error;
-use crate::storage;
+use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol, Vec, contract, contractimpl};
 
 #[contract]
 pub struct ReplayContract;
@@ -45,7 +45,7 @@ impl EventReplayEngine for ReplayContract {
         protocol: Symbol,
         action: Symbol,
         timestamp: u64,
-        payload: Val,
+        payload: Bytes,
     ) -> Result<u64, Error> {
         storage::require_initialized(&e)?;
         let admin = storage::get_admin(&e)?;
@@ -97,15 +97,15 @@ impl EventReplayEngine for ReplayContract {
 
             // Basic event type checking (placeholder for real state reconstruction)
             match (event.protocol, event.action) {
-                (PROTOCOL, ACT_INIT) |
-                (PROTOCOL_CONFIG, ACT_CFG_INIT) |
-                (PROTOCOL_ASSETS, ACT_ASSET_REG) |
-                (PROTOCOL_POLICY, ACT_POL_INIT) |
-                (PROTOCOL_REPLAY, ACT_REPLAY_INIT) => {
+                (PROTOCOL, ACT_INIT)
+                | (PROTOCOL_CONFIG, ACT_CFG_INIT)
+                | (PROTOCOL_ASSETS, ACT_ASSET_REG)
+                | (PROTOCOL_POLICY, ACT_POL_INIT)
+                | (PROTOCOL_REPLAY, ACT_REPLAY_INIT) => {
                     // Mark these events as successfully processed
                     event.status = ReplayEventStatus::Success;
                     successful_events += 1;
-                },
+                }
                 _ => {
                     // Mark all other events as skipped for now
                     event.status = ReplayEventStatus::Skipped;
@@ -132,13 +132,7 @@ impl EventReplayEngine for ReplayContract {
         };
 
         storage::set_report(&e, &report);
-        events::emit_replay_completed(
-            &e,
-            run_id,
-            success,
-            total_events,
-            successful_events,
-        );
+        events::emit_replay_completed(&e, run_id, success, total_events, successful_events);
 
         Ok(report)
     }
