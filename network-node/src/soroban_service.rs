@@ -4,7 +4,7 @@ use crate::soroban_rpc_client::{
 };
 use metrics::counter;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 pub struct SorobanService {
     rpc_client: Arc<SorobanRpcClient>,

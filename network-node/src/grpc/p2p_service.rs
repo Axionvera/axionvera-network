@@ -7,7 +7,7 @@ use crate::grpc::network::{
     BlockData, BroadcastRequest, BroadcastResponse, MessageType, PeerConnectionRequest,
     PeerConnectionResponse, PeerDisconnectionRequest, PeerDisconnectionResponse, PeerInfo,
     PeerListResponse, SyncRequest, SyncResponse, TransactionInfo, TransactionStatus,
-    TransactionType, p2p_service_server::P2PService,
+    TransactionType, p2p_service_server::P2pService as P2PService,
 };
 use crate::p2p::P2PManager;
 

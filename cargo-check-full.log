@@ -1,0 +1,2843 @@
+    Checking axionvera-network-node v0.1.0 (/Users/boufdaddy/Documents/web3-projects/axionvera-network/network-node)
+warning: unused import: `tokio::signal`
+ --> network-node/src/lib.rs:3:5
+  |
+3 | use tokio::signal;
+  |     ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `tokio_util::sync::CancellationToken`
+ --> network-node/src/lib.rs:6:5
+  |
+6 | use tokio_util::sync::CancellationToken;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `instrument` and `warn`
+  --> network-node/src/aws_kms_signer.rs:12:28
+   |
+12 | use tracing::{debug, info, instrument, warn};
+   |                            ^^^^^^^^^^  ^^^^
+
+warning: unused imports: `extract_traceparent_grpc` and `inject_traceparent_grpc`
+ --> network-node/src/consensus.rs:2:24
+  |
+2 | use crate::telemetry::{extract_traceparent_grpc, inject_traceparent_grpc};
+  |                        ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `HashSet`
+ --> network-node/src/consensus.rs:4:33
+  |
+4 | use std::collections::{HashMap, HashSet};
+  |                                 ^^^^^^^
+
+warning: unused import: `Span`
+ --> network-node/src/consensus.rs:7:53
+  |
+7 | use tracing::{debug, error, info, instrument, warn, Span};
+  |                                                     ^^^^
+
+warning: unused import: `Span`
+ --> network-node/src/crypto.rs:7:53
+  |
+7 | use tracing::{debug, error, info, instrument, warn, Span};
+  |                                                     ^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> network-node/src/database.rs:4:5
+  |
+4 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::time::Duration`
+ --> network-node/src/database.rs:5:5
+  |
+5 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `debug`
+ --> network-node/src/database.rs:6:15
+  |
+6 | use tracing::{debug, error, info, instrument};
+  |               ^^^^^
+
+warning: unused import: `Value`
+  --> network-node/src/enhanced_server.rs:11:24
+   |
+11 | use serde_json::{json, Value};
+   |                        ^^^^^
+
+warning: unused import: `tokio::time::timeout`
+  --> network-node/src/enhanced_server.rs:16:5
+   |
+16 | use tokio::time::timeout;
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `error`
+  --> network-node/src/enhanced_server.rs:25:15
+   |
+25 | use tracing::{error, info, warn};
+   |               ^^^^^
+
+warning: unused import: `crate::error::Result as NetworkResult`
+  --> network-node/src/enhanced_server.rs:30:5
+   |
+30 | use crate::error::Result as NetworkResult;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Result`
+ --> network-node/src/error_middleware.rs:7:65
+  |
+7 | use crate::error::{ContextualError, ErrorContext, NetworkError, Result};
+  |                                                                 ^^^^^^
+
+warning: unused import: `warn`
+ --> network-node/src/grpc/gateway_service.rs:6:28
+  |
+6 | use tracing::{error, info, warn};
+  |                            ^^^^
+
+warning: unused import: `crate::error::NetworkError`
+  --> network-node/src/grpc/gateway_service.rs:10:5
+   |
+10 | use crate::error::NetworkError;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TransactionInfo`
+  --> network-node/src/grpc/gateway_service.rs:18:73
+   |
+18 | ...TransactionHistoryResponse, TransactionInfo,
+   |                                ^^^^^^^^^^^^^^^
+
+warning: unused import: `Streaming`
+ --> network-node/src/grpc/health_service.rs:6:40
+  |
+6 | use tonic::{Request, Response, Status, Streaming};
+  |                                        ^^^^^^^^^
+
+warning: unused import: `warn`
+ --> network-node/src/grpc/p2p_service.rs:4:28
+  |
+4 | use tracing::{error, info, warn};
+  |                            ^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> network-node/src/grpc/service_registry_service.rs:1:5
+  |
+1 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `debug`
+ --> network-node/src/indexer.rs:6:15
+  |
+6 | use tracing::{debug, error, info, instrument};
+  |               ^^^^^
+
+warning: unused import: `std::ffi::CString`
+ --> network-node/src/memory_profiling.rs:1:5
+  |
+1 | use std::ffi::CString;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `info`
+ --> network-node/src/memory_profiling.rs:2:22
+  |
+2 | use tracing::{error, info};
+  |                      ^^^^
+
+warning: unused imports: `extract_traceparent_grpc` and `inject_traceparent_grpc`
+ --> network-node/src/p2p.rs:2:24
+  |
+2 | use crate::telemetry::{extract_traceparent_grpc, inject_traceparent_grpc};
+  |                        ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Span`
+ --> network-node/src/p2p.rs:7:46
+  |
+7 | use tracing::{debug, info, instrument, warn, Span};
+  |                                              ^^^^
+
+warning: unexpected `cfg` condition value: `redis-backend`
+ --> network-node/src/rate_limiter.rs:9:7
+  |
+9 | #[cfg(feature = "redis-backend")]
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `profiling` and `tikv-jemalloc-ctl`
+  = help: consider adding `redis-backend` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `error`
+ --> network-node/src/shutdown.rs:4:15
+  |
+4 | use tracing::{error, info};
+  |               ^^^^^
+
+warning: unused import: `KmsConfig`
+ --> network-node/src/signing.rs:1:29
+  |
+1 | use crate::aws_kms_signer::{KmsConfig, KmsSigner};
+  |                             ^^^^^^^^^
+
+warning: unused import: `error`
+ --> network-node/src/soroban_service.rs:7:22
+  |
+7 | use tracing::{debug, error, info, warn};
+  |                      ^^^^^
+
+warning: unused import: `std::collections::BTreeMap`
+ --> network-node/src/state_trie.rs:4:5
+  |
+4 | use std::collections::BTreeMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0046]: not all trait items implemented, missing: `WatchHealthStream`, `watch_health`
+    --> network-node/src/grpc/gateway_service.rs:101:1
+     |
+ 101 |   impl GatewayService for GatewayServiceImpl {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `WatchHealthStream`, `watch_health` in implementation
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.gateway.rs:1134:9
+     |
+1134 | / ...   type WatchHealthStream: tonic::codegen::tokio_stream::Stream<
+1135 | | ...           Item = std::result::Result<super::HealthCheckResponse, t...
+1136 | | ...       >
+1137 | | ...       + Send
+1138 | | ...       + 'static;
+     | |___________________- `WatchHealthStream` from trait
+1139 | / ...   async fn watch_health(
+1140 | | ...       &self,
+1141 | | ...       request: tonic::Request<()>,
+1142 | | ...   ) -> std::result::Result<
+1143 | | ...       tonic::Response<Self::WatchHealthStream>,
+1144 | | ...       tonic::Status,
+1145 | | ...   >;
+     | |________- `watch_health` from trait
+
+error[E0107]: enum takes 2 generic arguments but 1 generic argument was supplied
+   --> network-node/src/enhanced_server.rs:85:38
+    |
+ 85 | ...t self) -> Result<tokio::task::JoinHandle<Result<()>>> {
+    |               ^^^^^^ ----------------------------------- supplied 1 generic argument
+    |               |
+    |               expected 2 generic arguments
+    |
+note: enum defined here, with 2 generic parameters: `T`, `E`
+   --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:557:10
+    |
+557 | pub enum Result<T, E> {
+    |          ^^^^^^ -  -
+help: add missing generic argument
+    |
+ 85 |     pub async fn start(&mut self) -> Result<tokio::task::JoinHandle<Result<()>>, E> {
+    |                                                                                +++
+
+error[E0107]: enum takes 2 generic arguments but 1 generic argument was supplied
+   --> network-node/src/enhanced_server.rs:85:69
+    |
+ 85 | ...ask::JoinHandle<Result<()>>> {
+    |                    ^^^^^^ -- supplied 1 generic argument
+    |                    |
+    |                    expected 2 generic arguments
+    |
+note: enum defined here, with 2 generic parameters: `T`, `E`
+   --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:557:10
+    |
+557 | pub enum Result<T, E> {
+    |          ^^^^^^ -  -
+help: add missing generic argument
+    |
+ 85 |     pub async fn start(&mut self) -> Result<tokio::task::JoinHandle<Result<(), E>>> {
+    |                                                                              +++
+
+error[E0107]: enum takes 2 generic arguments but 1 generic argument was supplied
+   --> network-node/src/enhanced_server.rs:340:59
+    |
+340 |     pub async fn stop_accepting_new_connections(&self) -> Result<()> {
+    |                                                           ^^^^^^ -- supplied 1 generic argument
+    |                                                           |
+    |                                                           expected 2 generic arguments
+    |
+note: enum defined here, with 2 generic parameters: `T`, `E`
+   --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:557:10
+    |
+557 | pub enum Result<T, E> {
+    |          ^^^^^^ -  -
+help: add missing generic argument
+    |
+340 |     pub async fn stop_accepting_new_connections(&self) -> Result<(), E> {
+    |                                                                    +++
+
+error[E0107]: enum takes 2 generic arguments but 1 generic argument was supplied
+   --> network-node/src/enhanced_server.rs:347:61
+    |
+347 |     pub async fn wait_for_connections_to_complete(&self) -> Result<()> {
+    |                                                             ^^^^^^ -- supplied 1 generic argument
+    |                                                             |
+    |                                                             expected 2 generic arguments
+    |
+note: enum defined here, with 2 generic parameters: `T`, `E`
+   --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:557:10
+    |
+557 | pub enum Result<T, E> {
+    |          ^^^^^^ -  -
+help: add missing generic argument
+    |
+347 |     pub async fn wait_for_connections_to_complete(&self) -> Result<(), E> {
+    |                                                                      +++
+
+error[E0107]: enum takes 2 generic arguments but 1 generic argument was supplied
+   --> network-node/src/enhanced_server.rs:376:37
+    |
+376 |     pub async fn stop(&mut self) -> Result<()> {
+    |                                     ^^^^^^ -- supplied 1 generic argument
+    |                                     |
+    |                                     expected 2 generic arguments
+    |
+note: enum defined here, with 2 generic parameters: `T`, `E`
+   --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:557:10
+    |
+557 | pub enum Result<T, E> {
+    |          ^^^^^^ -  -
+help: add missing generic argument
+    |
+376 |     pub async fn stop(&mut self) -> Result<(), E> {
+    |                                              +++
+
+error[E0599]: no variant or associated item named `Ed25519` found for enum `SigningAlgorithmSpec` in the current scope
+   --> network-node/src/aws_kms_signer.rs:101:74
+    |
+101 | ...s::SigningAlgorithmSpec::Ed25519)
+    |                             ^^^^^^^ variant or associated item not found in `SigningAlgorithmSpec`
+
+error[E0599]: no method named `write` found for struct `RwLockReadGuard<'_, HashMap<String, ...>>` in the current scope
+   --> network-node/src/consensus.rs:574:55
+    |
+574 |                         let mut proposals = proposals.write().await;
+    |                                                       ^^^^^ method not found in `RwLockReadGuard<'_, HashMap<String, ...>>`
+    |
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-15512548587024281151.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0282]: type annotations needed
+   --> network-node/src/consensus.rs:574:29
+    |
+574 |                         let mut proposals = proposals.write().await;
+    |                             ^^^^^^^^^^^^^
+575 |                         for id in &expired {
+576 |                             if let Some(proposal) = proposals.get_mut(id) {
+    |                                                     --------- type must be known at this point
+    |
+help: consider giving `proposals` an explicit type
+    |
+574 |                         let mut proposals: /* Type */ = proposals.write().await;
+    |                                          ++++++++++++
+
+warning: variable does not need to be mutable
+   --> network-node/src/crypto.rs:185:29
+    |
+185 |                 if let Some(mut req) = pending.remove(&request.id) {
+    |                             ----^^^
+    |                             |
+    |                             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no method named `clone` found for struct `tokio::sync::mpsc::UnboundedReceiver<T>` in the current scope
+   --> network-node/src/crypto.rs:485:56
+    |
+485 |         let mut result_receiver = self.result_receiver.clone();
+    |                                                        ^^^^^
+    |
+help: there is a method `close` with a similar name
+    |
+485 -         let mut result_receiver = self.result_receiver.clone();
+485 +         let mut result_receiver = self.result_receiver.close();
+    |
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:103:19
+    |
+101 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_ledger ON ev...
+102 | |             .execute(&self.pool)
+103 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:106:19
+    |
+104 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_type ON even...
+105 | |             .execute(&self.pool)
+106 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:109:19
+    |
+107 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_user ON even...
+108 | |             .execute(&self.pool)
+109 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:112:19
+    |
+110 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_asset ON eve...
+111 | |             .execute(&self.pool)
+112 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:115:19
+    |
+113 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_timestamp ON...
+114 | |             .execute(&self.pool)
+115 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:118:19
+    |
+116 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_action ON ev...
+117 | |             .execute(&self.pool)
+118 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `NetworkError`
+   --> network-node/src/database.rs:121:19
+    |
+119 | /         sqlx::query("CREATE INDEX IF NOT EXISTS idx_events_version ON e...
+120 | |             .execute(&self.pool)
+121 | |             .await?;
+    | |                  -^ the trait `std::convert::From<sqlx::Error>` is not implemented for `NetworkError`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+note: `NetworkError` needs to implement `From<sqlx::Error>`
+   --> network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | ^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the following other types implement trait `std::convert::From<T>`
+   --> network-node/src/error.rs:3:10
+    |
+  3 | #[derive(Error, Debug)]
+    |          ^^^^^
+    |          |
+    |          `NetworkError` implements `std::convert::From<error::DatabaseError>`
+    |          `NetworkError` implements `std::convert::From<serde_json::Error>`
+    |          `NetworkError` implements `std::convert::From<std::io::Error>`
+    = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `get` found for struct `PgRow` in the current scope
+   --> network-node/src/database.rs:231:39
+    |
+231 |         Ok(rows.into_iter().map(|r| r.get(0)).collect())
+    |                                       ^^^ method not found in `PgRow`
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-core-0.7.4/src/row.rs:67:8
+    |
+ 67 |     fn get<'r, T, I>(&'r self, index: I) -> T
+    |        --- the method is available for `PgRow` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Row` which provides `get` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use sqlx::Row;
+    |
+
+error[E0599]: no method named `get` found for struct `PgRow` in the current scope
+   --> network-node/src/database.rs:245:39
+    |
+245 |         Ok(rows.into_iter().map(|r| r.get(0)).collect())
+    |                                       ^^^ method not found in `PgRow`
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-core-0.7.4/src/row.rs:67:8
+    |
+ 67 |     fn get<'r, T, I>(&'r self, index: I) -> T
+    |        --- the method is available for `PgRow` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Row` which provides `get` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use sqlx::Row;
+    |
+
+error[E0277]: `u32` is not a future
+   --> network-node/src/enhanced_server.rs:594:56
+    |
+594 |     let active_connections = pool.active_connections().await;
+    |                                                        ^^^^^ `u32` is not a future
+    |
+    = help: the trait `futures_util::Future` is not implemented for `u32`
+    = note: u32 must be a future or must implement `IntoFuture` to be awaited
+    = note: required for `u32` to implement `std::future::IntoFuture`
+help: remove the `.await`
+    |
+594 -     let active_connections = pool.active_connections().await;
+594 +     let active_connections = pool.active_connections();
+    |
+
+error[E0599]: no method named `to_rfc3331` found for struct `chrono::DateTime<Tz>` in the current scope
+   --> network-node/src/enhanced_server.rs:602:41
+    |
+602 |         "timestamp": chrono::Utc::now().to_rfc3331(),
+    |                                         ^^^^^^^^^^
+    |
+help: there is a method `to_rfc3339` with a similar name
+    |
+602 -         "timestamp": chrono::Utc::now().to_rfc3331(),
+602 +         "timestamp": chrono::Utc::now().to_rfc3339(),
+    |
+
+error[E0599]: no method named `clone` found for struct `tokio::sync::RwLockReadGuard<'_, ErrorStats>` in the current scope
+   --> network-node/src/error_middleware.rs:372:39
+    |
+372 |         self.error_stats.read().await.clone()
+    |                                       ^^^^^ method not found in `tokio::sync::RwLockReadGuard<'_, ErrorStats>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+error[E0599]: the method `clone` exists for struct `RwLockReadGuard<'_, HashMap<String, ...>>`, but its trait bounds were not satisfied
+   --> network-node/src/error_middleware.rs:377:44
+    |
+ 69 |   pub struct CircuitBreaker {
+    |   ------------------------- doesn't satisfy `CircuitBreaker: Clone`
+...
+377 |           self.circuit_breakers.read().await.clone()
+    |                                              ^^^^^ method cannot be called on `RwLockReadGuard<'_, HashMap<String, ...>>` due to unsatisfied trait bounds
+    |
+   ::: /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:247:1
+    |
+247 | / pub struct HashMap<
+248 | |     K,
+249 | |     V,
+250 | |     S = RandomState,
+251 | |     #[unstable(fe...
+252 | | > {
+    | |_- doesn't satisfy `_: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `CircuitBreaker: Clone`
+            which is required by `HashMap<std::string::String, CircuitBreaker>: Clone`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-12110127577937328341.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+help: consider annotating `CircuitBreaker` with `#[derive(Clone)]`
+    |
+ 69 + #[derive(Clone)]
+ 70 | pub struct CircuitBreaker {
+    |
+
+error[E0271]: expected `{closure@stellar_service.rs:80:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:82:13
+    |
+ 80 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+ 81 |               let account_id = account_id.to_string();
+ 82 | /             Box::pin(async move {
+ 83 | |                 let url = format!(
+ 84 | |                     "{}/accounts/{}",
+ 85 | |                     provider.url.trim_end_matches('/'),
+...   |
+107 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+111 |               .execute_request(operation)
+    |                --------------- --------- closure used here
+    |                |
+    |                required by a bound introduced by this call
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:82:22: 82:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-3510926447761963252.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:80:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:82:13
+    |
+ 80 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+ 81 |               let account_id = account_id.to_string();
+ 82 | /             Box::pin(async move {
+ 83 | |                 let url = format!(
+ 84 | |                     "{}/accounts/{}",
+ 85 | |                     provider.url.trim_end_matches('/'),
+...   |
+107 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+110 | /         self.horizon_client
+111 | |             .execute_request(operation)
+    | |_______________________________________- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:82:22: 82:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-3510926447761963252.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:80:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:82:13
+    |
+ 80 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+ 81 |               let account_id = account_id.to_string();
+ 82 | /             Box::pin(async move {
+ 83 | |                 let url = format!(
+ 84 | |                     "{}/accounts/{}",
+ 85 | |                     provider.url.trim_end_matches('/'),
+...   |
+107 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+112 |               .await
+    |                ----- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:82:22: 82:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-3510926447761963252.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:223:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:224:13
+    |
+223 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+224 | /             Box::pin(async move {
+225 | |                 let url = format!(
+226 | |                     "{}/ledgers?order=desc&limit=1",
+227 | |                     provider.url.trim_end_matches('/')
+...   |
+258 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+262 |               .execute_request(operation)
+    |                --------------- --------- closure used here
+    |                |
+    |                required by a bound introduced by this call
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:224:22: 224:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-9200192181092524124.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:223:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:224:13
+    |
+223 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+224 | /             Box::pin(async move {
+225 | |                 let url = format!(
+226 | |                     "{}/ledgers?order=desc&limit=1",
+227 | |                     provider.url.trim_end_matches('/')
+...   |
+258 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+261 | /         self.horizon_client
+262 | |             .execute_request(operation)
+    | |_______________________________________- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:224:22: 224:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-9200192181092524124.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:223:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:224:13
+    |
+223 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+224 | /             Box::pin(async move {
+225 | |                 let url = format!(
+226 | |                     "{}/ledgers?order=desc&limit=1",
+227 | |                     provider.url.trim_end_matches('/')
+...   |
+258 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+263 |               .await
+    |                ----- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:224:22: 224:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-9200192181092524124.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0308]: mismatched types
+    --> network-node/src/horizon_client.rs:158:36
+     |
+ 158 |                         .unwrap_or("unknown");
+     |                          --------- ^^^^^^^^^ expected `&String`, found `&str`
+     |                          |
+     |                          arguments to this method are incorrect
+     |
+     = note: expected reference `&std::string::String`
+                found reference `&'static str`
+help: the return type of this call is `&'static str` due to the type of the argument passed
+    --> network-node/src/horizon_client.rs:155:40
+     |
+ 155 |                       let old_provider = providers
+     |  ________________________________________^
+ 156 | |                         .get(*current_index)
+ 157 | |                         .map(|p| &p.provider.name)
+ 158 | |                         .unwrap_or("unknown");
+     | |____________________________________---------^
+     |                                      |
+     |                                      this argument influences the return type of `unwrap_or`
+note: method defined here
+    --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/option.rs:1038:18
+     |
+1038 |     pub const fn unwrap_or(self, default: T) -> T
+     |                  ^^^^^^^^^
+help: use `Option::map_or` to deref inner value of `Option`
+     |
+ 158 -                         .unwrap_or("unknown");
+ 158 +                         .map_or("unknown", |v| v);
+     |
+
+error[E0308]: mismatched types
+   --> network-node/src/enhanced_server.rs:414:9
+    |
+413 |     let response = match next.run(request).await {
+    |                          ----------------------- this expression has type `axum::http::Response<axum::body::Body>`
+414 |         Ok(response) => response,
+    |         ^^^^^^^^^^^^ expected `Response<Body>`, found `Result<_, _>`
+    |
+    = note: expected struct `axum::http::Response<axum::body::Body>`
+                 found enum `std::result::Result<_, _>`
+
+error[E0308]: mismatched types
+   --> network-node/src/enhanced_server.rs:415:9
+    |
+413 |     let response = match next.run(request).await {
+    |                          ----------------------- this expression has type `axum::http::Response<axum::body::Body>`
+414 |         Ok(response) => response,
+415 |         Err(err) => {
+    |         ^^^^^^^^ expected `Response<Body>`, found `Result<_, _>`
+    |
+    = note: expected struct `axum::http::Response<axum::body::Body>`
+                 found enum `std::result::Result<_, _>`
+
+warning: variable does not need to be mutable
+   --> network-node/src/enhanced_server.rs:439:5
+    |
+439 |     mut request: Request,
+    |     ----^^^^^^^
+    |     |
+    |     help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> network-node/src/rate_limiter.rs:66:21
+   |
+66 |                 let mut conn = manager.clone();
+   |                     ----^^^^
+   |                     |
+   |                     help: remove this `mut`
+
+error[E0277]: the trait bound `axum::Router: Service<hyper::Request<hyper::Body>>` is not satisfied
+   --> network-node/src/enhanced_server.rs:315:22
+    |
+315 |                     .serve(app.into_make_service())
+    |                      ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `Service<hyper::Request<hyper::Body>>` is not implemented for `axum::Router`
+help: the following other types implement trait `Service<Request>`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/axum-0.7.9/src/routing/mod.rs:508:5
+    |
+508 |       impl Service<IncomingStream<'_>> for Router<()> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `axum::Router` implements `Service<IncomingStream<'_>>`
+...
+525 | / impl<B> Service<Request<B>> for Router<()>
+526 | | where
+527 | |     B: HttpBody<Data = bytes::Bytes> + Send + 'static,
+528 | |     B::Error: Into<axum_core::BoxError>,
+    | |________________________________________^ `axum::Router` implements `Service<axum::http::Request<B>>`
+    = note: there are multiple different versions of crate `axum` in the dependency graph
+    = help: you can use `cargo tree` to explore your dependency tree
+    = note: required for `axum::Router` to implement `hyper::service::http::HttpService<hyper::Body>`
+    = note: required for `IntoMakeService<axum::Router>` to implement `MakeServiceRef<TlsStream<TcpStream>, ...>`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-7499316692268647510.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0599]: the method `with_graceful_shutdown` exists for struct `Server<..., ...>`, but its trait bounds were not satisfied
+   --> network-node/src/enhanced_server.rs:316:22
+    |
+314 |                   let server = hyper::Server::builder(from_stream(incoming))
+    |  ______________________________-
+315 | |                     .serve(app.into_make_service())
+316 | |                     .with_graceful_shutdown(async {
+    | |                     -^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `Server<..., ...>` due to unsatisfied trait bounds
+    | |_____________________|
+    |
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/axum-0.7.9/src/routing/mod.rs:62:1
+    |
+ 62 |   pub struct Router<S = ()> {
+    |   ------------------------- doesn't satisfy `<_ as HttpService<Body>>::ResBody = _` or `axum::Router: Service<hyper::Request<hyper::Body>>`
+    |
+    = note: the following trait bounds were not satisfied:
+            `axum::Router: Service<hyper::Request<hyper::Body>>`
+            which is required by `<axum::Router as hyper::service::http::HttpService<hyper::Body>>::ResBody = _`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-787719429270714437.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0282]: type annotations needed
+   --> network-node/src/enhanced_server.rs:321:24
+    |
+321 |                   return server
+    |  ________________________^
+322 | |                     .await
+    | |__________________________^ cannot infer type
+
+error[E0609]: no field `state_trie` on type `AppState`
+   --> network-node/src/enhanced_server.rs:666:22
+    |
+666 |     let trie = state.state_trie.read().await;
+    |                      ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `connection_pool`, `error_middleware`, `is_accepting`, `active_connections`, `metrics_collector` ... and 2 others
+
+error[E0282]: type annotations needed
+   --> network-node/src/enhanced_server.rs:666:9
+    |
+666 |     let trie = state.state_trie.read().await;
+    |         ^^^^
+667 |     match trie.get_snapshot_chunk(chunk_index) {
+    |           ---- type must be known at this point
+    |
+help: consider giving `trie` an explicit type
+    |
+666 |     let trie: /* Type */ = state.state_trie.read().await;
+    |             ++++++++++++
+
+error[E0282]: type annotations needed
+   --> network-node/src/enhanced_server.rs:674:55
+    |
+674 | ...::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    |                             ^ cannot infer type
+
+error[E0609]: no field `p2p_manager` on type `AppState`
+   --> network-node/src/enhanced_server.rs:683:17
+    |
+683 |     match state.p2p_manager.handle_ping(peer_info) {
+    |                 ^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `connection_pool`, `error_middleware`, `is_accepting`, `active_connections`, `metrics_collector` ... and 2 others
+
+error[E0282]: type annotations needed
+   --> network-node/src/enhanced_server.rs:685:55
+    |
+685 | ...::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    |                             ^ cannot infer type
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/network_service.rs:107:49
+    |
+107 | ...rror::Database(format!("Timestamp error: {}", e)))?;
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `DatabaseError`, found `String`
+    |
+    = note: this error originates in the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `NetworkServiceServer<NetworkServiceImpl>: Interceptor` is not satisfied
+    --> network-node/src/grpc/server.rs:216:13
+     |
+ 215 |   ...   let network_service = interceptor(
+     |                               ----------- required by a bound introduced by this call
+ 216 | / ...       NetworkServiceServer::new(network_service)
+ 217 | | ...           .max_decoding_message_size(4 * 1024 * 1024), // 4MB max ...
+     | |_________________________________________________________^ unsatisfied trait bound
+     |
+help: the trait `FnMut(tonic::Request<()>)` is not implemented for `NetworkServiceServer<NetworkServiceImpl>`
+    --> /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1984:5
+     |
+1984 |     pub struct NetworkServiceServer<T: NetworkService> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `Interceptor` is implemented for `AdminAuthInterceptor`
+    --> network-node/src/grpc/server.rs:108:1
+     |
+ 108 | impl Interceptor for AdminAuthInterceptor {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: required for `NetworkServiceServer<NetworkServiceImpl>` to implement `Interceptor`
+note: required by a bound in `interceptor`
+    --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:65:8
+     |
+  63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+     |        ----------- required by a bound in this function
+  64 | where
+  65 |     F: Interceptor,
+     |        ^^^^^^^^^^^ required by this bound in `interceptor`
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+   --> network-node/src/grpc/server.rs:215:31
+    |
+215 |         let network_service = interceptor(
+    |                               ^^^^^^^^^^^
+...
+218 |             admin_auth_interceptor.clone(),
+    |             ------------------------------ unexpected argument #2 of type `AdminAuthInterceptor`
+    |
+note: function defined here
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:63:8
+    |
+ 63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+    |        ^^^^^^^^^^^
+help: remove the extra argument
+    |
+217 -                 .max_decoding_message_size(4 * 1024 * 1024), // 4MB max message size
+218 -             admin_auth_interceptor.clone(),
+217 +                 .max_decoding_message_size(4 * 1024 * 1024),
+    |
+
+error[E0277]: the trait bound `GatewayServiceServer<GatewayServiceImpl>: Interceptor` is not satisfied
+    --> network-node/src/grpc/server.rs:222:13
+     |
+ 221 |           let gateway_service = interceptor(
+     |                                 ----------- required by a bound introduced by this call
+ 222 | /             GatewayServiceServer::new(gateway_service)
+ 223 | |                 .max_decoding_message_size(4 * 1024 * 1024),
+     | |___________________________________________________________^ unsatisfied trait bound
+     |
+help: the trait `FnMut(tonic::Request<()>)` is not implemented for `GatewayServiceServer<GatewayServiceImpl>`
+    --> /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.gateway.rs:1153:5
+     |
+1153 |     pub struct GatewayServiceServer<T: GatewayService> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `Interceptor` is implemented for `AdminAuthInterceptor`
+    --> network-node/src/grpc/server.rs:108:1
+     |
+ 108 | impl Interceptor for AdminAuthInterceptor {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: required for `GatewayServiceServer<GatewayServiceImpl>` to implement `Interceptor`
+note: required by a bound in `interceptor`
+    --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:65:8
+     |
+  63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+     |        ----------- required by a bound in this function
+  64 | where
+  65 |     F: Interceptor,
+     |        ^^^^^^^^^^^ required by this bound in `interceptor`
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+   --> network-node/src/grpc/server.rs:221:31
+    |
+221 |         let gateway_service = interceptor(
+    |                               ^^^^^^^^^^^
+...
+224 |             admin_auth_interceptor.clone(),
+    |             ------------------------------ unexpected argument #2 of type `AdminAuthInterceptor`
+    |
+note: function defined here
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:63:8
+    |
+ 63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+    |        ^^^^^^^^^^^
+help: remove the extra argument
+    |
+223 -                 .max_decoding_message_size(4 * 1024 * 1024),
+224 -             admin_auth_interceptor.clone(),
+223 +                 .max_decoding_message_size(4 * 1024 * 1024),
+    |
+
+error[E0277]: the trait bound `InterceptorLayer<...>: Service<...>` is not satisfied
+   --> network-node/src/grpc/server.rs:229:26
+    |
+229 |             .add_service(network_service)
+    |              ----------- ^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |              |
+    |              required by a bound introduced by this call
+    |
+    = help: the trait `Service<hyper::Request<hyper::Body>>` is not implemented for `InterceptorLayer<...>`
+    = help: the following other types implement trait `Service<Request>`:
+              `&'a mut S` implements `Service<Request>`
+              `&hyper::Client<C, B>` implements `Service<hyper::Request<B>>`
+              `&hyper_util::client::legacy::client::Client<C, B>` implements `Service<axum::http::Request<B>>`
+              `&reqwest::Client` implements `Service<reqwest::Request>`
+              `AddExtension<S, T>` implements `Service<axum::http::Request<ResBody>>`
+              `AxumRouter<(), B>` implements `Service<hyper::Request<B>>`
+              `Box<S>` implements `Service<Request>`
+              `Channel` implements `Service<Request<UnsyncBoxBody<..., ...>>>`
+            and 237 others
+note: required by a bound in `tonic::transport::Server::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:362:12
+    |
+360 | ...fn add_service<S>(&mut self, svc: S) -> Router<L>
+    |       ----------- required by a bound in this associated function
+361 | ...e
+362 | ...S: Service<Request<Body>, Response = Response<BoxBody>, Error = Infallible>
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Server::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-2677025373192893370.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `InterceptorLayer<...>: NamedService` is not satisfied
+   --> network-node/src/grpc/server.rs:229:26
+    |
+229 |             .add_service(network_service)
+    |              ----------- ^^^^^^^^^^^^^^^ the trait `NamedService` is not implemented for `InterceptorLayer<...>`
+    |              |
+    |              required by a bound introduced by this call
+    |
+    = help: the following other types implement trait `NamedService`:
+              GatewayServiceServer<T>
+              HealthServiceServer<T>
+              NetworkServiceServer<T>
+              P2pServiceServer<T>
+              ServerReflectionServer<T>
+              ServiceRegistryServer<T>
+              VaultServiceServer<T>
+              network::vault_service_server::VaultServiceServer<T>
+            and 3 others
+note: required by a bound in `tonic::transport::Server::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:363:15
+    |
+360 |     pub fn add_service<S>(&mut self, svc: S) -> Router<L>
+    |            ----------- required by a bound in this associated function
+...
+363 |             + NamedService
+    |               ^^^^^^^^^^^^ required by this bound in `Server::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-2677025373192893370.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `InterceptorLayer<...>: Service<...>` is not satisfied
+   --> network-node/src/grpc/server.rs:230:26
+    |
+230 |             .add_service(gateway_service)
+    |              ----------- ^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |              |
+    |              required by a bound introduced by this call
+    |
+    = help: the trait `Service<hyper::Request<hyper::Body>>` is not implemented for `InterceptorLayer<...>`
+    = help: the following other types implement trait `Service<Request>`:
+              `&'a mut S` implements `Service<Request>`
+              `&hyper::Client<C, B>` implements `Service<hyper::Request<B>>`
+              `&hyper_util::client::legacy::client::Client<C, B>` implements `Service<axum::http::Request<B>>`
+              `&reqwest::Client` implements `Service<reqwest::Request>`
+              `AddExtension<S, T>` implements `Service<axum::http::Request<ResBody>>`
+              `AxumRouter<(), B>` implements `Service<hyper::Request<B>>`
+              `Box<S>` implements `Service<Request>`
+              `Channel` implements `Service<Request<UnsyncBoxBody<..., ...>>>`
+            and 237 others
+note: required by a bound in `tonic::transport::server::Router::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:572:12
+    |
+570 | ...fn add_service<S>(mut self, svc: S) -> Self
+    |       ----------- required by a bound in this associated function
+571 | ...e
+572 | ...S: Service<Request<Body>, Response = Response<BoxBody>, Error = Infallible>
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Router::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-4820413202757795208.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `InterceptorLayer<...>: NamedService` is not satisfied
+   --> network-node/src/grpc/server.rs:230:26
+    |
+230 |             .add_service(gateway_service)
+    |              ----------- ^^^^^^^^^^^^^^^ the trait `NamedService` is not implemented for `InterceptorLayer<...>`
+    |              |
+    |              required by a bound introduced by this call
+    |
+    = help: the following other types implement trait `NamedService`:
+              GatewayServiceServer<T>
+              HealthServiceServer<T>
+              NetworkServiceServer<T>
+              P2pServiceServer<T>
+              ServerReflectionServer<T>
+              ServiceRegistryServer<T>
+              VaultServiceServer<T>
+              network::vault_service_server::VaultServiceServer<T>
+            and 3 others
+note: required by a bound in `tonic::transport::server::Router::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:573:15
+    |
+570 |     pub fn add_service<S>(mut self, svc: S) -> Self
+    |            ----------- required by a bound in this associated function
+...
+573 |             + NamedService
+    |               ^^^^^^^^^^^^ required by this bound in `Router::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-4820413202757795208.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `GatewayServiceServer<GatewayServiceImpl>: Interceptor` is not satisfied
+    --> network-node/src/grpc/server.rs:251:17
+     |
+ 250 |               interceptor(
+     |               ----------- required by a bound introduced by this call
+ 251 | /                 GatewayServiceServer::new(GatewayServiceImpl::new(
+ 252 | |                     self.connection_pool.clone(),
+ 253 | |                     self.state_trie.clone(),
+ 254 | |                     self.p2p_manager.clone(),
+...    |
+ 257 | |                 .accept_compressed(tonic::codec::CompressionEncoding::Gzip)
+ 258 | |                 .send_compressed(tonic::codec::CompressionEncoding::Gzip),
+     | |_________________________________________________________________________^ unsatisfied trait bound
+     |
+help: the trait `FnMut(tonic::Request<()>)` is not implemented for `GatewayServiceServer<GatewayServiceImpl>`
+    --> /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.gateway.rs:1153:5
+     |
+1153 |     pub struct GatewayServiceServer<T: GatewayService> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `Interceptor` is implemented for `AdminAuthInterceptor`
+    --> network-node/src/grpc/server.rs:108:1
+     |
+ 108 | impl Interceptor for AdminAuthInterceptor {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: required for `GatewayServiceServer<GatewayServiceImpl>` to implement `Interceptor`
+note: required by a bound in `interceptor`
+    --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:65:8
+     |
+  63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+     |        ----------- required by a bound in this function
+  64 | where
+  65 |     F: Interceptor,
+     |        ^^^^^^^^^^^ required by this bound in `interceptor`
+
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+   --> network-node/src/grpc/server.rs:250:13
+    |
+250 |             interceptor(
+    |             ^^^^^^^^^^^
+...
+259 |                 admin_auth_interceptor.clone(),
+    |                 ------------------------------ unexpected argument #2 of type `AdminAuthInterceptor`
+    |
+note: function defined here
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/service/interceptor.rs:63:8
+    |
+ 63 | pub fn interceptor<F>(f: F) -> InterceptorLayer<F>
+    |        ^^^^^^^^^^^
+help: remove the extra argument
+    |
+258 -                 .send_compressed(tonic::codec::CompressionEncoding::Gzip),
+259 -                 admin_auth_interceptor.clone(),
+258 +                 .send_compressed(tonic::codec::CompressionEncoding::Gzip),
+    |
+
+error[E0277]: the trait bound `InterceptorLayer<...>: Service<...>` is not satisfied
+   --> network-node/src/grpc/server.rs:250:13
+    |
+249 |           server = server.add_service(
+    |                           ----------- required by a bound introduced by this call
+250 | /             interceptor(
+251 | |                 GatewayServiceServer::new(GatewayServiceImpl::new(
+252 | |                     self.connection_pool.clone(),
+253 | |                     self.state_trie.clone(),
+...   |
+259 | |                 admin_auth_interceptor.clone(),
+260 | |             )
+    | |_____________^ unsatisfied trait bound
+    |
+    = help: the trait `Service<hyper::Request<hyper::Body>>` is not implemented for `InterceptorLayer<...>`
+    = help: the following other types implement trait `Service<Request>`:
+              `&'a mut S` implements `Service<Request>`
+              `&hyper::Client<C, B>` implements `Service<hyper::Request<B>>`
+              `&hyper_util::client::legacy::client::Client<C, B>` implements `Service<axum::http::Request<B>>`
+              `&reqwest::Client` implements `Service<reqwest::Request>`
+              `AddExtension<S, T>` implements `Service<axum::http::Request<ResBody>>`
+              `AxumRouter<(), B>` implements `Service<hyper::Request<B>>`
+              `Box<S>` implements `Service<Request>`
+              `Channel` implements `Service<Request<UnsyncBoxBody<..., ...>>>`
+            and 237 others
+note: required by a bound in `tonic::transport::server::Router::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:572:12
+    |
+570 | ...fn add_service<S>(mut self, svc: S) -> Self
+    |       ----------- required by a bound in this associated function
+571 | ...e
+572 | ...S: Service<Request<Body>, Response = Response<BoxBody>, Error = Infallible>
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Router::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-4820413202757795208.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `InterceptorLayer<...>: NamedService` is not satisfied
+   --> network-node/src/grpc/server.rs:250:13
+    |
+249 |           server = server.add_service(
+    |                           ----------- required by a bound introduced by this call
+250 | /             interceptor(
+251 | |                 GatewayServiceServer::new(GatewayServiceImpl::new(
+252 | |                     self.connection_pool.clone(),
+253 | |                     self.state_trie.clone(),
+...   |
+259 | |                 admin_auth_interceptor.clone(),
+260 | |             )
+    | |_____________^ the trait `NamedService` is not implemented for `InterceptorLayer<...>`
+    |
+    = help: the following other types implement trait `NamedService`:
+              GatewayServiceServer<T>
+              HealthServiceServer<T>
+              NetworkServiceServer<T>
+              P2pServiceServer<T>
+              ServerReflectionServer<T>
+              ServiceRegistryServer<T>
+              VaultServiceServer<T>
+              network::vault_service_server::VaultServiceServer<T>
+            and 3 others
+note: required by a bound in `tonic::transport::server::Router::<L>::add_service`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tonic-0.11.0/src/transport/server/mod.rs:573:15
+    |
+570 |     pub fn add_service<S>(mut self, svc: S) -> Self
+    |            ----------- required by a bound in this associated function
+...
+573 |             + NamedService
+    |               ^^^^^^^^^^^^ required by this bound in `Router::<L>::add_service`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-4820413202757795208.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0599]: no method named `rustls_server_config` found for struct `ServerTlsConfig` in the current scope
+   --> network-node/src/grpc/server.rs:346:57
+    |
+346 | ...new().rustls_server_config(Arc::new(rustls_cfg));
+    |          ^^^^^^^^^^^^^^^^^^^^ method not found in `ServerTlsConfig`
+
+error[E0599]: no method named `tls_config` found for struct `tonic::transport::server::Router<L>` in the current scope
+   --> network-node/src/grpc/server.rs:348:33
+    |
+348 |                 server = server.tls_config(tls_config)
+    |                                 ^^^^^^^^^^ method not found in `tonic::transport::server::Router`
+
+error[E0599]: no method named `tls_config` found for struct `tonic::transport::server::Router<L>` in the current scope
+   --> network-node/src/grpc/server.rs:353:33
+    |
+353 |                 server = server.tls_config(tls_config)
+    |                                 ^^^^^^^^^^ method not found in `tonic::transport::server::Router`
+
+error[E0782]: expected a type, found a trait
+   --> network-node/src/grpc/server.rs:362:66
+    |
+362 | ...erverReflectionServer::new(ServerReflection::new());
+    |                               ^^^^^^^^^^^^^^^^
+    |
+help: you can add the `dyn` keyword if you want a trait object
+    |
+362 |             let reflection_service = ServerReflectionServer::new(<dyn ServerReflection>::new());
+    |                                                                  ++++                 +
+
+error[E0599]: no method named `intercept_fn` found for struct `tonic::transport::server::Router<L>` in the current scope
+   --> network-node/src/grpc/server.rs:368:25
+    |
+368 |         server = server.intercept_fn(|req| {
+    |                  -------^^^^^^^^^^^^ method not found in `tonic::transport::server::Router`
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/server.rs:368:39
+    |
+368 |         server = server.intercept_fn(|req| {
+    |                                       ^^^
+369 |             info!("gRPC request: path={}", req.uri().path());
+    |                                            --- type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+368 |         server = server.intercept_fn(|req: /* Type */| {
+    |                                          ++++++++++++
+
+error[E0308]: mismatched types
+   --> network-node/src/horizon_client.rs:300:23
+    |
+300 |             if let Ok(Ok((provider, is_healthy, error))) = result {
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ------ this expression has type `Result<(HorizonProvider, bool, ...), ...>`
+    |                       |
+    |                       expected `(HorizonProvider, bool, Option<String>)`, found `Result<_, _>`
+    |
+    = note: expected tuple `(HorizonProvider, bool, std::option::Option<std::string::String>)`
+                found enum `std::result::Result<_, _>`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-12147392310549676465.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0599]: no variant or associated item named `P2P` found for enum `NetworkError` in the current scope
+   --> network-node/src/p2p.rs:188:45
+    |
+188 |             Err(crate::error::NetworkError::P2P(
+    |                                             ^^^ variant or associated item not found in `NetworkError`
+    |
+   ::: network-node/src/error.rs:4:1
+    |
+  4 | pub enum NetworkError {
+    | --------------------- variant or associated item `P2P` not found for this enum
+
+error[E0308]: mismatched types
+   --> network-node/src/p2p.rs:261:13
+    |
+261 |         Ok((recipients_count, failed_peers))
+    |             ^^^^^^^^^^^^^^^^ expected `u64`, found `usize`
+    |
+help: you can convert a `usize` to a `u64` and panic if the converted value doesn't fit
+    |
+261 |         Ok((recipients_count.try_into().unwrap(), failed_peers))
+    |                             ++++++++++++++++++++
+
+error[E0277]: the trait bound `OsRng: rand_core::CryptoRng` is not satisfied
+   --> network-node/src/signing.rs:196:57
+    |
+196 |         let key_pair = ed25519_dalek::Keypair::generate(&mut csprng);
+    |                        -------------------------------- ^^^^^^^^^^^ the trait `rand_core::CryptoRng` is not implemented for `OsRng`
+    |                        |
+    |                        required by a bound introduced by this call
+    |
+note: there are multiple different versions of crate `rand_core` in the dependency graph
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.5.1/src/lib.rs:208:1
+    |
+208 | pub trait CryptoRng {}
+    | ^^^^^^^^^^^^^^^^^^^ this is the expected trait
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.6.4/src/lib.rs:209:1
+    |
+209 | pub trait CryptoRng {}
+    | ------------------- this is the found trait
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.1/src/lib.rs:95:1
+    |
+ 95 | pub trait CryptoRng: Rng + TryCryptoRng<Error = Infallible> {}
+    | ----------------------------------------------------------- this is the found trait
+    = help: you can use `cargo tree` to explore your dependency tree
+    = help: the following other types implement trait `rand_core::CryptoRng`:
+              &'a mut R
+              Box<R>
+              rand::rngs::adapter::reseeding::ReseedingRng<R, Rsdr>
+              rand::rngs::entropy::EntropyRng
+              rand::rngs::std::StdRng
+              rand::rngs::thread::ThreadRng
+              rand_chacha::chacha::ChaCha12Core
+              rand_chacha::chacha::ChaCha12Rng
+            and 6 others
+    = note: there are multiple different versions of crate `rand_core` in the dependency graph
+    = help: you can use `cargo tree` to explore your dependency tree
+note: required by a bound in `ed25519_dalek::Keypair::generate`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/keypair.rs:129:12
+    |
+127 |     pub fn generate<R>(csprng: &mut R) -> Keypair
+    |            -------- required by a bound in this associated function
+128 |     where
+129 |         R: CryptoRng + RngCore,
+    |            ^^^^^^^^^ required by this bound in `Keypair::generate`
+
+error[E0277]: the trait bound `OsRng: rand_core::RngCore` is not satisfied
+   --> network-node/src/signing.rs:196:57
+    |
+196 |         let key_pair = ed25519_dalek::Keypair::generate(&mut csprng);
+    |                        -------------------------------- ^^^^^^^^^^^ the trait `rand_core::RngCore` is not implemented for `OsRng`
+    |                        |
+    |                        required by a bound introduced by this call
+    |
+note: there are multiple different versions of crate `rand_core` in the dependency graph
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.5.1/src/lib.rs:137:1
+    |
+137 | pub trait RngCore {
+    | ^^^^^^^^^^^^^^^^^ this is the expected trait
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.6.4/src/lib.rs:142:1
+    |
+142 | pub trait RngCore {
+    | ----------------- this is the found trait
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.1/src/lib.rs:257:1
+    |
+257 | pub trait RngCore: Rng {}
+    | ---------------------- this is the found trait
+    = help: you can use `cargo tree` to explore your dependency tree
+    = help: the following other types implement trait `rand_core::RngCore`:
+              &'a mut R
+              Box<R>
+              rand::rngs::adapter::read::ReadRng<R>
+              rand::rngs::adapter::reseeding::ReseedingRng<R, Rsdr>
+              rand::rngs::entropy::EntropyRng
+              rand::rngs::mock::StepRng
+              rand::rngs::std::StdRng
+              rand::rngs::thread::ThreadRng
+            and 6 others
+    = note: there are multiple different versions of crate `rand_core` in the dependency graph
+    = help: you can use `cargo tree` to explore your dependency tree
+note: required by a bound in `ed25519_dalek::Keypair::generate`
+   --> /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/keypair.rs:129:24
+    |
+127 |     pub fn generate<R>(csprng: &mut R) -> Keypair
+    |            -------- required by a bound in this associated function
+128 |     where
+129 |         R: CryptoRng + RngCore,
+    |                        ^^^^^^^ required by this bound in `Keypair::generate`
+
+error[E0277]: the trait bound `serde_json::Error: std::convert::From<reqwest::Error>` is not satisfied
+   --> network-node/src/soroban_rpc_client.rs:204:60
+    |
+204 |                 .map_err(|e| NetworkError::Serialization(e.into()))?;
+    |                                                            ^^^^ unsatisfied trait bound
+    |
+    = help: the trait `std::convert::From<reqwest::Error>` is not implemented for `serde_json::Error`
+    = note: required for `reqwest::Error` to implement `Into<serde_json::Error>`
+
+error[E0271]: expected `{closure@stellar_service.rs:130:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:132:13
+    |
+130 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+131 |               let tx_hash = transaction_hash.to_string();
+132 | /             Box::pin(async move {
+133 | |                 let url = format!(
+134 | |                     "{}/transactions/{}",
+135 | |                     provider.url.trim_end_matches('/'),
+...   |
+157 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+161 |               .execute_request(operation)
+    |                --------------- --------- closure used here
+    |                |
+    |                required by a bound introduced by this call
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:132:22: 132:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-6753952218860531559.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:130:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:132:13
+    |
+130 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+131 |               let tx_hash = transaction_hash.to_string();
+132 | /             Box::pin(async move {
+133 | |                 let url = format!(
+134 | |                     "{}/transactions/{}",
+135 | |                     provider.url.trim_end_matches('/'),
+...   |
+157 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+160 | /         self.horizon_client
+161 | |             .execute_request(operation)
+    | |_______________________________________- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:132:22: 132:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-6753952218860531559.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:130:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:132:13
+    |
+130 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+131 |               let tx_hash = transaction_hash.to_string();
+132 | /             Box::pin(async move {
+133 | |                 let url = format!(
+134 | |                     "{}/transactions/{}",
+135 | |                     provider.url.trim_end_matches('/'),
+...   |
+157 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+162 |               .await
+    |                ----- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:132:22: 132:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-6753952218860531559.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:174:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:176:13
+    |
+174 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+175 |               let ledger_sequence = sequence;
+176 | /             Box::pin(async move {
+177 | |                 let url = format!(
+178 | |                     "{}/ledgers/{}",
+179 | |                     provider.url.trim_end_matches('/'),
+...   |
+201 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+205 |               .execute_request(operation)
+    |                --------------- --------- closure used here
+    |                |
+    |                required by a bound introduced by this call
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:176:22: 176:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-1674694888411073593.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:174:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:176:13
+    |
+174 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+175 |               let ledger_sequence = sequence;
+176 | /             Box::pin(async move {
+177 | |                 let url = format!(
+178 | |                     "{}/ledgers/{}",
+179 | |                     provider.url.trim_end_matches('/'),
+...   |
+201 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+204 | /         self.horizon_client
+205 | |             .execute_request(operation)
+    | |_______________________________________- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:176:22: 176:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-1674694888411073593.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:174:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:176:13
+    |
+174 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+175 |               let ledger_sequence = sequence;
+176 | /             Box::pin(async move {
+177 | |                 let url = format!(
+178 | |                     "{}/ledgers/{}",
+179 | |                     provider.url.trim_end_matches('/'),
+...   |
+201 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+206 |               .await
+    |                ----- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:176:22: 176:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-1674694888411073593.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:283:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:285:13
+    |
+283 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+284 |               let xdr = transaction_xdr.to_string();
+285 | /             Box::pin(async move {
+286 | |                 let url = format!("{}/transactions", provider.url.trim_...
+287 | |                 let client = reqwest::Client::new();
+...   |
+310 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+314 |               .execute_request(operation)
+    |                --------------- --------- closure used here
+    |                |
+    |                required by a bound introduced by this call
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:285:22: 285:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-17749007495064282698.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:283:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:285:13
+    |
+283 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+284 |               let xdr = transaction_xdr.to_string();
+285 | /             Box::pin(async move {
+286 | |                 let url = format!("{}/transactions", provider.url.trim_...
+287 | |                 let client = reqwest::Client::new();
+...   |
+310 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+313 | /         self.horizon_client
+314 | |             .execute_request(operation)
+    | |_______________________________________- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:285:22: 285:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-17749007495064282698.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0271]: expected `{closure@stellar_service.rs:283:25}` to return `Pin<Box<dyn Future<Output = Result<_, _>> + Send>>`, but it returns `Pin<Box<...>>`
+   --> network-node/src/stellar_service.rs:285:13
+    |
+283 |           let operation = |provider: HorizonProvider| {
+    |                           --------------------------- this closure
+284 |               let xdr = transaction_xdr.to_string();
+285 | /             Box::pin(async move {
+286 | |                 let url = format!("{}/transactions", provider.url.trim_...
+287 | |                 let client = reqwest::Client::new();
+...   |
+310 | |             })
+    | |______________^ expected `dyn futures_util::Future`, found `async` block
+...
+315 |               .await
+    |                ----- closure used here
+    |
+    = note: expected struct `Pin<Box<(dyn futures_util::Future<Output = std::result::Result<_, _>> + std::marker::Send + 'static)>>`
+               found struct `Pin<Box<{async block@network-node/src/stellar_service.rs:285:22: 285:32}>>`
+note: required by a bound in `HorizonClient::execute_request`
+   --> network-node/src/horizon_client.rs:184:14
+    |
+180 | ...ync fn execute_request<F, T, E>(&self, operation: F) -> Result<T, NetworkError>
+    |           --------------- required by a bound in this associated function
+...
+184 | ...-> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HorizonClient::execute_request`
+    = note: the full name for the type has been written to '/Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/deps/axionvera_network_node-68e3731362aba68b.long-type-17749007495064282698.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0592]: duplicate definitions with name `get_pending_transactions`
+   --> network-node/src/metrics.rs:108:5
+    |
+ 73 |     pub fn get_pending_transactions(&self) -> u64 {
+    |     --------------------------------------------- other definition for `get_pending_transactions`
+...
+108 |     pub fn get_pending_transactions(&self) -> u64 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `get_pending_transactions`
+
+error[E0599]: no method named `clone` found for struct `tokio::sync::mpsc::UnboundedReceiver<T>` in the current scope
+  --> network-node/src/crypto.rs:89:47
+   |
+89 |             let work_receiver = work_receiver.clone();
+   |                                               ^^^^^
+   |
+help: there is a method `close` with a similar name
+   |
+89 -             let work_receiver = work_receiver.clone();
+89 +             let work_receiver = work_receiver.close();
+   |
+
+error[E0599]: no method named `clone` found for struct `tokio::sync::mpsc::UnboundedReceiver<T>` in the current scope
+   --> network-node/src/crypto.rs:104:47
+    |
+104 |             let work_receiver = work_receiver.clone();
+    |                                               ^^^^^
+    |
+help: there is a method `close` with a similar name
+    |
+104 -             let work_receiver = work_receiver.clone();
+104 +             let work_receiver = work_receiver.close();
+    |
+
+error[E0308]: mismatched types
+   --> network-node/src/database.rs:151:28
+    |
+151 |         self.pool.size() - self.pool.num_idle()
+    |                            ^^^^^^^^^^^^^^^^^^^^ expected `u32`, found `usize`
+
+error[E0277]: cannot subtract `usize` from `u32`
+   --> network-node/src/database.rs:151:26
+    |
+151 |         self.pool.size() - self.pool.num_idle()
+    |                          ^ no implementation for `u32 - usize`
+    |
+    = help: the trait `Sub<usize>` is not implemented for `u32`
+    = help: the following other types implement trait `Sub<Rhs>`:
+              `&u32` implements `Sub<u32>`
+              `&u32` implements `Sub`
+              `u32` implements `Sub<&u32>`
+              `u32` implements `Sub<zerocopy::byteorder::U32<O>>`
+              `u32` implements `Sub`
+
+error[E0599]: no method named `deposit` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:126:18
+     |
+ 124 |               let mut response = self
+     |  ________________________________-
+ 125 | |                 .network_service
+ 126 | |                 .deposit(network_req)
+     | |                 -^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1880:18
+     |
+1880 |           async fn deposit(
+     |                    ------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `deposit` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `deposit` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:124:32
+    |
+124 |               let mut response = self
+    |  ________________________________^
+125 | |                 .network_service
+126 | |                 .deposit(network_req)
+127 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `withdraw` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:168:18
+     |
+ 166 |               let mut response = self
+     |  ________________________________-
+ 167 | |                 .network_service
+ 168 | |                 .withdraw(network_req)
+     | |                 -^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1887:18
+     |
+1887 |           async fn withdraw(
+     |                    -------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `withdraw` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `withdraw` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:166:32
+    |
+166 |               let mut response = self
+    |  ________________________________^
+167 | |                 .network_service
+168 | |                 .withdraw(network_req)
+169 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `distribute_rewards` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:203:18
+     |
+ 201 |               let mut response = self
+     |  ________________________________-
+ 202 | |                 .network_service
+ 203 | |                 .distribute_rewards(network_req)
+     | |_________________-^^^^^^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1894:18
+     |
+1894 |           async fn distribute_rewards(
+     |                    ------------------ the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `distribute_rewards` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `distribute_rewards` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `get_rewards` with a similar name
+     |
+ 203 -                 .distribute_rewards(network_req)
+ 203 +                 .get_rewards(network_req)
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:201:32
+    |
+201 |               let mut response = self
+    |  ________________________________^
+202 | |                 .network_service
+203 | |                 .distribute_rewards(network_req)
+204 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `claim_rewards` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:237:18
+     |
+ 235 |               let mut response = self
+     |  ________________________________-
+ 236 | |                 .network_service
+ 237 | |                 .claim_rewards(network_req)
+     | |_________________-^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1901:18
+     |
+1901 |           async fn claim_rewards(
+     |                    ------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `claim_rewards` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `claim_rewards` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `get_rewards` with a similar name
+     |
+ 237 -                 .claim_rewards(network_req)
+ 237 +                 .get_rewards(network_req)
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:235:32
+    |
+235 |               let mut response = self
+    |  ________________________________^
+236 | |                 .network_service
+237 | |                 .claim_rewards(network_req)
+238 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `get_balance` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:259:18
+     |
+ 257 |   ...   let mut response = self
+     |  __________________________-
+ 258 | | ...       .network_service
+ 259 | | ...       .get_balance(Request::new(crate::grpc::network::BalanceReque...
+     | |           -^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |___________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1909:18
+     |
+1909 |           async fn get_balance(
+     |                    ----------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_balance` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_balance` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:257:32
+    |
+257 |   ...   let mut response = self
+    |  __________________________^
+258 | | ...       .network_service
+259 | | ...       .get_balance(Request::new(crate::grpc::network::BalanceRequest {
+260 | | ...           user_address: req.user_address.clone(),
+261 | | ...           token_address: req.token_address.clone(),
+262 | | ...       }))
+263 | | ...       .await?
+    | |_________________^ cannot infer type
+
+error[E0599]: no method named `get_rewards` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:292:18
+     |
+ 290 |   ...   let mut response = self
+     |  __________________________-
+ 291 | | ...       .network_service
+ 292 | | ...       .get_rewards(Request::new(crate::grpc::network::RewardsReque...
+     | |           -^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |___________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1913:18
+     |
+1913 |           async fn get_rewards(
+     |                    ----------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_rewards` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_rewards` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:290:32
+    |
+290 |   ...   let mut response = self
+    |  __________________________^
+291 | | ...       .network_service
+292 | | ...       .get_rewards(Request::new(crate::grpc::network::RewardsRequest {
+293 | | ...           user_address: req.user_address.clone(),
+294 | | ...       }))
+295 | | ...       .await?
+    | |_________________^ cannot infer type
+
+error[E0599]: no method named `get_contract_state` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:324:18
+     |
+ 322 |               let mut response = self
+     |  ________________________________-
+ 323 | |                 .network_service
+ 324 | |                 .get_contract_state(Request::new(crate::grpc::network:...
+     | |                 -^^^^^^^^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1917:18
+     |
+1917 |           async fn get_contract_state(
+     |                    ------------------ the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_contract_state` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_contract_state` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:322:32
+    |
+322 |   ...   let mut response = self
+    |  __________________________^
+323 | | ...       .network_service
+324 | | ...       .get_contract_state(Request::new(crate::grpc::network::Contra...
+325 | | ...           contract_address: req.contract_address.clone(),
+326 | | ...       }))
+327 | | ...       .await?
+    | |_________________^ cannot infer type
+
+error[E0599]: no method named `get_network_status` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:352:18
+     |
+ 350 |               let mut response = self
+     |  ________________________________-
+ 351 | |                 .network_service
+ 352 | |                 .get_network_status(Request::new(()))
+     | |                 -^^^^^^^^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1925:18
+     |
+1925 |           async fn get_network_status(
+     |                    ------------------ the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_network_status` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_network_status` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:350:32
+    |
+350 |               let mut response = self
+    |  ________________________________^
+351 | |                 .network_service
+352 | |                 .get_network_status(Request::new(()))
+353 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `get_node_info` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:380:18
+     |
+ 378 |   ...   let mut response = self
+     |  __________________________-
+ 379 | | ...       .network_service
+ 380 | | ...       .get_node_info(Request::new(crate::grpc::network::NodeInfoRe...
+     | |           -^^^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |___________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1932:18
+     |
+1932 |           async fn get_node_info(
+     |                    ------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_node_info` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_node_info` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:378:32
+    |
+378 |   ...   let mut response = self
+    |  __________________________^
+379 | | ...       .network_service
+380 | | ...       .get_node_info(Request::new(crate::grpc::network::NodeInfoReq...
+381 | | ...           node_id: req.node_id.clone(),
+382 | | ...       }))
+383 | | ...       .await?
+    | |_________________^ cannot infer type
+
+error[E0599]: no method named `get_transaction` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:411:18
+     |
+ 409 |   ...   let mut response = self
+     |  __________________________-
+ 410 | | ...       .network_service
+ 411 | | ...       .get_transaction(Request::new(crate::grpc::network::Transact...
+     | |___________-^^^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1940:18
+     |
+1940 |           async fn get_transaction(
+     |                    --------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_transaction` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_transaction` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `get_transaction_history` with a similar name
+     |
+ 411 |                 .get_transaction_history(Request::new(crate::grpc::network::TransactionRequest {
+     |                                 ++++++++
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:409:32
+    |
+409 |   ...   let mut response = self
+    |  __________________________^
+410 | | ...       .network_service
+411 | | ...       .get_transaction(Request::new(crate::grpc::network::Transacti...
+412 | | ...           transaction_hash: req.transaction_hash.clone(),
+413 | | ...       }))
+414 | | ...       .await?
+    | |_________________^ cannot infer type
+
+error[E0599]: no method named `get_transaction_history` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:437:18
+     |
+ 435 |               let mut response = self
+     |  ________________________________-
+ 436 | |                 .network_service
+ 437 | |                 .get_transaction_history(Request::new(
+     | |_________________-^^^^^^^^^^^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1947:18
+     |
+1947 |           async fn get_transaction_history(
+     |                    ----------------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_transaction_history` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_transaction_history` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `get_transaction` with a similar name
+     |
+ 437 -                 .get_transaction_history(Request::new(
+ 437 +                 .get_transaction(Request::new(
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:435:32
+    |
+435 |               let mut response = self
+    |  ________________________________^
+436 | |                 .network_service
+437 | |                 .get_transaction_history(Request::new(
+438 | |                     crate::grpc::network::TransactionHistoryRequest {
+...   |
+447 | |                 ))
+448 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0599]: no method named `parameter_upgrade` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:510:18
+     |
+ 508 |               let nr = self
+     |  ______________________-
+ 509 | |                 .network_service
+ 510 | |                 .parameter_upgrade(network_req)
+     | |_________________-^^^^^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1955:18
+     |
+1955 |           async fn parameter_upgrade(
+     |                    ----------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `parameter_upgrade` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `parameter_upgrade` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `list_pending_parameter_upgrades` with a similar name
+     |
+ 510 -                 .parameter_upgrade(network_req)
+ 510 +                 .list_pending_parameter_upgrades(network_req)
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:508:22
+    |
+508 |               let nr = self
+    |  ______________________^
+509 | |                 .network_service
+510 | |                 .parameter_upgrade(network_req)
+511 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/gateway_service.rs:489:9
+    |
+489 | /         self.process_with_tracking(request_id.clone(), async move {
+490 | |             let net_patch =
+491 | |                 req.parameter_patch
+492 | |                     .map(|p| crate::grpc::network::NetworkParametersPat...
+...   |
+527 | |         })
+528 | |         .await
+    | |______________^ expected `Result<Response<...>, ...>`, found `Result<TransactionResponse, Status>`
+    |
+    = note: expected enum `std::result::Result<tonic::Response<gateway::TransactionResponse>, _>`
+               found enum `std::result::Result<gateway::TransactionResponse, _>`
+
+error[E0599]: no method named `get_chain_parameters` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:539:18
+     |
+ 537 |               let nv = self
+     |  ______________________-
+ 538 | |                 .network_service
+ 539 | |                 .get_chain_parameters(Request::new(()))
+     | |                 -^^^^^^^^^^^^^^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1962:18
+     |
+1962 |           async fn get_chain_parameters(
+     |                    -------------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_chain_parameters` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_chain_parameters` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:537:22
+    |
+537 |               let nv = self
+    |  ______________________^
+538 | |                 .network_service
+539 | |                 .get_chain_parameters(Request::new(()))
+540 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/gateway_service.rs:536:9
+    |
+536 | /         self.process_with_tracking(request_id, async move {
+537 | |             let nv = self
+538 | |                 .network_service
+539 | |                 .get_chain_parameters(Request::new(()))
+...   |
+549 | |         })
+550 | |         .await
+    | |______________^ expected `Result<Response<...>, ...>`, found `Result<ChainParametersView, Status>`
+    |
+    = note: expected enum `std::result::Result<tonic::Response<gateway::ChainParametersView>, _>`
+               found enum `std::result::Result<gateway::ChainParametersView, _>`
+
+error[E0599]: no method named `list_pending_parameter_upgrades` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:561:18
+     |
+ 559 |               let nv = self
+     |  ______________________-
+ 560 | |                 .network_service
+ 561 | |                 .list_pending_parameter_upgrades(Request::new(()))
+     | |_________________-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1969:18
+     |
+1969 |           async fn list_pending_parameter_upgrades(
+     |                    ------------------------------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `list_pending_parameter_upgrades` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `list_pending_parameter_upgrades` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+help: there is a method `parameter_upgrade` with a similar name
+     |
+ 561 -                 .list_pending_parameter_upgrades(Request::new(()))
+ 561 +                 .parameter_upgrade(Request::new(()))
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:559:22
+    |
+559 |               let nv = self
+    |  ______________________^
+560 | |                 .network_service
+561 | |                 .list_pending_parameter_upgrades(Request::new(()))
+562 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/gateway_service.rs:558:9
+    |
+558 | /         self.process_with_tracking(request_id, async move {
+559 | |             let nv = self
+560 | |                 .network_service
+561 | |                 .list_pending_parameter_upgrades(Request::new(()))
+...   |
+575 | |         })
+576 | |         .await
+    | |______________^ expected `Result<Response<...>, ...>`, found `Result<..., ...>`
+    |
+    = note: expected enum `std::result::Result<tonic::Response<gateway::PendingParameterUpgradesResponse>, _>`
+               found enum `std::result::Result<gateway::PendingParameterUpgradesResponse, _>`
+
+error[E0599]: no method named `get_tvl` found for struct `NetworkServiceImpl` in the current scope
+    --> network-node/src/grpc/gateway_service.rs:586:18
+     |
+ 584 |               let nv = self
+     |  ______________________-
+ 585 | |                 .network_service
+ 586 | |                 .get_tvl(Request::new(crate::grpc::network::TvlRequest {
+     | |                 -^^^^^^^ method not found in `NetworkServiceImpl`
+     | |_________________|
+     |
+     |
+    ::: /Users/boufdaddy/Documents/web3-projects/axionvera-network/target/debug/build/axionvera-network-node-e61a0d20e95d2081/out/axionvera.network.rs:1977:18
+     |
+1977 |           async fn get_tvl(
+     |                    ------- the method is available for `NetworkServiceImpl` here
+     |
+    ::: network-node/src/grpc/network_service.rs:27:1
+     |
+  27 |   pub struct NetworkServiceImpl {
+     |   ----------------------------- method `get_tvl` not found for this struct
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `NetworkService` which provides `get_tvl` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use crate::grpc::network::network_service_server::NetworkService;
+     |
+
+error[E0282]: type annotations needed
+   --> network-node/src/grpc/gateway_service.rs:584:22
+    |
+584 |               let nv = self
+    |  ______________________^
+585 | |                 .network_service
+586 | |                 .get_tvl(Request::new(crate::grpc::network::TvlRequest {
+587 | |                     token_address: req.token_address,
+588 | |                 }))
+589 | |                 .await?
+    | |_______________________^ cannot infer type
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/gateway_service.rs:583:9
+    |
+583 | /         self.process_with_tracking(request_id, async move {
+584 | |             let nv = self
+585 | |                 .network_service
+586 | |                 .get_tvl(Request::new(crate::grpc::network::TvlRequest {
+...   |
+596 | |         })
+597 | |         .await
+    | |______________^ expected `Result<Response<TvlResponse>, Status>`, found `Result<TvlResponse, Status>`
+    |
+    = note: expected enum `std::result::Result<tonic::Response<gateway::TvlResponse>, _>`
+               found enum `std::result::Result<gateway::TvlResponse, _>`
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/gateway_service.rs:606:9
+    |
+606 | /         self.process_with_tracking(request_id, async move {
+607 | |             let timestamp = SystemTime::now()
+608 | |                 .duration_since(SystemTime::UNIX_EPOCH)
+609 | |                 .map_err(|e| Status::internal(format!("Timestamp error:...
+...   |
+661 | |         })
+662 | |         .await
+    | |______________^ expected `Result<Response<...>, ...>`, found `Result<HealthCheckResponse, Status>`
+    |
+    = note: expected enum `std::result::Result<tonic::Response<gateway::HealthCheckResponse>, _>`
+               found enum `std::result::Result<gateway::HealthCheckResponse, _>`
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/health_service.rs:121:45
+    |
+121 | ...se(|e| (false, format!("Database connection failed: {}", e)));
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `bool`, found `(bool, String)`
+    |
+    = note: expected type `bool`
+              found tuple `(bool, std::string::String)`
+
+error[E0308]: mismatched types
+   --> network-node/src/grpc/health_service.rs:118:25
+    |
+118 |                       let (db_healthy, db_message) = pool
+    |  _________________________^^^^^^^^^^^^^^^^^^^^^^^^___-
+    | |                         |
+    | |                         expected `bool`, found `(_, _)`
+119 | |                         .health_check()
+120 | |                         .await
+121 | |                         .unwrap_or_else(|e| (false, format!("Database connection failed: {}", e)));
+    | |__________________________________________________________________________________________________- this expression has type `bool`
+    |
+    = note: expected type `bool`
+              found tuple `(_, _)`
+
+error[E0599]: no method named `uri` found for struct `tonic::Request<T>` in the current scope
+   --> network-node/src/grpc/server.rs:110:28
+    |
+110 |         let path = request.uri().path();
+    |                            ^^^ method not found in `tonic::Request<()>`
+
+error[E0369]: binary operation `==` cannot be applied to type `horizon_client::CircuitBreakerState`
+  --> network-node/src/horizon_client.rs:59:31
+   |
+59 |         if self.circuit_state == CircuitBreakerState::HalfOpen {
+   |            ------------------ ^^ ----------------------------- horizon_client::CircuitBreakerState
+   |            |
+   |            horizon_client::CircuitBreakerState
+   |
+note: an implementation of `PartialEq` might be missing for `horizon_client::CircuitBreakerState`
+  --> network-node/src/horizon_client.rs:10:1
+   |
+10 | pub enum CircuitBreakerState {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ must implement `PartialEq`
+help: consider annotating `horizon_client::CircuitBreakerState` with `#[derive(PartialEq)]`
+   |
+10 + #[derive(PartialEq)]
+11 | pub enum CircuitBreakerState {
+   |
+
+error[E0369]: binary operation `==` cannot be applied to type `horizon_client::CircuitBreakerState`
+  --> network-node/src/horizon_client.rs:70:31
+   |
+70 |         if self.circuit_state == CircuitBreakerState::Open {
+   |            ------------------ ^^ ------------------------- horizon_client::CircuitBreakerState
+   |            |
+   |            horizon_client::CircuitBreakerState
+   |
+note: an implementation of `PartialEq` might be missing for `horizon_client::CircuitBreakerState`
+  --> network-node/src/horizon_client.rs:10:1
+   |
+10 | pub enum CircuitBreakerState {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ must implement `PartialEq`
+help: consider annotating `horizon_client::CircuitBreakerState` with `#[derive(PartialEq)]`
+   |
+10 + #[derive(PartialEq)]
+11 | pub enum CircuitBreakerState {
+   |
+
+error[E0308]: mismatched types
+  --> network-node/src/p2p.rs:57:39
+   |
+57 |         let index = self.bucket_index(&peer.id);
+   |                          ------------ ^^^^^^^^ expected `&[u8; 32]`, found `&String`
+   |                          |
+   |                          arguments to this method are incorrect
+   |
+   = note: expected reference `&[u8; 32]`
+              found reference `&std::string::String`
+note: method defined here
+  --> network-node/src/p2p.rs:45:8
+   |
+45 |     fn bucket_index(&self, id: &NodeId) -> usize {
+   |        ^^^^^^^^^^^^        -----------
+
+error[E0308]: mismatched types
+    --> network-node/src/p2p.rs:62:27
+     |
+  62 |             bucket.insert(peer.id, peer);
+     |                    ------ ^^^^^^^ expected `[u8; 32]`, found `String`
+     |                    |
+     |                    arguments to this method are incorrect
+     |
+note: method defined here
+    --> /Users/boufdaddy/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/collections/btree/map.rs:1046:12
+     |
+1046 |     pub fn insert(&mut self, key: K, value: V) -> Option<V>
+     |            ^^^^^^
+
+error[E0308]: mismatched types
+  --> network-node/src/p2p.rs:79:45
+   |
+79 |             let dist_a = Self::xor_distance(&a.id, target);
+   |                          ------------------ ^^^^^ expected `&[u8; 32]`, found `&String`
+   |                          |
+   |                          arguments to this function are incorrect
+   |
+   = note: expected reference `&[u8; 32]`
+              found reference `&std::string::String`
+note: associated function defined here
+  --> network-node/src/p2p.rs:36:12
+   |
+36 |     pub fn xor_distance(id1: &NodeId, id2: &NodeId) -> [u8; 32] {
+   |            ^^^^^^^^^^^^ ------------
+
+error[E0308]: mismatched types
+  --> network-node/src/p2p.rs:80:45
+   |
+80 |             let dist_b = Self::xor_distance(&b.id, target);
+   |                          ------------------ ^^^^^ expected `&[u8; 32]`, found `&String`
+   |                          |
+   |                          arguments to this function are incorrect
+   |
+   = note: expected reference `&[u8; 32]`
+              found reference `&std::string::String`
+note: associated function defined here
+  --> network-node/src/p2p.rs:36:12
+   |
+36 |     pub fn xor_distance(id1: &NodeId, id2: &NodeId) -> [u8; 32] {
+   |            ^^^^^^^^^^^^ ------------
+
+error[E0599]: no method named `sign` found for struct `ed25519_dalek::Keypair` in the current scope
+   --> network-node/src/signing.rs:212:39
+    |
+212 |         let signature = self.key_pair.sign(message);
+    |                                       ^^^^
+    |
+   ::: /Users/boufdaddy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signature-1.6.4/src/signer.rs:15:8
+    |
+ 15 |     fn sign(&self, msg: &[u8]) -> S {
+    |        ---- the method is available for `ed25519_dalek::Keypair` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Signer` which provides `sign` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use ed25519_dalek::Signer;
+    |
+help: there is a method `try_sign` with a similar name
+    |
+212 |         let signature = self.key_pair.try_sign(message);
+    |                                       ++++
+
+error[E0599]: no variant or associated item named `QueryError` found for enum `error::DatabaseError` in the current scope
+  --> network-node/src/state_trie.rs:36:64
+   |
+36 | ...:Database(DatabaseError::QueryError(e.to_string())))?;
+   |                             ^^^^^^^^^^ variant or associated item not found in `error::DatabaseError`
+   |
+  ::: network-node/src/error.rs:67:1
+   |
+67 | pub enum DatabaseError {
+   | ---------------------- variant or associated item `QueryError` not found for this enum
+
+error[E0599]: no variant or associated item named `SerializationError` found for enum `error::DatabaseError` in the current scope
+  --> network-node/src/state_trie.rs:63:64
+   |
+63 | ...abase(DatabaseError::SerializationError))?;
+   |                         ^^^^^^^^^^^^^^^^^^ variant or associated item not found in `error::DatabaseError`
+   |
+  ::: network-node/src/error.rs:67:1
+   |
+67 | pub enum DatabaseError {
+   | ---------------------- variant or associated item `SerializationError` not found for this enum
+
+error[E0599]: no variant or associated item named `QueryError` found for enum `error::DatabaseError` in the current scope
+  --> network-node/src/state_trie.rs:66:64
+   |
+66 | ...:Database(DatabaseError::QueryError(e.to_string())))?;
+   |                             ^^^^^^^^^^ variant or associated item not found in `error::DatabaseError`
+   |
+  ::: network-node/src/error.rs:67:1
+   |
+67 | pub enum DatabaseError {
+   | ---------------------- variant or associated item `QueryError` not found for this enum
+
+warning: unused variable: `url`
+   --> network-node/src/config.rs:155:21
+    |
+155 |     pub fn from_url(url: &str) -> crate::error::Result<Self> {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_url`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `proposal`
+   --> network-node/src/consensus.rs:403:14
+    |
+403 |         let (proposal, votes) = {
+    |              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proposal`
+
+warning: unused variable: `now`
+   --> network-node/src/consensus.rs:455:13
+    |
+455 |         let now = chrono::Utc::now();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+warning: unused variable: `req`
+   --> network-node/src/crypto.rs:185:29
+    |
+185 |                 if let Some(mut req) = pending.remove(&request.id) {
+    |                             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_req`
+
+warning: unused variable: `result_sender`
+   --> network-node/src/crypto.rs:146:9
+    |
+146 |         result_sender: mpsc::UnboundedSender<BatchVerificationResult>,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_result_sender`
+
+warning: unused variable: `pending_requests`
+   --> network-node/src/crypto.rs:216:9
+    |
+216 |         pending_requests: Arc<RwLock<HashMap<String, SignatureVerificatio...
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_pending_requests`
+
+warning: unused variable: `request_id`
+  --> network-node/src/error_middleware.rs:99:13
+   |
+99 |         let request_id = context.request_id.clone();
+   |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_request_id`
+
+warning: unused variable: `contextual_error`
+   --> network-node/src/error_middleware.rs:359:9
+    |
+359 |         contextual_error: &ContextualError,
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_contextual_error`
+
+error[E0004]: non-exhaustive patterns: `&NetworkError::Crypto(_)`, `&NetworkError::Kms(_)`, `&NetworkError::KmsTimeout(_)` and 7 more not covered
+   --> network-node/src/error_middleware.rs:235:15
+    |
+235 |         match error {
+    |               ^^^^^ patterns `&NetworkError::Crypto(_)`, `&NetworkError::Kms(_)`, `&NetworkError::KmsTimeout(_)` and 7 more not covered
+    |
+note: `NetworkError` defined here
+   --> network-node/src/error.rs:4:10
+    |
+  4 | pub enum NetworkError {
+    |          ^^^^^^^^^^^^
+...
+ 36 |     Crypto(String),
+    |     ------ not covered
+...
+ 39 |     Kms(String),
+    |     --- not covered
+...
+ 42 |     KmsTimeout(String),
+    |     ---------- not covered
+...
+ 45 |     KmsRateLimit(String),
+    |     ------------ not covered
+...
+ 48 |     Signer(String),
+    |     ------ not covered
+    = note: the matched value is of type `&NetworkError`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern as shown, or multiple match arms
+    |
+245 ~             NetworkError::Internal(_) => LogLevel::Error,
+246 ~             _ => todo!(),
+    |
+
+warning: unused variable: `db_message`
+  --> network-node/src/grpc/health_service.rs:42:26
+   |
+42 |         let (db_healthy, db_message) = self.check_database_health().await;
+   |                          ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_db_message`
+
+warning: unused variable: `signature`
+  --> network-node/src/grpc/network_service.rs:85:9
+   |
+85 |         signature: &[u8],
+   |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_signature`
+
+warning: unused variable: `timestamp`
+   --> network-node/src/grpc/network_service.rs:255:13
+    |
+255 |         let timestamp = SystemTime::now()
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_timestamp`
+
+error[E0382]: borrow of moved value: `req.peer_id`
+  --> network-node/src/grpc/p2p_service.rs:42:61
+   |
+40 |         match self.p2p_manager.connect_to_peer(addr, req.peer_id).await {
+   |                                                      ----------- value moved here
+41 |             Ok(session_id) => {
+42 |                 info!("Successfully connected to peer: {}", req.peer_id);
+   |                                                             ^^^^^^^^^^^ value borrowed here after move
+   |
+   = note: move occurs because `req.peer_id` has type `std::string::String`, which does not implement the `Copy` trait
+   = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `info` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `routing_table`
+   --> network-node/src/p2p.rs:106:13
+    |
+106 |         let routing_table = self.routing_table.clone();
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_routing_table`
+
+warning: unused variable: `pin`
+   --> network-node/src/signing.rs:232:36
+    |
+232 |     pub async fn new(slot_id: u32, pin: String) -> Result<Self> {
+    |                                    ^^^ help: if this is intentional, prefix it with an underscore: `_pin`
+
+warning: unused variable: `key`
+  --> network-node/src/state_trie.rs:78:23
+   |
+78 |     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+   |                       ^^^ help: if this is intentional, prefix it with an underscore: `_key`
+
+Some errors have detailed explanations: E0004, E0046, E0061, E0107, E0271, E0277, E0282, E0308, E0369...
+For more information about an error, try `rustc --explain E0004`.
+warning: `axionvera-network-node` (lib) generated 48 warnings
+error: could not compile `axionvera-network-node` (lib) due to 129 previous errors; 48 warnings emitted

@@ -1,31 +1,32 @@
 use axum::{
+    Json,
     extract::{Request, State},
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    Json,
 };
 use futures_util::StreamExt;
 use hyper::server::accept::from_stream;
-use rustls_pemfile::{certs, read_one, Item};
-use serde_json::{json, Value};
+use rustls_pemfile::{Item, certs, read_one};
+use serde_json::{Value, json};
 use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::timeout;
-use tokio_rustls::rustls::{
-    AllowAnyAuthenticatedClient, Certificate, PrivateKey, RootCertStore,
-    ServerConfig as RustlsServerConfig,
-};
 use tokio_rustls::TlsAcceptor;
+use tokio_rustls::rustls::server::AllowAnyAuthenticatedClient;
+use tokio_rustls::rustls::{
+    Certificate, PrivateKey, RootCertStore, ServerConfig as RustlsServerConfig,
+};
 use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
 
 use crate::config::NetworkConfig;
 use crate::database::ConnectionPool;
-use crate::error::{ContextualError, ErrorContext, NetworkError, Result};
+use crate::error::Result as NetworkResult;
+use crate::error::{ContextualError, ErrorContext, NetworkError};
 use crate::error_middleware::ErrorMiddleware;
 use crate::metrics::MetricsCollector;
 use crate::rate_limiter::RateLimiter;
@@ -400,7 +401,7 @@ async fn error_handler_middleware(
     State(error_middleware): State<Arc<ErrorMiddleware>>,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> std::result::Result<Response, StatusCode> {
     let request_id = uuid::Uuid::new_v4().to_string();
 
     // Create error context
@@ -436,7 +437,7 @@ async fn rate_limit_middleware(
     State(rate_limiter): State<Arc<RateLimiter>>,
     mut request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> std::result::Result<Response, StatusCode> {
     // Try to get client IP from headers typically set by proxies
     let ip = request
         .headers()
@@ -472,7 +473,7 @@ async fn connection_limiter_middleware(
     State(is_accepting): State<Arc<RwLock<bool>>>,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> std::result::Result<Response, StatusCode> {
     let accepting = *is_accepting.read().await;
 
     if !accepting {
@@ -487,7 +488,7 @@ async fn connection_tracker_middleware(
     State(active_connections): State<Arc<RwLock<usize>>>,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> std::result::Result<Response, StatusCode> {
     // Increment active connections
     *active_connections.write().await += 1;
 

@@ -14,7 +14,7 @@ pub struct ConnectionPool {
 
 impl ConnectionPool {
     /// Create a new connection pool
-    #[instrument(fields(database_url = %database_url, max_connections = %config.max_connections))]
+    #[instrument(fields(database_url = %database_url))]
     pub async fn new(database_url: &str) -> Result<Self> {
         let config = DatabaseConfig::from_url(database_url)?;
 

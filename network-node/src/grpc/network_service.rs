@@ -17,8 +17,8 @@ use crate::grpc::network::{
     NetworkParameters as ProtoNetworkParameters, NetworkParametersPatch as ProtoPatch,
     NetworkStatusResponse, NodeInfoRequest, NodeInfoResponse, ParameterUpgradeRequest,
     PendingParameterUpgrade, PendingParameterUpgradesResponse, RewardsRequest, RewardsResponse,
-    TVLRequest, TVLResponse, TransactionHistoryRequest, TransactionHistoryResponse,
-    TransactionInfo, TransactionRequest, TransactionResponse, TransactionStatus, TransactionType,
+    TransactionHistoryRequest, TransactionHistoryResponse, TransactionInfo, TransactionRequest,
+    TransactionResponse, TransactionStatus, TransactionType, TvlRequest, TvlResponse,
     WithdrawRequest, network_service_server::NetworkService,
 };
 use crate::p2p::P2PManager;
@@ -560,7 +560,7 @@ impl NetworkService for NetworkServiceImpl {
         Ok(Response::new(PendingParameterUpgradesResponse { pending }))
     }
 
-    async fn get_tvl(&self, request: Request<TVLRequest>) -> Result<Response<TVLResponse>, Status> {
+    async fn get_tvl(&self, request: Request<TvlRequest>) -> Result<Response<TvlResponse>, Status> {
         let req = request.into_inner();
         info!("Received TVL request for token: {}", req.token_address);
 
@@ -570,7 +570,7 @@ impl NetworkService for NetworkServiceImpl {
 
         // Mock TVL implementation
         // In a real scenario, this would query the database for the sum of deposits
-        let response = TVLResponse {
+        let response = TvlResponse {
             total_value_locked: "5000000000".to_string(), // $5B mock TVL
             token_address: req.token_address,
             timestamp: Some(prost_types::Timestamp {

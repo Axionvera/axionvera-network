@@ -30,43 +30,43 @@ impl MetricsCollector {
     /// Increment total requests counter
     pub fn increment_requests(&self) {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
-        counter!("http_requests_total").increment(1);
+        counter!("http_requests_total", 1);
     }
 
     /// Set active connections gauge
     pub fn set_active_connections(&self, count: usize) {
         self.active_connections.store(count, Ordering::Relaxed);
-        gauge!("active_connections").set(count as f64);
+        gauge!("active_connections", count as f64);
     }
 
     /// Increment error counter
     pub fn increment_errors(&self) {
         self.total_errors.fetch_add(1, Ordering::Relaxed);
-        counter!("errors_total").increment(1);
+        counter!("errors_total", 1);
     }
 
     /// Add to bytes sent
     pub fn add_bytes_sent(&self, bytes: u64) {
         self.bytes_sent.fetch_add(bytes, Ordering::Relaxed);
-        counter!("bytes_sent_total").increment(bytes);
+        counter!("bytes_sent_total", bytes);
     }
 
     /// Add to bytes received
     pub fn add_bytes_received(&self, bytes: u64) {
         self.bytes_received.fetch_add(bytes, Ordering::Relaxed);
-        counter!("bytes_received_total").increment(bytes);
+        counter!("bytes_received_total", bytes);
     }
 
     /// Record request duration
     pub fn record_request_duration(&self, duration_secs: f64) {
-        histogram!("request_duration_seconds").record(duration_secs);
+        histogram!("request_duration_seconds", duration_secs);
     }
 
     /// Set pending transactions gauge
     pub fn set_pending_transactions(&self, count: u64) {
         self.pending_transactions.store(count, Ordering::Relaxed);
-        gauge!("axionvera_pending_transactions_total").set(count as f64);
-        gauge!("axionvera_transaction_queue_depth").set(count as f64);
+        gauge!("axionvera_pending_transactions_total", count as f64);
+        gauge!("axionvera_transaction_queue_depth", count as f64);
     }
 
     /// Get pending transactions

@@ -3,7 +3,7 @@ use crate::error::{NetworkError, Result};
 use metrics::counter;
 use reqwest::StatusCode;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tracing::{debug, error, warn};
@@ -120,7 +120,7 @@ impl SorobanRpcClient {
         let from = &self.rpc_urls[from_index];
         let to = &self.rpc_urls[from_index + 1];
 
-        counter!("soroban_rpc_failovers_total").increment(1);
+        counter!("soroban_rpc_failovers_total", 1);
         warn!(
             from_rpc_url = %from,
             to_rpc_url = %to,
@@ -275,7 +275,7 @@ impl SorobanRpcClient {
 mod tests {
     use super::*;
     use axum::http::StatusCode as AxumStatusCode;
-    use axum::{routing::post, Json, Router};
+    use axum::{Json, Router, routing::post};
     use serde_json::json;
     use tokio::net::TcpListener;
 
