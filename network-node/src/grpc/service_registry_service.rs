@@ -7,9 +7,9 @@ use tonic::{Request, Response, Status};
 use tracing::info;
 
 use crate::grpc::network::{
-    DeregisterServiceRequest, DeregisterServiceResponse, ListServicesResponse,
-    LookupServiceRequest, LookupServiceResponse, RegisterServiceRequest, RegisterServiceResponse,
-    ServiceInfo, service_registry_server::ServiceRegistry,
+    service_registry_server::ServiceRegistry, DeregisterServiceRequest, DeregisterServiceResponse,
+    ListServicesResponse, LookupServiceRequest, LookupServiceResponse, RegisterServiceRequest,
+    RegisterServiceResponse, ServiceInfo,
 };
 use crate::service_registry::ServiceDiscoveryRegistry;
 

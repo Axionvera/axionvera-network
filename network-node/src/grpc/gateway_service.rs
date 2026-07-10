@@ -9,15 +9,14 @@ use crate::chain_params::ChainParameterRegistry;
 use crate::database::ConnectionPool;
 use crate::error::NetworkError;
 use crate::grpc::gateway::{
-    BalanceRequest, BalanceResponse, ChainParametersView, ClaimRewardsRequest,
-    ContractStateRequest, ContractStateResponse, DepositRequest, DistributeRewardsRequest,
-    HealthCheckResponse, NetworkParameters as GwNetworkParameters,
+    gateway_service_server::GatewayService, BalanceRequest, BalanceResponse, ChainParametersView,
+    ClaimRewardsRequest, ContractStateRequest, ContractStateResponse, DepositRequest,
+    DistributeRewardsRequest, HealthCheckResponse, NetworkParameters as GwNetworkParameters,
     NetworkParametersPatch as GwNetworkParametersPatch, NetworkStatusResponse, NodeInfoRequest,
     NodeInfoResponse, PaginationInfo, ParameterUpgradeRequest, PendingParameterUpgrade,
     PendingParameterUpgradesResponse, RewardsRequest, RewardsResponse, ServiceHealth,
     TransactionHistoryRequest, TransactionHistoryResponse, TransactionInfo, TransactionRequest,
     TransactionResponse, TvlRequest, TvlResponse, WithdrawRequest,
-    gateway_service_server::GatewayService,
 };
 use crate::grpc::network_service::NetworkServiceImpl;
 use crate::p2p::P2PManager;

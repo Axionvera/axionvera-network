@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use std::time::SystemTime;
-use tokio::sync::RwLock;
 use tokio::sync::mpsc;
+use tokio::sync::RwLock;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{info, warn};
 
 use crate::database::ConnectionPool;
 use crate::grpc::network::{
-    HealthCheckResponse, HealthStatus, health_service_server::HealthService,
+    health_service_server::HealthService, HealthCheckResponse, HealthStatus,
 };
 
 pub struct HealthServiceImpl {

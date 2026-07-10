@@ -3,7 +3,7 @@ use crate::error::{NetworkError, Result};
 use metrics::counter;
 use reqwest::StatusCode;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tracing::{debug, error, warn};
@@ -275,7 +275,7 @@ impl SorobanRpcClient {
 mod tests {
     use super::*;
     use axum::http::StatusCode as AxumStatusCode;
-    use axum::{Json, Router, routing::post};
+    use axum::{routing::post, Json, Router};
     use serde_json::json;
     use tokio::net::TcpListener;
 

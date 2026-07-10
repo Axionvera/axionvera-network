@@ -12,14 +12,14 @@ use crate::chain_params::{
 use crate::database::ConnectionPool;
 use crate::error::NetworkError;
 use crate::grpc::network::{
-    BalanceRequest, BalanceResponse, ChainParametersView, ClaimRewardsRequest,
-    ContractStateRequest, ContractStateResponse, DepositRequest, DistributeRewardsRequest,
-    NetworkParameters as ProtoNetworkParameters, NetworkParametersPatch as ProtoPatch,
-    NetworkStatusResponse, NodeInfoRequest, NodeInfoResponse, ParameterUpgradeRequest,
-    PendingParameterUpgrade, PendingParameterUpgradesResponse, RewardsRequest, RewardsResponse,
-    TransactionHistoryRequest, TransactionHistoryResponse, TransactionInfo, TransactionRequest,
-    TransactionResponse, TransactionStatus, TransactionType, TvlRequest, TvlResponse,
-    WithdrawRequest, network_service_server::NetworkService,
+    network_service_server::NetworkService, BalanceRequest, BalanceResponse, ChainParametersView,
+    ClaimRewardsRequest, ContractStateRequest, ContractStateResponse, DepositRequest,
+    DistributeRewardsRequest, NetworkParameters as ProtoNetworkParameters,
+    NetworkParametersPatch as ProtoPatch, NetworkStatusResponse, NodeInfoRequest, NodeInfoResponse,
+    ParameterUpgradeRequest, PendingParameterUpgrade, PendingParameterUpgradesResponse,
+    RewardsRequest, RewardsResponse, TransactionHistoryRequest, TransactionHistoryResponse,
+    TransactionInfo, TransactionRequest, TransactionResponse, TransactionStatus, TransactionType,
+    TvlRequest, TvlResponse, WithdrawRequest,
 };
 use crate::p2p::P2PManager;
 use crate::state_trie::StateTrie;
