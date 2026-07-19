@@ -10,6 +10,7 @@ members = [
   "contracts/interfaces",
   "contracts/integrations",
   "contracts/orchestrator",
+  "contracts/pipeline",
   "contracts/rewards",
   "contracts/resources",
   "contracts/state",

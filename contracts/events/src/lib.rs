@@ -119,6 +119,18 @@ pub struct FeeTreasuryAllocatedEvent {
 pub const ACT_MOD_REGISTER: Symbol = symbol_short!("mod_reg");
 pub const ACT_MOD_STATUS_UPDATE: Symbol = symbol_short!("mod_stat");
 
+pub const ACT_PIPE_START: Symbol = symbol_short!("pipe_str");
+pub const ACT_PIPE_COMPL: Symbol = symbol_short!("pipe_com");
+pub const ACT_PIPE_FAIL: Symbol = symbol_short!("pipe_fai");
+pub const ACT_STAGE_START: Symbol = symbol_short!("stg_str");
+pub const ACT_STAGE_COMPL: Symbol = symbol_short!("stg_com");
+pub const ACT_STAGE_FAIL: Symbol = symbol_short!("stg_fai");
+
+pub const ACT_ORCH_VALIDATED: Symbol = symbol_short!("orch_val");
+pub const ACT_ORCH_EXECUTED: Symbol = symbol_short!("orch_exe");
+pub const ACT_ORCH_ROLLBACK: Symbol = symbol_short!("orch_rbk");
+pub const ACT_ORCH_FAILED: Symbol = symbol_short!("orch_fai");
+
 // ---------------------------------------------------------------------------
 // Storage keys used by the indexing layer
 // ---------------------------------------------------------------------------
@@ -358,11 +370,17 @@ pub struct DelegateAuthorizedEvent {
     pub owner: Address,
     pub delegate: Address,
     pub permissions: u32,
+    pub pipeline_id: Symbol,
     pub timestamp: u64,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PipelineFailedEvent {
+    pub event_version: u32,
+    pub pipeline_id: Symbol,
+    pub failed_stage: Symbol,
+    pub error_code: u32,
 pub struct DelegateRevokedEvent {
     pub event_version: u32,
     pub owner: Address,
@@ -372,44 +390,59 @@ pub struct DelegateRevokedEvent {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DelegateActionEvent {
+pub struct StageStartedEvent {
     pub event_version: u32,
-    pub owner: Address,
-    pub delegate: Address,
-    pub action: Symbol,
-    pub timestamp: u64,
-}
-
-// ---------------------------------------------------------------------------
-// Capabilities — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-/// Protocol identifier used as Topic 1 for all capability events.
-pub const PROTOCOL_CAPABILITIES: Symbol = symbol_short!("AxCaps");
-
-pub const ACT_CAP_REGISTERED: Symbol = symbol_short!("cap_reg");
-pub const ACT_CAP_UPDATED: Symbol = symbol_short!("cap_upd");
-pub const ACT_CAP_REMOVED: Symbol = symbol_short!("cap_rem");
-
-// ---------------------------------------------------------------------------
-// Module registry event payload structs
-// ---------------------------------------------------------------------------
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ModuleRegisteredEvent {
-    pub admin: Address,
-    pub name: Symbol,
-    pub module_address: Address,
+    pub pipeline_id: Symbol,
+    pub stage_id: Symbol,
     pub timestamp: u64,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ModuleStatusChangedEvent {
-    pub admin: Address,
-    pub module_address: Address,
-    pub is_active: bool,
+pub struct StageCompletedEvent {
+    pub event_version: u32,
+    pub pipeline_id: Symbol,
+    pub stage_id: Symbol,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationValidatedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub operation_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationExecutedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub executed_count: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationRollbackEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub operation_id: u32,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OrchestrationFailedEvent {
+    pub event_version: u32,
+    pub plan_id: BytesN<32>,
+    pub caller: Address,
+    pub failed_operation: u32,
+    pub rollback_count: u32,
     pub timestamp: u64,
 }
 
