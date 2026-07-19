@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, symbol_short, Address, Bytes, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol, contracttype, symbol_short};
 
 use axionvera_interfaces::{FeeConfig, FeeReceipt, FeeType};
 
@@ -365,26 +365,6 @@ pub struct DelegatedActionEvent {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountingEvent {
-    pub event_version: u32,
-    pub category: Symbol,
-    pub operation: Symbol,
-    pub actor: Option<Address>,
-    pub asset: Option<Address>,
-    pub amount_in: i128,
-    pub amount_out: i128,
-    pub amount_processed: i128,
-    pub storage_reads: u32,
-    pub storage_writes: u32,
-    pub events_emitted: u32,
-    pub token_transfers: u32,
-    pub timestamp: u64,
-    pub ledger: u32,
-    pub pipeline_id: Symbol,  
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DelegateAuthorizedEvent {
     pub event_version: u32,
     pub owner: Address,
@@ -653,37 +633,6 @@ pub const ACT_CFG_PAUSE: Symbol = symbol_short!("cfg_pause");
 pub const ACT_CFG_UNPAU: Symbol = symbol_short!("cfg_unpau");
 
 // ---------------------------------------------------------------------------
-// Config event payload structs
-// ---------------------------------------------------------------------------
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountingEvent {
-    pub event_version: u32,
-    pub category: Symbol,
-    pub operation: Symbol,
-    pub actor: Option<Address>,
-    pub asset: Option<Address>,
-    pub amount_in: i128,
-    pub amount_out: i128,
-    pub amount_processed: i128,
-    pub storage_reads: u32,
-    pub storage_writes: u32,
-    pub events_emitted: u32,
-    pub token_transfers: u32,
-    pub timestamp: u64,
-    pub ledger: u32,
-}
-
-// ---------------------------------------------------------------------------
-// Helper: get the ledger timestamp
-// ---------------------------------------------------------------------------
-
-pub fn ledger_timestamp(e: &Env) -> u64 {
-    e.ledger().timestamp()
-}
-
-// ---------------------------------------------------------------------------
 // Policy Engine — protocol identifier and action symbols
 // ---------------------------------------------------------------------------
 
@@ -796,7 +745,7 @@ pub const PROTOCOL_REPLAY: Symbol = symbol_short!("AxReplay");
 
 pub const ACT_REPLAY_INIT: Symbol = symbol_short!("rep_init");
 pub const ACT_REPLAY_START: Symbol = symbol_short!("rep_start");
-pub const ACT_REPLAY_COMPLETE: Symbol = symbol_short!("rep_complete");
+pub const ACT_REPLAY_COMPLETE: Symbol = symbol_short!("rep_compl");
 
 // ---------------------------------------------------------------------------
 // Replay Engine event payload structs
@@ -836,16 +785,16 @@ pub struct ReplayCompletedEvent {
 /// Protocol identifier used as Topic 1 for all scheduler events.
 pub const PROTOCOL_SCHEDULER: Symbol = symbol_short!("AxSched");
 
-pub const ACT_SCHED_INIT: Symbol = symbol_short!("sched_init");
-pub const ACT_SCHED_TASK_SCHEDULED: Symbol = symbol_short!("task_sched");
+pub const ACT_SCHED_INIT: Symbol = symbol_short!("sch_init");
+pub const ACT_SCHED_TASK_SCHEDULED: Symbol = symbol_short!("tsk_sched");
 pub const ACT_SCHED_TASK_UPDATED: Symbol = symbol_short!("task_upd");
-pub const ACT_SCHED_TASK_CANCELED: Symbol = symbol_short!("task_cancel");
+pub const ACT_SCHED_TASK_CANCELED: Symbol = symbol_short!("tsk_canc");
 pub const ACT_SCHED_TASK_EXECUTED: Symbol = symbol_short!("task_exec");
 pub const ACT_SCHED_TASK_FAILED: Symbol = symbol_short!("task_fail");
-pub const ACT_SCHED_ADMIN_P: Symbol = symbol_short!("sched_adm_p");
-pub const ACT_SCHED_ADMIN_A: Symbol = symbol_short!("sched_adm_a");
-pub const ACT_SCHED_PAUSE: Symbol = symbol_short!("sched_pause");
-pub const ACT_SCHED_UNPAUSE: Symbol = symbol_short!("sched_unpau");
+pub const ACT_SCHED_ADMIN_P: Symbol = symbol_short!("sch_adm_p");
+pub const ACT_SCHED_ADMIN_A: Symbol = symbol_short!("sch_adm_a");
+pub const ACT_SCHED_PAUSE: Symbol = symbol_short!("sch_pause");
+pub const ACT_SCHED_UNPAUSE: Symbol = symbol_short!("sch_unpau");
 
 // ---------------------------------------------------------------------------
 // Scheduler event payload structs
@@ -943,150 +892,6 @@ pub struct SchedulerUnpausedEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Action Symbols — used as Topic 2 for all events
-// ---------------------------------------------------------------------------
-pub const ACT_INIT: Symbol = symbol_short!("init");
-pub const ACT_DEPOSIT: Symbol = symbol_short!("deposit");
-pub const ACT_WITHDRAW: Symbol = symbol_short!("withdraw");
-pub const ACT_DISTRIBUTE: Symbol = symbol_short!("distrib");
-pub const ACT_CLAIM: Symbol = symbol_short!("claim");
-pub const ACT_LOCK: Symbol = symbol_short!("lock");
-pub const ACT_UNLOCK: Symbol = symbol_short!("unlock");
-pub const ACT_ADMIN_PROPOSED: Symbol = symbol_short!("admin_prp");
-pub const ACT_ADMIN_ACCEPTED: Symbol = symbol_short!("adm_acpt");
-pub const ACT_UPGRADE: Symbol = symbol_short!("upgrade");
-pub const ACT_PAUSE: Symbol = symbol_short!("pause");
-pub const ACT_UNPAUSE: Symbol = symbol_short!("unpause");
-pub const ACT_ASSET_ADDED: Symbol = symbol_short!("asset_add");
-pub const ACT_ASSET_DEPOSIT: Symbol = symbol_short!("asset_dep");
-pub const ACT_ASSET_WITHDRAW: Symbol = symbol_short!("asset_wd");
-pub const ACT_ASSET_DISTRIBUTE: Symbol = symbol_short!("ast_dist");
-pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
-pub const ACT_DELEGATE: Symbol = symbol_short!("delegate");
-pub const ACT_REVOKE_DELEGATION: Symbol = symbol_short!("rvk_dlg");
-pub const ACT_DELEGATED_ACTION: Symbol = symbol_short!("deleg_act");
-
-// ---------------------------------------------------------------------------
-// Storage keys used by the indexing layer
-// ---------------------------------------------------------------------------
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DataKey {
-    /// Global event log (Vec<EventLogEntry>)
-    EventLog,
-    /// Per-user event log keyed by address (Vec<EventLogEntry>)
-    UserEventLog(Address),
-    /// Set of all users who have ever interacted (Map<Address, bool>)
-    InteractingUsers,
-}
-
-// ---------------------------------------------------------------------------
-// Event payload structs
-// All events follow the two-topic (PROTOCOL, ACTION) design
-// and include an `event_version` field for schema evolution.
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Helper: get the ledger timestamp
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Config contract — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Config event payload structs
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Asset registry — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Asset registry event payload structs
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Resource lifecycle — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Resource lifecycle event payload structs
-// ---------------------------------------------------------------------------
-
-// Action Symbols — used as Topic 2 for all events
-// ---------------------------------------------------------------------------
-pub const ACT_INIT: Symbol = symbol_short!("init");
-pub const ACT_DEPOSIT: Symbol = symbol_short!("deposit");
-pub const ACT_WITHDRAW: Symbol = symbol_short!("withdraw");
-pub const ACT_DISTRIBUTE: Symbol = symbol_short!("distrib");
-pub const ACT_CLAIM: Symbol = symbol_short!("claim");
-pub const ACT_LOCK: Symbol = symbol_short!("lock");
-pub const ACT_UNLOCK: Symbol = symbol_short!("unlock");
-pub const ACT_ADMIN_PROPOSED: Symbol = symbol_short!("admin_prp");
-pub const ACT_ADMIN_ACCEPTED: Symbol = symbol_short!("adm_acpt");
-pub const ACT_UPGRADE: Symbol = symbol_short!("upgrade");
-pub const ACT_PAUSE: Symbol = symbol_short!("pause");
-pub const ACT_UNPAUSE: Symbol = symbol_short!("unpause");
-pub const ACT_ASSET_ADDED: Symbol = symbol_short!("asset_add");
-pub const ACT_ASSET_DEPOSIT: Symbol = symbol_short!("asset_dep");
-pub const ACT_ASSET_WITHDRAW: Symbol = symbol_short!("asset_wd");
-pub const ACT_ASSET_DISTRIBUTE: Symbol = symbol_short!("ast_dist");
-pub const ACT_ASSET_CLAIM: Symbol = symbol_short!("asset_clm");
-pub const ACT_DELEGATE: Symbol = symbol_short!("delegate");
-pub const ACT_REVOKE_DELEGATION: Symbol = symbol_short!("rvk_dlg");
-pub const ACT_DELEGATED_ACTION: Symbol = symbol_short!("deleg_act");
-
-// ---------------------------------------------------------------------------
-// Storage keys used by the indexing layer
-// ---------------------------------------------------------------------------
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DataKey {
-    /// Global event log (Vec<EventLogEntry>)
-    EventLog,
-    /// Per-user event log keyed by address (Vec<EventLogEntry>)
-    UserEventLog(Address),
-    /// Set of all users who have ever interacted (Map<Address, bool>)
-    InteractingUsers,
-}
-
-// ---------------------------------------------------------------------------
-// Event payload structs
-// All events follow the two-topic (PROTOCOL, ACTION) design
-// and include an `event_version` field for schema evolution.
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Helper: get the ledger timestamp
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Config contract — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Config event payload structs
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Asset registry — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Asset registry event payload structs
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Resource lifecycle — protocol identifier and action symbols
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Resource lifecycle event payload structs
-// ---------------------------------------------------------------------------
-
-
-// ---------------------------------------------------------------------------
 // Resource lifecycle — protocol identifier and action symbols
 // ---------------------------------------------------------------------------
 
@@ -1131,29 +936,4 @@ pub struct ResourceRetiredEvent {
     pub resource_id: Symbol,
     pub caller: Address,
     pub timestamp: u64,
-}
-
-// ---------------------------------------------------------------------------
-// Accounting — action symbol and event payload
-// ---------------------------------------------------------------------------
-
-pub const ACT_ACCOUNTING: Symbol = symbol_short!("acct");
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountingEvent {
-    pub event_version: u32,
-    pub category: Symbol,
-    pub operation: Symbol,
-    pub actor: Option<Address>,
-    pub asset: Option<Address>,
-    pub amount_in: i128,
-    pub amount_out: i128,
-    pub amount_processed: i128,
-    pub storage_reads: u32,
-    pub storage_writes: u32,
-    pub events_emitted: u32,
-    pub token_transfers: u32,
-    pub timestamp: u64,
-    pub ledger: u32,
 }

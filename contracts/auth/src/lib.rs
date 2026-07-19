@@ -90,7 +90,12 @@ pub struct DelegatedPolicy {
 impl AccessPolicy<(Env, Address)> for DelegatedPolicy {
     fn enforce(&self, context: &(Env, Address)) -> Result<(), PolicyViolation> {
         let (e, delegatee) = context;
-        if DelegationManager::is_authorized(e, self.delegator.clone(), delegatee.clone(), self.operation.clone()) {
+        if DelegationManager::is_authorized(
+            e,
+            self.delegator.clone(),
+            delegatee.clone(),
+            self.operation.clone(),
+        ) {
             Ok(())
         } else {
             Err(PolicyViolation::Unauthorized)

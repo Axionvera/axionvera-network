@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::{take_snapshot, get_latest_snapshot, get_snapshot_history, MIN_SNAPSHOT_INTERVAL};
+    use crate::{MIN_SNAPSHOT_INTERVAL, get_latest_snapshot, get_snapshot_history, take_snapshot};
+    use axionvera_state::VaultState;
     use soroban_sdk::{Env, testutils::Ledger};
-    use axionvera_state::{VaultState};
 
     #[soroban_sdk::contract]
     pub struct TestContract;

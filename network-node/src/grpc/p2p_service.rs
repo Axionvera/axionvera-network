@@ -4,8 +4,8 @@ use tonic::{Request, Response, Status};
 use tracing::{error, info, warn};
 
 use crate::grpc::network::{
-    p2p_service_server::P2PService, BlockData, BroadcastRequest, BroadcastResponse, MessageType,
-    PeerConnectionRequest, PeerConnectionResponse, PeerDisconnectionRequest,
+    p2p_service_server::P2pService as P2PService, BlockData, BroadcastRequest, BroadcastResponse,
+    MessageType, PeerConnectionRequest, PeerConnectionResponse, PeerDisconnectionRequest,
     PeerDisconnectionResponse, PeerInfo, PeerListResponse, SyncRequest, SyncResponse,
     TransactionInfo, TransactionStatus, TransactionType,
 };

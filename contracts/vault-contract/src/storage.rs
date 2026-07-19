@@ -1,9 +1,6 @@
-use soroban_sdk::{contracttype, Address, Env, Map, Vec};
+use soroban_sdk::{Address, Env, Map, Vec, contracttype};
 
 use crate::errors::{
-    ArithmeticError, AuthorizationError, BalanceError, StateError, ValidationError, VaultError,
-    ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError, ValidationError,
-    VaultError,
     ArithmeticError, AuthorizationError, BalanceError, DelegationError, StateError,
     ValidationError, VaultError,
 };
@@ -125,8 +122,10 @@ pub enum DataKey {
     DelegationOperators(Address),
     /// Maximum number of delegations allowed per user
     MaxDelegationsPerUser,
-    UserLiquidBalance(Address),
-    UserLocks(Address),
+    /// Legacy delegate permissions (for backwards compatibility)
+    delegate_permissions(Address, Address),
+    /// User reward vesting schedules
+    UserRewardVestingSchedules(Address),
 }
 
 /// The global state of the vault contract.
@@ -607,14 +606,22 @@ pub fn authorize_delegate(
         created_at: e.ledger().timestamp(),
         active: true,
     };
-    e.storage().instance().set(&DataKey::delegate_permissions(owner.clone(), delegate.clone()), &record);
+    e.storage().instance().set(
+        &DataKey::delegate_permissions(owner.clone(), delegate.clone()),
+        &record,
+    );
     bump_instance_ttl(e);
     Ok(())
 }
 
 pub fn revoke_delegate(e: &Env, owner: &Address, delegate: &Address) -> Result<(), VaultError> {
     require_initialized(e)?;
-    e.storage().instance().remove(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    e.storage()
+        .instance()
+        .remove(&DataKey::delegate_permissions(
+            owner.clone(),
+            delegate.clone(),
+        ));
     bump_instance_ttl(e);
     Ok(())
 }
@@ -625,10 +632,13 @@ pub fn get_delegate_permissions(
     delegate: &Address,
 ) -> Result<u32, VaultError> {
     require_initialized(e)?;
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
     match record {
         Some(auth) if auth.active => {
             bump_instance_ttl(e);
@@ -644,10 +654,13 @@ pub fn require_delegate_permission(
     delegate: &Address,
     permission: u32,
 ) -> Result<(), VaultError> {
-    let record = e
-        .storage()
-        .instance()
-        .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(owner.clone(), delegate.clone()));
+    let record =
+        e.storage()
+            .instance()
+            .get::<_, DelegateAuthorization>(&DataKey::delegate_permissions(
+                owner.clone(),
+                delegate.clone(),
+            ));
     match record {
         Some(auth) if auth.active && (auth.permissions & permission) != 0 => Ok(()),
         _ => Err(AuthorizationError::Unauthorized.into()),
@@ -768,8 +781,9 @@ pub fn store_early_withdraw_locked(
         if remaining_lock_amount > 0 {
             next_locks.push_back(Lock {
                 amount: remaining_lock_amount,
+                duration_seconds: lock.duration_seconds,
                 unlock_timestamp: lock.unlock_timestamp,
-                reward_multiplier: lock.reward_multiplier,
+                reward_multiplier_bps: lock.reward_multiplier_bps,
             });
         }
 
@@ -936,16 +950,6 @@ pub fn get_liquid_balance_unchecked(e: &Env, user: &Address) -> i128 {
         bump_persistent_ttl(e, &key);
     }
     balance
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DelegateAuthorization {
-    pub owner: Address,
-    pub delegate: Address,
-    pub permissions: u32,
-    pub created_at: u64,
-    pub active: bool,
 }
 
 fn set_liquid_balance(e: &Env, user: &Address, amount: i128) {

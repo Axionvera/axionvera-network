@@ -1,5 +1,5 @@
+use axionvera_events::{EVENT_VERSION, ledger_timestamp};
 use soroban_sdk::{Address, BytesN, Env, Symbol};
-use axionvera_events::{ledger_timestamp, EVENT_VERSION};
 
 // Protocol and action symbols for replay events
 pub const PROTOCOL_REPLAY: Symbol = Symbol::new_from_array(b"AxReplay\0\0\0\0\0\0");

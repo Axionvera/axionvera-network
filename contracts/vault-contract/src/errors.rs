@@ -289,6 +289,7 @@ impl VaultError {
             Self::InvalidLockConfiguration => ErrorInfo {
                 category: ErrorCategory::Validation,
                 message: "lock duration models are invalid",
+            },
             Self::InvalidPenaltyRate => ErrorInfo {
                 category: ErrorCategory::Validation,
                 message: "penalty rate must be between 0 and 10000 basis points",

@@ -1,8 +1,8 @@
 #![cfg(test)]
 
-use soroban_sdk::{testutils::Address as _, Address, Env, vec, contracttype};
-use axionvera_vault_contract::{VaultContract, VaultContractClient};
 use axionvera_risk::RiskParameters;
+use axionvera_vault_contract::{VaultContract, VaultContractClient};
+use soroban_sdk::{Address, Env, contracttype, testutils::Address as _, vec};
 
 #[contracttype]
 enum TokenDataKey {
@@ -16,14 +16,21 @@ pub struct MockToken;
 #[soroban_sdk::contractimpl]
 impl MockToken {
     pub fn balance(e: Env, id: Address) -> i128 {
-        e.storage().instance().get(&TokenDataKey::Balance(id)).unwrap_or(0)
+        e.storage()
+            .instance()
+            .get(&TokenDataKey::Balance(id))
+            .unwrap_or(0)
     }
 
     pub fn transfer(e: Env, from: Address, to: Address, amount: i128) {
         let from_balance = Self::balance(e.clone(), from.clone());
         let to_balance = Self::balance(e.clone(), to.clone());
-        e.storage().instance().set(&TokenDataKey::Balance(from), &(from_balance - amount));
-        e.storage().instance().set(&TokenDataKey::Balance(to), &(to_balance + amount));
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(from), &(from_balance - amount));
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(to), &(to_balance + amount));
     }
 }
 
@@ -55,8 +62,12 @@ fn test_vault_enforces_risk_limits() {
 
     // Mock token balance
     e.as_contract(&deposit_token, || {
-        e.storage().instance().set(&TokenDataKey::Balance(user.clone()), &2000i128);
-        e.storage().instance().set(&TokenDataKey::Balance(vault_id.clone()), &0i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &2000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(vault_id.clone()), &0i128);
     });
 
     // Test min deposit
@@ -121,8 +132,12 @@ fn test_vault_asset_enforces_risk_limits() {
 
     // Mock token balance
     e.as_contract(&other_asset, || {
-        e.storage().instance().set(&TokenDataKey::Balance(user.clone()), &2000i128);
-        e.storage().instance().set(&TokenDataKey::Balance(vault_id.clone()), &0i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(user.clone()), &2000i128);
+        e.storage()
+            .instance()
+            .set(&TokenDataKey::Balance(vault_id.clone()), &0i128);
     });
 
     // Test min deposit for asset

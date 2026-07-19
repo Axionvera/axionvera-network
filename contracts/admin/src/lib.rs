@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, Address, Env};
+use soroban_sdk::{Address, Env, contract, contractimpl};
 
 #[contract]
 pub struct AdminContract;
@@ -12,16 +12,16 @@ impl AdminContract {
         env.invoke_contract::<()>(
             &security_contract,
             &soroban_sdk::Symbol::new(&env, "pause"),
-            soroban_sdk::vec![&env]
+            soroban_sdk::vec![&env],
         );
     }
-    
+
     /// Admin entry point to recover protocol
     pub fn trigger_recovery(env: Env, security_contract: Address) {
         env.invoke_contract::<()>(
             &security_contract,
             &soroban_sdk::Symbol::new(&env, "unpause"),
-            soroban_sdk::vec![&env]
+            soroban_sdk::vec![&env],
         );
     }
 }

@@ -28,7 +28,10 @@ fn now_timestamp() -> Option<Timestamp> {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0);
-    Some(Timestamp { seconds: secs, nanos: 0 })
+    Some(Timestamp {
+        seconds: secs,
+        nanos: 0,
+    })
 }
 
 fn entry_to_proto(entry: crate::service_registry::ServiceEntry) -> ServiceInfo {

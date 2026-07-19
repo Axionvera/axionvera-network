@@ -2,15 +2,15 @@ use soroban_sdk::{Address, BytesN, Env, Symbol};
 
 use axionvera_core;
 use axionvera_events::{
-    self, AdminTransferAcceptedEvent, AdminTransferProposedEvent, AssetAddedEvent, AssetClaimEvent,
-    AssetDepositEvent, AssetDistributeEvent, AssetWithdrawEvent, ClaimEvent,
-    DelegateActionEvent, DelegateAuthorizedEvent, DelegateRevokedEvent, DepositEvent,
-    DistributeEvent, InitializeEvent, LockEvent, PauseEvent, UnlockEvent, UnpauseEvent,
-    UpgradeEvent, WithdrawEvent, ACT_ADMIN_ACCEPTED, ACT_ADMIN_PROPOSED, ACT_ASSET_ADDED,
-    ACT_ASSET_CLAIM, ACT_ASSET_DEPOSIT, ACT_ASSET_DISTRIBUTE, ACT_ASSET_WITHDRAW, ACT_CLAIM,
-    ACT_DELEGATE, ACT_DELEGATED_ACTION, ACT_DEPOSIT, ACT_DISTRIBUTE, ACT_INIT, ACT_LOCK, ACT_PAUSE,
+    self, ACT_ADMIN_ACCEPTED, ACT_ADMIN_PROPOSED, ACT_ASSET_ADDED, ACT_ASSET_CLAIM,
+    ACT_ASSET_DEPOSIT, ACT_ASSET_DISTRIBUTE, ACT_ASSET_WITHDRAW, ACT_CLAIM, ACT_DELEGATE,
+    ACT_DELEGATED_ACTION, ACT_DEPOSIT, ACT_DISTRIBUTE, ACT_INIT, ACT_LOCK, ACT_PAUSE,
     ACT_REVOKE_DELEGATION, ACT_UNLOCK, ACT_UNPAUSE, ACT_UPGRADE, ACT_VESTING_CLAIMED,
-    ACT_VESTING_CREATED, ACT_WITHDRAW, EVENT_VERSION, PROTOCOL,
+    ACT_VESTING_CREATED, ACT_WITHDRAW, AdminTransferAcceptedEvent, AdminTransferProposedEvent,
+    AssetAddedEvent, AssetClaimEvent, AssetDepositEvent, AssetDistributeEvent, AssetWithdrawEvent,
+    ClaimEvent, DelegateActionEvent, DelegateAuthorizedEvent, DelegateRevokedEvent, DepositEvent,
+    DistributeEvent, EVENT_VERSION, InitializeEvent, LockEvent, PROTOCOL, PauseEvent, UnlockEvent,
+    UnpauseEvent, UpgradeEvent, WithdrawEvent,
 };
 
 pub fn emit_initialize(e: &Env, admin: Address, deposit_token: Address, reward_token: Address) {

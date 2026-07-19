@@ -1,20 +1,21 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, Address, Bytes, Env, Map, Symbol, Vec};
+use soroban_sdk::{Address, Bytes, Env, Map, Symbol, Vec, contracttype};
 
 use axionvera_events as events;
 use axionvera_resources::{ResourceError, ResourceInfo, ResourceState};
+use axionvera_snapshots as snapshots;
 use axionvera_state::{
-    GovernanceState, RewardState, StateError, StakingState, TreasuryState, VaultState,
+    GovernanceState, RewardState, StakingState, StateError, TreasuryState, VaultState,
 };
 use axionvera_storage::{
     create_resource as storage_create_resource, get_governance_state, get_reward_state,
-    get_staking_state, get_treasury_state, get_vault_state, list_resources as storage_list_resources,
-    resource_exists as storage_resource_exists, resource_count as storage_resource_count,
-    set_governance_state, set_reward_state, set_staking_state, set_treasury_state, set_vault_state,
+    get_staking_state, get_treasury_state, get_vault_state,
+    list_resources as storage_list_resources, resource_count as storage_resource_count,
+    resource_exists as storage_resource_exists, set_governance_state, set_reward_state,
+    set_staking_state, set_treasury_state, set_vault_state,
     transition_resource as storage_transition_resource,
 };
-use axionvera_snapshots as snapshots;
 
 /// Maximum number of event log entries stored per user index.
 const MAX_EVENTS_PER_USER: u32 = 50;
@@ -208,14 +209,14 @@ pub struct CoreContract;
 #[contractimpl]
 impl CoreContract {
     /// Example of a critical function restricted by the emergency pause
-    pub fn critical_action(env: Env, security_contract: Address, /* other args */) {
+    pub fn critical_action(env: Env, security_contract: Address /* other args */) {
         // 1. Cross-contract call to check if paused
         let is_paused: bool = env.invoke_contract(
             &security_contract,
             &soroban_sdk::Symbol::new(&env, "is_paused"),
-            soroban_sdk::vec![&env]
+            soroban_sdk::vec![&env],
         );
-        
+
         assert!(!is_paused, "Emergency: Protocol is currently paused.");
 
         // 2. Continue with normal critical action...

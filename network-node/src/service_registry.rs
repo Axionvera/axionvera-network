@@ -24,7 +24,13 @@ impl ServiceEntry {
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        Self { name, address, version, metadata, registered_at }
+        Self {
+            name,
+            address,
+            version,
+            metadata,
+            registered_at,
+        }
     }
 }
 
@@ -89,7 +95,12 @@ mod tests {
     async fn test_register_and_lookup() {
         let registry = ServiceDiscoveryRegistry::new();
         let entry = registry
-            .register("vault".into(), "localhost:9000".into(), "1.0.0".into(), HashMap::new())
+            .register(
+                "vault".into(),
+                "localhost:9000".into(),
+                "1.0.0".into(),
+                HashMap::new(),
+            )
             .await
             .unwrap();
         assert_eq!(entry.name, "vault");
@@ -103,11 +114,21 @@ mod tests {
     async fn test_register_duplicate_fails() {
         let registry = ServiceDiscoveryRegistry::new();
         registry
-            .register("vault".into(), "localhost:9000".into(), "1.0.0".into(), HashMap::new())
+            .register(
+                "vault".into(),
+                "localhost:9000".into(),
+                "1.0.0".into(),
+                HashMap::new(),
+            )
             .await
             .unwrap();
         let result = registry
-            .register("vault".into(), "localhost:9001".into(), "1.0.0".into(), HashMap::new())
+            .register(
+                "vault".into(),
+                "localhost:9001".into(),
+                "1.0.0".into(),
+                HashMap::new(),
+            )
             .await;
         assert!(result.is_err());
     }
@@ -116,7 +137,12 @@ mod tests {
     async fn test_deregister() {
         let registry = ServiceDiscoveryRegistry::new();
         registry
-            .register("vault".into(), "localhost:9000".into(), "1.0.0".into(), HashMap::new())
+            .register(
+                "vault".into(),
+                "localhost:9000".into(),
+                "1.0.0".into(),
+                HashMap::new(),
+            )
             .await
             .unwrap();
         assert!(registry.deregister("vault").await);

@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::errors::ReplayError;
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Symbol, Val, Vec};
 use axionvera_interfaces::{ReplayEvent, ReplayEventStatus, ReplayReport};
+use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol, Vec, testutils::Address as _};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -53,7 +53,7 @@ fn test_add_event_succeeds() {
     let protocol = Symbol::new(&e, "TestProtocol");
     let action = Symbol::new(&e, "TestAction");
     let timestamp = 1234567890;
-    let payload: Val = ().into_val(&e);
+    let payload = Bytes::new(&e);
 
     let event_id = client.add_event(&protocol, &action, &timestamp, &payload);
     assert_eq!(event_id, 1);
@@ -77,7 +77,7 @@ fn test_start_replay_succeeds() {
     // Add a few test events
     let protocol = Symbol::new(&e, "TestProtocol");
     let action = Symbol::new(&e, "TestAction");
-    let payload: Val = ().into_val(&e);
+    let payload = Bytes::new(&e);
     client.add_event(&protocol, &action, &1, &payload);
     client.add_event(&protocol, &action, &2, &payload);
 

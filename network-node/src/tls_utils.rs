@@ -1,6 +1,9 @@
+use rustls_pemfile::{Item, certs, read_one};
 use std::io::Cursor;
-use rustls_pemfile::{certs, read_one, Item};
-use tokio_rustls::rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig as RustlsServerConfig, AllowAnyAuthenticatedClient};
+use tokio_rustls::rustls::server::AllowAnyAuthenticatedClient;
+use tokio_rustls::rustls::{
+    Certificate, PrivateKey, RootCertStore, ServerConfig as RustlsServerConfig,
+};
 
 pub fn build_rustls_server_config(
     cert_pem: &[u8],
@@ -10,7 +13,8 @@ pub fn build_rustls_server_config(
 ) -> Result<RustlsServerConfig, String> {
     // Parse server certs
     let mut cert_cursor = Cursor::new(cert_pem);
-    let server_certs = certs(&mut cert_cursor).map_err(|_| "Failed to parse server cert PEM".to_string())?;
+    let server_certs =
+        certs(&mut cert_cursor).map_err(|_| "Failed to parse server cert PEM".to_string())?;
     if server_certs.is_empty() {
         return Err("No server certificates found in TLS cert data".to_string());
     }
@@ -19,9 +23,15 @@ pub fn build_rustls_server_config(
     let mut key_cursor = Cursor::new(key_pem);
     let mut keys = Vec::new();
     loop {
-        match read_one(&mut key_cursor).map_err(|_| "Failed to parse TLS private key PEM".to_string())? {
-            Some(Item::PKCS8Key(key)) => { keys.push(key); }
-            Some(Item::RSAKey(key)) => { keys.push(key); }
+        match read_one(&mut key_cursor)
+            .map_err(|_| "Failed to parse TLS private key PEM".to_string())?
+        {
+            Some(Item::PKCS8Key(key)) => {
+                keys.push(key);
+            }
+            Some(Item::RSAKey(key)) => {
+                keys.push(key);
+            }
             Some(_) => {}
             None => break,
         }
@@ -30,7 +40,10 @@ pub fn build_rustls_server_config(
         return Err("No private keys found in TLS key data".to_string());
     }
 
-    let der_certs = server_certs.into_iter().map(Certificate).collect::<Vec<_>>();
+    let der_certs = server_certs
+        .into_iter()
+        .map(Certificate)
+        .collect::<Vec<_>>();
     let der_key = PrivateKey(keys.remove(0));
 
     let cfg = if let Some(ca_pem) = client_ca_pem {
@@ -40,7 +53,11 @@ pub fn build_rustls_server_config(
         if parsed.is_empty() {
             return Err("No CA certificates found in client CA PEM".to_string());
         }
-        for cert in parsed { roots.add(&Certificate(cert)).map_err(|e| format!("Failed to add CA cert: {}", e))?; }
+        for cert in parsed {
+            roots
+                .add(&Certificate(cert))
+                .map_err(|e| format!("Failed to add CA cert: {}", e))?;
+        }
 
         if require_client_auth {
             RustlsServerConfig::builder()

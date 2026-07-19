@@ -1,9 +1,9 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, Env, Vec, Symbol};
-use axionvera_state::{VaultState, StakingState, RewardState, TreasuryState};
 use axionvera_accounting::{self, ResourceTotals};
-use axionvera_storage::{get_vault_state, get_staking_state, get_reward_state, get_treasury_state};
+use axionvera_state::{RewardState, StakingState, TreasuryState, VaultState};
+use axionvera_storage::{get_reward_state, get_staking_state, get_treasury_state, get_vault_state};
+use soroban_sdk::{Env, Symbol, Vec, contracttype};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,15 +35,26 @@ pub enum DataKey {
 
 pub const MIN_SNAPSHOT_INTERVAL: u64 = 3600; // 1 hour
 
-pub fn take_snapshot(e: &Env, _proposal_id_for_gov: Option<Symbol>) -> Result<ProtocolSnapshot, SnapshotError> {
+pub fn take_snapshot(
+    e: &Env,
+    _proposal_id_for_gov: Option<Symbol>,
+) -> Result<ProtocolSnapshot, SnapshotError> {
     let now = e.ledger().timestamp();
-    let last_timestamp = e.storage().instance().get(&DataKey::LastSnapshotTimestamp).unwrap_or(0);
+    let last_timestamp = e
+        .storage()
+        .instance()
+        .get(&DataKey::LastSnapshotTimestamp)
+        .unwrap_or(0);
 
     if now < last_timestamp + MIN_SNAPSHOT_INTERVAL {
         return Err(SnapshotError::IntervalNotMet);
     }
 
-    let mut id = e.storage().instance().get(&DataKey::SnapshotCount).unwrap_or(0u64);
+    let mut id = e
+        .storage()
+        .instance()
+        .get(&DataKey::SnapshotCount)
+        .unwrap_or(0u64);
     id += 1;
 
     let metadata = SnapshotMetadata {
@@ -61,13 +72,19 @@ pub fn take_snapshot(e: &Env, _proposal_id_for_gov: Option<Symbol>) -> Result<Pr
         total_usage: axionvera_accounting::get_total_usage(e),
     };
 
-    e.storage().persistent().set(&DataKey::Snapshot(id), &snapshot);
+    e.storage()
+        .persistent()
+        .set(&DataKey::Snapshot(id), &snapshot);
     e.storage().instance().set(&DataKey::SnapshotCount, &id);
     e.storage().instance().set(&DataKey::LatestSnapshotId, &id);
-    e.storage().instance().set(&DataKey::LastSnapshotTimestamp, &now);
+    e.storage()
+        .instance()
+        .set(&DataKey::LastSnapshotTimestamp, &now);
 
     // Extend TTL for persistent storage
-    e.storage().persistent().extend_ttl(&DataKey::Snapshot(id), 518400, 518400);
+    e.storage()
+        .persistent()
+        .extend_ttl(&DataKey::Snapshot(id), 518400, 518400);
 
     Ok(snapshot)
 }
@@ -77,18 +94,26 @@ pub fn get_snapshot(e: &Env, id: u64) -> Option<ProtocolSnapshot> {
 }
 
 pub fn get_latest_snapshot(e: &Env) -> Option<ProtocolSnapshot> {
-    let id = e.storage().instance().get(&DataKey::LatestSnapshotId).unwrap_or(0);
-    if id == 0 {
-        None
-    } else {
-        get_snapshot(e, id)
-    }
+    let id = e
+        .storage()
+        .instance()
+        .get(&DataKey::LatestSnapshotId)
+        .unwrap_or(0);
+    if id == 0 { None } else { get_snapshot(e, id) }
 }
 
 pub fn get_snapshot_history(e: &Env, limit: u32) -> Vec<ProtocolSnapshot> {
-    let count = e.storage().instance().get(&DataKey::SnapshotCount).unwrap_or(0);
+    let count = e
+        .storage()
+        .instance()
+        .get(&DataKey::SnapshotCount)
+        .unwrap_or(0);
     let mut history = Vec::new(e);
-    let start = if count > limit as u64 { count - limit as u64 + 1 } else { 1 };
+    let start = if count > limit as u64 {
+        count - limit as u64 + 1
+    } else {
+        1
+    };
 
     for i in (start..=count).rev() {
         if let Some(snapshot) = get_snapshot(e, i) {

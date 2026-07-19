@@ -14,9 +14,9 @@ use crate::grpc::gateway::{
     DistributeRewardsRequest, HealthCheckResponse, NetworkParameters as GwNetworkParameters,
     NetworkParametersPatch as GwNetworkParametersPatch, NetworkStatusResponse, NodeInfoRequest,
     NodeInfoResponse, PaginationInfo, ParameterUpgradeRequest, PendingParameterUpgrade,
-    PendingParameterUpgradesResponse, RewardsRequest, RewardsResponse, ServiceHealth, TVLRequest,
-    TVLResponse, TransactionHistoryRequest, TransactionHistoryResponse, TransactionInfo,
-    TransactionRequest, TransactionResponse, WithdrawRequest,
+    PendingParameterUpgradesResponse, RewardsRequest, RewardsResponse, ServiceHealth,
+    TransactionHistoryRequest, TransactionHistoryResponse, TransactionInfo, TransactionRequest,
+    TransactionResponse, TvlRequest, TvlResponse, WithdrawRequest,
 };
 use crate::grpc::network_service::NetworkServiceImpl;
 use crate::p2p::P2PManager;
@@ -575,19 +575,19 @@ impl GatewayService for GatewayServiceImpl {
         .await
     }
 
-    async fn get_tvl(&self, request: Request<TVLRequest>) -> Result<Response<TVLResponse>, Status> {
+    async fn get_tvl(&self, request: Request<TvlRequest>) -> Result<Response<TvlResponse>, Status> {
         let req = request.into_inner();
         let request_id = Self::generate_request_id();
 
         self.process_with_tracking(request_id, async move {
             let nv = self
                 .network_service
-                .get_tvl(Request::new(crate::grpc::network::TVLRequest {
+                .get_tvl(Request::new(crate::grpc::network::TvlRequest {
                     token_address: req.token_address,
                 }))
                 .await?
                 .into_inner();
-            Ok(TVLResponse {
+            Ok(TvlResponse {
                 total_value_locked: nv.total_value_locked,
                 token_address: nv.token_address,
                 timestamp: nv.timestamp,

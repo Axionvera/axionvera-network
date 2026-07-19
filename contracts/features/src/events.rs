@@ -1,11 +1,11 @@
 use soroban_sdk::{Address, Env, Symbol};
 
 use axionvera_events::{
-    self, FeatureAdminTransferAcceptedEvent, FeatureAdminTransferProposedEvent,
-    FeatureDisabledEvent, FeatureEnabledEvent, FeatureInitializedEvent, FeaturePausedEvent,
-    FeatureRegisteredEvent, FeatureRolloutUpdatedEvent, FeatureUnpausedEvent, EVENT_VERSION,
-    PROTOCOL_FEATURES, ACT_FEAT_ADM_A, ACT_FEAT_ADM_P, ACT_FEAT_DIS, ACT_FEAT_EN,
-    ACT_FEAT_INIT, ACT_FEAT_PAUSE, ACT_FEAT_REG, ACT_FEAT_ROLL, ACT_FEAT_UNPAU,
+    self, ACT_FEAT_ADM_A, ACT_FEAT_ADM_P, ACT_FEAT_DIS, ACT_FEAT_EN, ACT_FEAT_INIT, ACT_FEAT_PAUSE,
+    ACT_FEAT_REG, ACT_FEAT_ROLL, ACT_FEAT_UNPAU, EVENT_VERSION, FeatureAdminTransferAcceptedEvent,
+    FeatureAdminTransferProposedEvent, FeatureDisabledEvent, FeatureEnabledEvent,
+    FeatureInitializedEvent, FeaturePausedEvent, FeatureRegisteredEvent,
+    FeatureRolloutUpdatedEvent, FeatureUnpausedEvent, PROTOCOL_FEATURES,
 };
 
 pub fn emit_initialized(e: &Env, admin: Address) {

@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::errors::FeatureError;
-use soroban_sdk::{testutils::Address as _, Address, Env, Symbol};
+use soroban_sdk::{Address, Env, Symbol, testutils::Address as _};
 
 fn setup(e: &Env) -> (FeaturesContractClient, Address) {
     let id = e.register_contract(None, FeaturesContract {});
@@ -141,7 +141,10 @@ fn test_feature_limit() {
     client.initialize(&admin);
 
     for i in 0..MAX_FEATURES {
-        let name = Symbol::new(&e, core::str::from_utf8(&[b'a' + (i % 26) as u8, b'a' + (i / 26) as u8]).unwrap());
+        let name = Symbol::new(
+            &e,
+            core::str::from_utf8(&[b'a' + (i % 26) as u8, b'a' + (i / 26) as u8]).unwrap(),
+        );
         client.register_feature(&name);
     }
 

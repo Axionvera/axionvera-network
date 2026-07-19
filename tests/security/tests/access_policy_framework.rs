@@ -1,10 +1,7 @@
 use axionvera_auth::{AccessPolicy, PolicyViolation};
 use axionvera_security::{Authenticated, MatchAddress, PredicatePolicy};
-use axionvera_vault_contract::{errors::VaultError, VaultContract, VaultContractClient};
-use soroban_sdk::{
-    testutils::Address as _,
-    Address, Env,
-};
+use axionvera_vault_contract::{VaultContract, VaultContractClient, errors::VaultError};
+use soroban_sdk::{Address, Env, testutils::Address as _};
 
 #[derive(Clone)]
 struct PolicyContext {
@@ -66,19 +63,14 @@ fn composed_policy_supports_fallback_operator() {
         emergency_mode: true,
     };
 
-    let policy = Authenticated::new(actor).and(
-        MatchAddress::new(actor, expected, PolicyViolation::AddressMismatch).or(
-            MatchAddress::new(
-                actor,
-                emergency_operator,
-                PolicyViolation::Unauthorized,
-            )
-            .and(PredicatePolicy::new(
-                emergency_mode,
-                PolicyViolation::PredicateFailed,
-            )),
-        ),
-    );
+    let policy =
+        Authenticated::new(actor).and(
+            MatchAddress::new(actor, expected, PolicyViolation::AddressMismatch).or(
+                MatchAddress::new(actor, emergency_operator, PolicyViolation::Unauthorized).and(
+                    PredicatePolicy::new(emergency_mode, PolicyViolation::PredicateFailed),
+                ),
+            ),
+        );
 
     assert_eq!(policy.enforce(&context), Ok(()));
 }

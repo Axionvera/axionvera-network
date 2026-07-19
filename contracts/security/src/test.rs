@@ -1,6 +1,6 @@
 #![cfg(test)]
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{Address, Env, testutils::Address as _};
 
 #[test]
 fn test_pause_unpause_flow() {
@@ -9,7 +9,7 @@ fn test_pause_unpause_flow() {
     let client = SecurityContractClient::new(&env, &contract_id);
 
     let admin = Address::generate(&env);
-    
+
     // Initialize
     client.init(&admin);
     assert_eq!(client.is_paused(), false);

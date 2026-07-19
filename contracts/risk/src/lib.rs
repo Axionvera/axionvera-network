@@ -1,7 +1,9 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol, contracterror};
 use axionvera_events::{PROTOCOL, ledger_timestamp};
+use soroban_sdk::{
+    Address, Env, Symbol, contract, contracterror, contractimpl, contracttype, symbol_short,
+};
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -49,7 +51,9 @@ impl RiskManagement {
         }
         e.storage().instance().set(&DataKey::Admin, &admin);
         e.storage().instance().set(&DataKey::RiskParams, &params);
-        e.storage().instance().set(&DataKey::CurrentTotalDeposits, &0_i128);
+        e.storage()
+            .instance()
+            .set(&DataKey::CurrentTotalDeposits, &0_i128);
     }
 
     pub fn set_risk_params(e: Env, admin: Address, params: RiskParameters) {
@@ -67,14 +71,28 @@ impl RiskManagement {
 
     pub fn check_deposit(e: Env, amount: i128) -> Result<(), RiskError> {
         let params: RiskParameters = e.storage().instance().get(&DataKey::RiskParams).unwrap();
-        let current_total: i128 = e.storage().instance().get(&DataKey::CurrentTotalDeposits).unwrap_or(0);
+        let current_total: i128 = e
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentTotalDeposits)
+            .unwrap_or(0);
 
         if amount < params.min_deposit_amount {
-            emit_risk_violation(&e, symbol_short!("min_dep"), amount, params.min_deposit_amount);
+            emit_risk_violation(
+                &e,
+                symbol_short!("min_dep"),
+                amount,
+                params.min_deposit_amount,
+            );
             return Err(RiskError::TooSmall);
         }
         if amount > params.max_deposit_amount && params.max_deposit_amount > 0 {
-            emit_risk_violation(&e, symbol_short!("max_dep"), amount, params.max_deposit_amount);
+            emit_risk_violation(
+                &e,
+                symbol_short!("max_dep"),
+                amount,
+                params.max_deposit_amount,
+            );
             return Err(RiskError::TooLarge);
         }
         if current_total + amount > params.global_cap && params.global_cap > 0 {
@@ -87,15 +105,26 @@ impl RiskManagement {
     pub fn check_withdrawal(e: Env, amount: i128) -> Result<(), RiskError> {
         let params: RiskParameters = e.storage().instance().get(&DataKey::RiskParams).unwrap();
         if amount > params.max_withdrawal_amount && params.max_withdrawal_amount > 0 {
-            emit_risk_violation(&e, symbol_short!("max_wd"), amount, params.max_withdrawal_amount);
+            emit_risk_violation(
+                &e,
+                symbol_short!("max_wd"),
+                amount,
+                params.max_withdrawal_amount,
+            );
             return Err(RiskError::TooLarge);
         }
         Ok(())
     }
 
     pub fn update_total_deposits(e: Env, delta: i128) {
-        let current_total: i128 = e.storage().instance().get(&DataKey::CurrentTotalDeposits).unwrap_or(0);
-        e.storage().instance().set(&DataKey::CurrentTotalDeposits, &(current_total + delta));
+        let current_total: i128 = e
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentTotalDeposits)
+            .unwrap_or(0);
+        e.storage()
+            .instance()
+            .set(&DataKey::CurrentTotalDeposits, &(current_total + delta));
     }
 }
 
@@ -107,7 +136,7 @@ fn emit_risk_violation(e: &Env, action: Symbol, amount: i128, limit: i128) {
             amount,
             limit,
             timestamp: ledger_timestamp(e),
-        }
+        },
     );
 }
 
@@ -156,11 +185,17 @@ mod tests {
         assert_eq!(client.try_check_deposit(&5), Err(Ok(RiskError::TooSmall)));
 
         // Too large
-        assert_eq!(client.try_check_deposit(&1500), Err(Ok(RiskError::TooLarge)));
+        assert_eq!(
+            client.try_check_deposit(&1500),
+            Err(Ok(RiskError::TooLarge))
+        );
 
         // Global cap
         client.update_total_deposits(&4900);
-        assert_eq!(client.try_check_deposit(&150), Err(Ok(RiskError::CapReached)));
+        assert_eq!(
+            client.try_check_deposit(&150),
+            Err(Ok(RiskError::CapReached))
+        );
     }
 
     #[test]
@@ -182,6 +217,9 @@ mod tests {
         assert!(client.try_check_withdrawal(&100).is_ok());
 
         // Too large
-        assert_eq!(client.try_check_withdrawal(&600), Err(Ok(RiskError::TooLarge)));
+        assert_eq!(
+            client.try_check_withdrawal(&600),
+            Err(Ok(RiskError::TooLarge))
+        );
     }
 }

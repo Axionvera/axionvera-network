@@ -120,7 +120,7 @@ impl SorobanRpcClient {
         let from = &self.rpc_urls[from_index];
         let to = &self.rpc_urls[from_index + 1];
 
-        counter!("soroban_rpc_failovers_total").increment(1);
+        counter!("soroban_rpc_failovers_total", 1);
         warn!(
             from_rpc_url = %from,
             to_rpc_url = %to,

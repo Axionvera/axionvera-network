@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod test;
 
-use soroban_sdk::{contracterror, contracttype, Address, Bytes, Env, Symbol};
+use soroban_sdk::{Address, Bytes, Env, Symbol, contracterror, contracttype};
 
 use axionvera_events as events;
 
@@ -118,7 +118,8 @@ pub fn emit_resource_transition_event(
         caller: caller.clone(),
         timestamp: e.ledger().timestamp(),
     };
-    e.events().publish((events::PROTOCOL_RESOURCES, action), event);
+    e.events()
+        .publish((events::PROTOCOL_RESOURCES, action), event);
 }
 
 /// Emit a resource created event.

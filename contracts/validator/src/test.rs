@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use crate::*;
-use soroban_sdk::{testutils::Address as _, Address, Env};
-use axionvera_storage::{set_vault_state, set_staking_state, set_reward_state, set_treasury_state};
+use axionvera_storage::{set_reward_state, set_staking_state, set_treasury_state, set_vault_state};
+use soroban_sdk::{Address, Env, testutils::Address as _};
 
 // -----------------------------------------------------------------------
 // Pure-logic consistency rule tests (no contract env needed beyond default)
@@ -34,7 +34,8 @@ fn vault_treasury_consistency_terminal_insolvent_ok() {
 
 #[test]
 fn vault_treasury_consistency_terminal_emergency_ok() {
-    let r = rule_vault_treasury_consistency(VaultState::Terminated, TreasuryState::EmergencyRestricted);
+    let r =
+        rule_vault_treasury_consistency(VaultState::Terminated, TreasuryState::EmergencyRestricted);
     assert_eq!(r.status, ValidationStatus::Passed);
 }
 
@@ -83,22 +84,32 @@ fn treasury_vault_consistency_emergency_active_fails() {
 #[test]
 fn all_pure_rules_pass_on_default_states() {
     let e = Env::default();
-    let results = validate_consistency_rules(&e,
-        VaultState::Uninitialized, StakingState::Uninitialized,
-        RewardState::Idle, TreasuryState::Normal,
+    let results = validate_consistency_rules(
+        &e,
+        VaultState::Uninitialized,
+        StakingState::Uninitialized,
+        RewardState::Idle,
+        TreasuryState::Normal,
     );
     for i in 0..results.len() {
-        assert_eq!(results.get(i).unwrap().status, ValidationStatus::Passed,
-            "rule {:?} should pass on default states", results.get(i).unwrap().name);
+        assert_eq!(
+            results.get(i).unwrap().status,
+            ValidationStatus::Passed,
+            "rule {:?} should pass on default states",
+            results.get(i).unwrap().name
+        );
     }
 }
 
 #[test]
 fn detect_mixed_inconsistencies() {
     let e = Env::default();
-    let results = validate_consistency_rules(&e,
-        VaultState::Terminated, StakingState::Active,
-        RewardState::Accruing, TreasuryState::Normal,
+    let results = validate_consistency_rules(
+        &e,
+        VaultState::Terminated,
+        StakingState::Active,
+        RewardState::Accruing,
+        TreasuryState::Normal,
     );
     let mut fail = 0;
     for i in 0..results.len() {
@@ -108,7 +119,10 @@ fn detect_mixed_inconsistencies() {
             ValidationStatus::Warning => (),
         }
     }
-    assert!(fail >= 2, "should detect vault-terminated + staking-active + treasury-normal inconsistencies");
+    assert!(
+        fail >= 2,
+        "should detect vault-terminated + staking-active + treasury-normal inconsistencies"
+    );
 }
 
 // -----------------------------------------------------------------------
@@ -123,8 +137,13 @@ impl ValidatorHarness {
     pub fn noop() {}
 }
 
-fn with_env<F: FnOnce(&Env)>(vault: VaultState, staking: StakingState,
-    reward: RewardState, treasury: TreasuryState, f: F) {
+fn with_env<F: FnOnce(&Env)>(
+    vault: VaultState,
+    staking: StakingState,
+    reward: RewardState,
+    treasury: TreasuryState,
+    f: F,
+) {
     let e = Env::default();
     let caller = Address::generate(&e);
     let id = e.register(ValidatorHarness, ());
@@ -140,8 +159,10 @@ fn with_env<F: FnOnce(&Env)>(vault: VaultState, staking: StakingState,
 #[test]
 fn storage_backed_rules_on_default_states() {
     with_env(
-        VaultState::Uninitialized, StakingState::Uninitialized,
-        RewardState::Idle, TreasuryState::Normal,
+        VaultState::Uninitialized,
+        StakingState::Uninitialized,
+        RewardState::Idle,
+        TreasuryState::Normal,
         |e| {
             let report = generate_report(e);
             assert_eq!(report.overall, ValidationStatus::Passed);
@@ -153,8 +174,10 @@ fn storage_backed_rules_on_default_states() {
 #[test]
 fn report_detects_inconsistencies() {
     with_env(
-        VaultState::Terminated, StakingState::Active,
-        RewardState::Accruing, TreasuryState::Normal,
+        VaultState::Terminated,
+        StakingState::Active,
+        RewardState::Accruing,
+        TreasuryState::Normal,
         |e| {
             let report = generate_report(e);
             assert_eq!(report.overall, ValidationStatus::Failed);
@@ -166,29 +189,36 @@ fn report_detects_inconsistencies() {
 #[test]
 fn rule_names_are_present_in_report() {
     with_env(
-        VaultState::Active, StakingState::Active,
-        RewardState::Accruing, TreasuryState::Normal,
+        VaultState::Active,
+        StakingState::Active,
+        RewardState::Accruing,
+        TreasuryState::Normal,
         |e| {
             let report = generate_report(e);
             let expected = [
-            symbol_short!("vault_stk"),
-            symbol_short!("vault_trs"),
-            symbol_short!("rwd_vault"),
-            symbol_short!("vault_rwd"),
-            symbol_short!("treas_vlt"),
-            symbol_short!("rsrc_inv"),
-            symbol_short!("acct_cons"),
-            symbol_short!("evt_log"),
-        ];
-        let mut found_count = 0u32;
-        for ei in 0..expected.len() {
-            for ri in 0..report.rules.len() {
-                if report.rules.get(ri).unwrap().name == expected[ei] {
-                    found_count += 1;
-                    break;
+                symbol_short!("vault_stk"),
+                symbol_short!("vault_trs"),
+                symbol_short!("rwd_vault"),
+                symbol_short!("vault_rwd"),
+                symbol_short!("treas_vlt"),
+                symbol_short!("rsrc_inv"),
+                symbol_short!("acct_cons"),
+                symbol_short!("evt_log"),
+            ];
+            let mut found_count = 0u32;
+            for ei in 0..expected.len() {
+                for ri in 0..report.rules.len() {
+                    if report.rules.get(ri).unwrap().name == expected[ei] {
+                        found_count += 1;
+                        break;
+                    }
                 }
             }
-        }
-        assert_eq!(found_count, expected.len() as u32, "all 8 rule names must appear");
-    });
+            assert_eq!(
+                found_count,
+                expected.len() as u32,
+                "all 8 rule names must appear"
+            );
+        },
+    );
 }
