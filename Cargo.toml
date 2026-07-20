@@ -15,10 +15,12 @@ members = [
   "contracts/resources",
   "contracts/state",
   "contracts/storage",
+  "contracts/testing",
   "contracts/validator",
   "network-node",
   "contracts/admin",
   "tests/auth",
+  "tests/determinism",
   "tests/security",
   "tests/risk",
 ]
