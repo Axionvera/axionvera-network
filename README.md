@@ -178,3 +178,6 @@ The `contracts/rewards` crate provides a deterministic reward simulation engine 
 
 The simulation tests in `contracts/rewards/src/test.rs` document low-activity, target-activity, deterministic replay, pool-conservation, and invalid-input edge cases.
 simulated changes
+
+## Peer Message Handling Changes
+- Separated parsing, validation, dispatch, and error handling into focused modules.
