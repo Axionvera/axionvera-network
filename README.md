@@ -181,3 +181,6 @@ simulated changes
 
 ## Peer Message Handling Changes
 - Separated parsing, validation, dispatch, and error handling into focused modules.
+
+## Consensus Module Changes
+- Separated responsibilities, updated imports, added regression tests, and documented flow.
