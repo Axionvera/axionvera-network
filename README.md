@@ -22,11 +22,16 @@ The reward model is index-based, which means the contract updates a global rewar
 
 If you are onboarding as a contributor, these are the best first reads:
 
+- [docs/network-architecture-overview.md](docs/network-architecture-overview.md) - **start here**: how the repo is laid out, what builds today, and which modules are wired up
 - [docs/contract-spec.md](docs/contract-spec.md)
 - [docs/contract-storage.md](docs/contract-storage.md)
 - [contracts/vault-contract/src/lib.rs](contracts/vault-contract/src/lib.rs)
 - [contracts/vault-contract/src/storage.rs](contracts/vault-contract/src/storage.rs)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
+
+The overview is the fastest way to find out whether the area you are about to touch is
+compiled by the workspace, and it records the known gaps between the code and the older
+architecture documents.
 
 ## Contract At A Glance
 
@@ -143,6 +148,7 @@ npm test
 
 ## More Documentation
 
+- [docs/network-architecture-overview.md](docs/network-architecture-overview.md) - node runtime, peer and protocol modules, consensus, config and diagnostics flow
 - [docs/contract-spec.md](docs/contract-spec.md)
 - [docs/contract-storage.md](docs/contract-storage.md)
 - [docs/architecture.md](docs/architecture.md)
