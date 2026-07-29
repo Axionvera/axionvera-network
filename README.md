@@ -137,10 +137,13 @@ npm test
 
 ## Contributor Notes
 
+- Before submitting a PR, review the [Contributor Cleanup Checklist](docs/contributor/cleanup-checklist.md) to ensure your changes meet all quality standards.
 - Start with the tests if you want executable examples of the contract behavior.
 - Read storage docs before changing accounting logic.
 - If you touch deposits, withdrawals, or rewards, verify both state changes and emitted events.
 
+
+- Before submitting a PR, review the [Contributor Cleanup Checklist](docs/contributor/cleanup-checklist.md) to ensure your changes meet all quality standards.
 ## More Documentation
 
 - [docs/contract-spec.md](docs/contract-spec.md)
