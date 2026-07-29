@@ -1063,6 +1063,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axionvera-pipeline"
+version = "0.1.0"
+dependencies = [
+ "axionvera-events",
+ "axionvera-interfaces",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "axionvera-resources"
 version = "0.1.0"
 dependencies = [
@@ -1081,15 +1090,9 @@ dependencies = [
 name = "axionvera-risk"
 version = "0.1.0"
 dependencies = [
+ "axionvera-auth",
  "axionvera-events",
- "axionvera-interfaces",
- "soroban-sdk",
-]
-
-[[package]]
-name = "axionvera-rewards"
-version = "0.1.0"
-dependencies = [
+ "axionvera-security",
  "soroban-sdk",
 ]
 

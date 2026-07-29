@@ -128,6 +128,14 @@ Contract tests:
 cargo test -p axionvera-vault-contract
 ```
 
+Network-node regression baseline:
+
+```bash
+cargo test -p axionvera-network-node --test regression_baseline
+```
+
+The regression baseline covers configuration parsing, peer message flow, consensus proposal handling, and error-path behavior for the network node so cleanup refactors can be validated safely.
+
 Project-level shortcuts:
 
 ```bash
