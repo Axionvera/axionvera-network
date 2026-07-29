@@ -177,3 +177,4 @@ The `contracts/rewards` crate provides a deterministic reward simulation engine 
 5. Allocates the adjusted pool by each participant's `stake + activity_score`, assigning integer remainder to the final participant so allocations exactly conserve the adjusted pool.
 
 The simulation tests in `contracts/rewards/src/test.rs` document low-activity, target-activity, deterministic replay, pool-conservation, and invalid-input edge cases.
+simulated changes
