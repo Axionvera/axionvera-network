@@ -1,26 +1,15 @@
 [package]
 name = "axionvera-vault-contract"
 version = "0.1.0"
-edition = "2021"
-license = "Apache-2.0"
-publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-soroban-sdk = { workspace = true }
-axionvera-auth = { path = "../auth" }
-axionvera-events = { path = "../events" }
-axionvera-accounting = { path = "../accounting" }
-axionvera-core = { path = "../core" }
-axionvera-fees = { path = "../fees" }
-axionvera-interfaces = { path = "../interfaces" }
-axionvera-storage = { path = "../storage" }
-axionvera-security = { path = "../security" }
-axionvera-risk = { path = "../risk" }
+soroban-sdk.workspace = true
 
 [dev-dependencies]
-proptest = "1.11.0"
 soroban-sdk = { workspace = true, features = ["testutils"] }
-axionvera-vault-contract-v2 = { path = "../vault-contract-v2" }

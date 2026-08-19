@@ -1,87 +1,11 @@
 [package]
 name = "axionvera-network-node"
 version = "0.1.0"
-edition = "2021"
-license = "Apache-2.0"
-publish = false
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
-tokio-util = { version = "0.7", features = ["rt"] }
-hyper = { version = "0.14", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-appender = "0.2"
-anyhow = "1.0"
-thiserror = "1.0"
-async-trait = "0.1"
-futures = "0.3"
-futures-util = "0.3"
-hex = "0.4"
-uuid = { version = "1.0", features = ["v4"] }
-chrono = { version = "0.4", features = ["serde"] }
-config = "0.13"
-clap = { version = "4.0", features = ["derive"] }
-slog = "2.7"
-slog-term = "2.9"
-slog-async = "2.7"
-axum = "0.7"
-tower = "0.4"
-tower-http = { version = "0.5", features = ["trace"] }
-metrics = "0.21"
-metrics-exporter-prometheus = "0.12"
-prometheus = "0.13"
-redis = { version = "0.23", features = ["tokio-comp", "connection-manager"] }
-tonic = { version = "0.11", features = ["transport", "prost", "gzip", "tls"] }
-rustls = { version = "0.21", package = "rustls" }
-tokio-rustls = "0.23"
-tonic-rustls = "0.3"
-rustls-pemfile = "1.0"
-tokio-stream = "0.1"
-prost = "0.12"
-prost-types = "0.12"
-tonic-web = "0.11"
-tonic-reflection = "0.11"
-fastrand = "2"
-rocksdb = "0.21"
-sha2 = "0.10"
-ed25519-dalek = "1"
-rand = "0.8"
-opentelemetry = "0.21"
-opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
-tracing-opentelemetry = "0.22"
-aws-config = "1"
-aws-sdk-kms = "1"
-aws-sdk-secretsmanager = "1"
-aws-smithy-runtime = "1"
-aws-smithy-runtime-api = "1"
-aws-types = "1"
-stellar-horizon = "0.8"
-stellar_sdk = "0.1"
-reqwest = { version = "0.11", features = ["json"] }
-reqwest-middleware = "0.2"
-reqwest-retry = "0.2"
-sqlx = { version = "0.7", features = [
-    "runtime-tokio-rustls",
-    "postgres",
-    "chrono",
-    "uuid",
-] }
-dotenvy = "0.15"
-base64 = "0.21"
-http = "0.2"
-tikv-jemallocator = "0.6.1"
-tikv-jemalloc-ctl = { version = "0.6.1", optional = true }
-
-[features]
-profiling = ["tikv-jemallocator/profiling", "tikv-jemalloc-ctl"]
-
-[build-dependencies]
-tonic-build = "0.11"
-
-[dev-dependencies]
-tempfile = "3.0"
-mockall = "0.11"
-rcgen = "0.9"
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true

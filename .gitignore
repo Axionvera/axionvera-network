@@ -1,13 +1,5 @@
-/target
-**/target
-.soroban
-.stellar
-node_modules
-dist
+target/
+node_modules/
 .env
 .DS_Store
-AGENTS.md
-.agent/
-.agents/
-issue.md
-**/test_snapshots
+bug-scan-logs/

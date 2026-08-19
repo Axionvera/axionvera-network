@@ -1,40 +1,19 @@
 [workspace]
-members = [
-  "contracts/auth",
-  "contracts/vault-contract",
-  "contracts/vault-contract-v2",
-  "contracts/events",
-  "contracts/accounting",
-  "contracts/core",
-  "contracts/features",
-  "contracts/interfaces",
-  "contracts/integrations",
-  "contracts/orchestrator",
-  "contracts/pipeline",
-  "contracts/rewards",
-  "contracts/resources",
-  "contracts/state",
-  "contracts/storage",
-  "contracts/validator",
-  "network-node",
-  "contracts/admin",
-  "tests/auth",
-  "tests/security",
-  "tests/risk",
-]
 resolver = "2"
+members = [
+"contracts/vault-contract",
+"contracts/rewards",
+"network-node"
+]
 
 [workspace.package]
-version = "0.1.0"
 edition = "2021"
-publish = false
+license = "MIT"
+repository = "https://github.com/Axionvera/axionvera-network"
 
 [workspace.dependencies]
 soroban-sdk = "22.0.0"
-
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

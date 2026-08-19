@@ -1,186 +1,26 @@
 # Axionvera Network
 
-Axionvera Network is a Soroban (Stellar) vault and reward distribution project. This repository contains:
+Axionvera Network is a clean Rust and Soroban workspace for vault deposits, withdrawals, rewards, and supporting network-node services.
 
-- a Soroban smart contract for deposits, withdrawals, and rewards
-- a Rust network node service around the contract
-- deployment scripts and infrastructure code
-- tests and contributor documentation
+## Current Scope
 
-## What The Contract Does
+- Soroban vault contract
+- Reward distribution engine
+- Rust network node
+- Tests and contributor documentation
 
-The vault contract supports four main user actions:
+## Planned Modules
 
-1. Deposit a token into the vault.
-2. Withdraw deposited funds later.
-3. Receive proportional rewards when an admin distributes them.
-4. Claim accrued rewards.
+- `contracts/vault-contract` - Soroban vault contract
+- `contracts/rewards` - reward simulation and distribution logic
+- `network-node` - off-chain network service
+- `docs` - architecture and contributor docs
+- `tests` - integration tests
 
-The reward model is index-based, which means the contract updates a global reward index instead of looping through every user during a distribution.
-
-## Start Here
-
-If you are onboarding as a contributor, these are the best first reads:
-
-- [docs/network-architecture-overview.md](docs/network-architecture-overview.md) - **start here**: how the repo is laid out, what builds today, and which modules are wired up
-- [docs/contract-spec.md](docs/contract-spec.md)
-- [docs/contract-storage.md](docs/contract-storage.md)
-- [contracts/vault-contract/src/lib.rs](contracts/vault-contract/src/lib.rs)
-- [contracts/vault-contract/src/storage.rs](contracts/vault-contract/src/storage.rs)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-
-The overview is the fastest way to find out whether the area you are about to touch is
-compiled by the workspace, and it records the known gaps between the code and the older
-architecture documents.
-
-## Contract At A Glance
-
-Key ideas:
-
-- `total_deposits` tracks the total deposited amount.
-- `reward_index` tracks cumulative rewards per deposited unit.
-- each user stores a personal reward index snapshot and accrued rewards.
-- rewards are realized lazily on user interaction.
-
-Core public functions:
-
-- `initialize(admin, deposit_token, reward_token)`
-- `deposit(from, amount)`
-- `withdraw(to, amount)`
-- `distribute_rewards(amount)`
-- `claim_rewards(user)`
-- `balance(user)`
-- `total_deposits()`
-- `reward_index()`
-- `pending_rewards(user)`
-
-## Storage Overview
-
-The contract stores both global and per-user state.
-
-Global keys:
-
-- initialization flag
-- admin address
-- deposit token address
-- reward token address
-- total deposits
-- reward index
-
-Per-user keys:
-
-- deposited balance
-- last synced reward index
-- accrued but unclaimed rewards
-
-Read the full walkthrough in [docs/contract-storage.md](docs/contract-storage.md).
-
-## Example Flow
-
-```rust
-vault.initialize(&admin, &deposit_token_id, &reward_token_id);
-
-vault.deposit(&alice, &100);
-vault.deposit(&bob, &300);
-
-vault.distribute_rewards(&400);
-
-assert_eq!(vault.pending_rewards(&alice), 100);
-assert_eq!(vault.pending_rewards(&bob), 300);
-
-assert_eq!(vault.claim_rewards(&alice), 100);
-assert_eq!(vault.claim_rewards(&bob), 300);
-```
-
-## Repository Layout
-
-- [contracts/vault-contract](contracts/vault-contract) - Soroban vault contract in Rust
-- [network-node](network-node) - network service and API layer
-- [docs](docs) - contract and architecture documentation
-- [scripts](scripts) - deployment and helper scripts
-- [tests](tests) - integration and TypeScript tests
-- [terraform](terraform) - infrastructure as code
-
-## Local Setup
-
-Prerequisites:
-
-- Rust stable
-- `wasm32-unknown-unknown` target
-- Soroban CLI
-- Node.js 18+
-
-Basic setup:
+## Development
 
 ```bash
-git clone https://github.com/your-org/axionvera-network.git
-cd axionvera-network
-npm install
-rustup target add wasm32-unknown-unknown
-```
-
-Build the contract:
-
-```bash
-npm run build:contracts
-```
-
-## Testing
-
-Contract tests:
-
-```bash
-cargo test -p axionvera-vault-contract
-```
-
-Network-node regression baseline:
-
-```bash
-cargo test -p axionvera-network-node --test regression_baseline
-```
-
-The regression baseline covers configuration parsing, peer message flow, consensus proposal handling, and error-path behavior for the network node so cleanup refactors can be validated safely.
-
-Project-level shortcuts:
-
-```bash
-npm run test:rust
-npm test
-```
-
-## Contributor Notes
-
-- Before submitting a PR, review the [Contributor Cleanup Checklist](docs/contributor/cleanup-checklist.md) to ensure your changes meet all quality standards.
-- Start with the tests if you want executable examples of the contract behavior.
-- Read storage docs before changing accounting logic.
-- If you touch deposits, withdrawals, or rewards, verify both state changes and emitted events.
-
-
-- Before submitting a PR, review the [Contributor Cleanup Checklist](docs/contributor/cleanup-checklist.md) to ensure your changes meet all quality standards.
-## More Documentation
-
-- [docs/network-architecture-overview.md](docs/network-architecture-overview.md) - node runtime, peer and protocol modules, consensus, config and diagnostics flow
-- [docs/contract-spec.md](docs/contract-spec.md)
-- [docs/contract-storage.md](docs/contract-storage.md)
-- [docs/architecture.md](docs/architecture.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## Dynamic Reward Engine
-
-The `contracts/rewards` crate provides a deterministic reward simulation engine for adapting epoch rewards to protocol conditions before distribution. Operators provide a `RewardFormula`, aggregate `ProtocolMetrics`, participant metrics, and a requested reward pool. The engine:
-
-1. Normalizes protocol activity against a target activity score.
-2. Normalizes participation breadth against a target participant count.
-3. Blends both signals with basis-point weights that must sum to 10,000.
-4. Scales emissions between the formula's minimum and maximum emission rates.
-5. Allocates the adjusted pool by each participant's `stake + activity_score`, assigning integer remainder to the final participant so allocations exactly conserve the adjusted pool.
-
-The simulation tests in `contracts/rewards/src/test.rs` document low-activity, target-activity, deterministic replay, pool-conservation, and invalid-input edge cases.
-simulated changes
-
-## Peer Message Handling Changes
-- Separated parsing, validation, dispatch, and error handling into focused modules.
-
-## Consensus Module Changes
-- Separated responsibilities, updated imports, added regression tests, and documented flow.
+cargo fmt --all -- --check
+cargo check --workspace --all-targets
+cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
