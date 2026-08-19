@@ -1,0 +1,30 @@
+{
+  "name": "axionvera-network",
+  "version": "1.0.0",
+  "description": "Axionvera Network is a clean Rust and Soroban workspace for vault deposits, withdrawals, rewards, and supporting network-node services.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "check": "sh .husky/pre-commit",
+    "test": "sh .husky/pre-commit",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Axionvera/axionvera-network.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Axionvera/axionvera-network/issues"
+  },
+  "homepage": "https://github.com/Axionvera/axionvera-network#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
