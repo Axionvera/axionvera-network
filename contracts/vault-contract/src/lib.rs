@@ -22,6 +22,7 @@ enum DataKey {
     Balance(Address),
     TotalDeposits,
     RewardBalance,
+    ClaimableReward(Address),
 }
 
 #[contract]
@@ -108,14 +109,22 @@ impl VaultContract {
     pub fn claim_rewards(env: Env, user: Address) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         user.require_auth();
-        let reward_balance = Self::reward_balance(&env);
-        if reward_balance <= 0 {
-            return Err(VaultError::InvalidRewardState);
+        let claimable = Self::claimable_reward(&env, &user);
+        if claimable == 0 {
+            return Ok(0);
         }
         env.storage()
-            .instance()
-            .set(&DataKey::RewardBalance, &0_i128);
-        Ok(reward_balance)
+            .persistent()
+            .set(&DataKey::ClaimableReward(user), &0_i128);
+        Ok(claimable)
+    }
+
+    pub fn set_claimable_reward(env: Env, user: Address, amount: i128) -> Result<(), VaultError> {
+        Self::require_initialized(&env)?;
+        env.storage()
+            .persistent()
+            .set(&DataKey::ClaimableReward(user), &amount);
+        Ok(())
     }
 
     pub fn is_initialized(env: Env) -> bool {
@@ -183,6 +192,13 @@ impl VaultContract {
             .get(&DataKey::RewardBalance)
             .unwrap_or(0)
     }
+
+    fn claimable_reward(env: &Env, user: &Address) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::ClaimableReward(user.clone()))
+            .unwrap_or(0)
+    }
 }
 
 #[cfg(test)]
@@ -245,16 +261,22 @@ mod test {
     }
 
     #[test]
-    fn tracks_deposits_and_rejects_empty_reward_claim() {
+    fn tracks_deposits_and_claims_rewards() {
         let (env, client, _) = setup();
         let user = Address::generate(&env);
         assert_eq!(client.deposit(&user, &10), 10);
         assert_eq!(client.total_deposits(), 10);
         assert_eq!(client.withdraw(&user, &4), 6);
         assert_eq!(client.total_deposits(), 6);
-        assert_eq!(
-            client.try_claim_rewards(&user).unwrap_err().unwrap(),
-            VaultError::InvalidRewardState
-        );
+
+        // Claiming with no rewards returns zero
+        assert_eq!(client.claim_rewards(&user), 0);
+
+        // Set rewards and claim
+        client.set_claimable_reward(&user, &100);
+        assert_eq!(client.claim_rewards(&user), 100);
+
+        // Reward balance should be cleared
+        assert_eq!(client.claim_rewards(&user), 0);
     }
 }
