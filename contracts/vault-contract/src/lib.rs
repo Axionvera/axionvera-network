@@ -90,8 +90,12 @@ impl VaultContract {
         if amount > balance {
             return Err(VaultError::InsufficientBalance);
         }
-        let new_balance = balance - amount;
-        let new_total = Self::total(&env) - amount;
+        let new_balance = balance
+            .checked_sub(amount)
+            .ok_or(VaultError::InvalidAmount)?;
+        let new_total = Self::total(&env)
+            .checked_sub(amount)
+            .ok_or(VaultError::InvalidAmount)?;
         env.storage()
             .persistent()
             .set(&DataKey::Balance(to), &new_balance);
