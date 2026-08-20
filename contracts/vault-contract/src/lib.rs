@@ -114,6 +114,29 @@ impl VaultContract {
         Ok(reward_balance)
     }
 
+    pub fn is_initialized(env: Env) -> bool {
+        env.storage().instance().has(&DataKey::Initialized)
+    }
+
+    pub fn admin(env: Env) -> Result<Address, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(env.storage().instance().get(&DataKey::Admin).unwrap())
+    }
+
+    pub fn deposit_token(env: Env) -> Result<Address, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(env
+            .storage()
+            .instance()
+            .get(&DataKey::DepositToken)
+            .unwrap())
+    }
+
+    pub fn reward_token(env: Env) -> Result<Address, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(env.storage().instance().get(&DataKey::RewardToken).unwrap())
+    }
+
     pub fn total_deposits(env: Env) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         Ok(Self::total(&env))
