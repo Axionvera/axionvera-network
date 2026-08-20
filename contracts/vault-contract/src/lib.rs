@@ -146,6 +146,16 @@ impl VaultContract {
         Ok(Self::total(&env))
     }
 
+    pub fn user_balance(env: Env, user: Address) -> Result<i128, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(Self::balance(&env, &user))
+    }
+
+    pub fn pending_rewards(env: Env) -> Result<i128, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(Self::reward_balance(&env))
+    }
+
     fn require_initialized(env: &Env) -> Result<(), VaultError> {
         if !env.storage().instance().has(&DataKey::Initialized) {
             return Err(VaultError::NotInitialized);
