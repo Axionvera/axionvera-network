@@ -1,3 +1,7 @@
+pub mod config;
+
+pub use config::NodeConfig;
+
 pub fn health_status() -> &'static str {
     "ok"
 }
