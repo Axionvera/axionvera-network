@@ -1,7 +1,9 @@
 #![no_std]
 
 use axionvera_rewards::calculate_pending_rewards;
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env,
+};
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -56,6 +58,10 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::RewardBalance, &0_i128);
+        env.events().publish(
+            (symbol_short!("vault"), symbol_short!("init")),
+            admin.clone(),
+        );
         Ok(())
     }
 
@@ -78,6 +84,10 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
+        env.events().publish(
+            (symbol_short!("vault"), symbol_short!("deposit")),
+            (from.clone(), amount),
+        );
         Ok(new_balance)
     }
 
@@ -104,6 +114,10 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
+        env.events().publish(
+            (symbol_short!("vault"), symbol_short!("withdraw")),
+            (to.clone(), amount),
+        );
         Ok(new_balance)
     }
 
@@ -116,7 +130,11 @@ impl VaultContract {
         }
         env.storage()
             .persistent()
-            .set(&DataKey::ClaimableReward(user), &0_i128);
+            .set(&DataKey::ClaimableReward(user.clone()), &0_i128);
+        env.events().publish(
+            (symbol_short!("vault"), symbol_short!("claim")),
+            (user, claimable),
+        );
         Ok(claimable)
     }
 
