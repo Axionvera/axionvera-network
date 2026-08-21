@@ -1,5 +1,6 @@
 #![no_std]
 
+use axionvera_rewards::calculate_pending_rewards;
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env};
 
 #[contracterror]
@@ -127,6 +128,14 @@ impl VaultContract {
         Ok(())
     }
 
+    pub fn set_reward_balance(env: Env, amount: i128) -> Result<(), VaultError> {
+        Self::require_initialized(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::RewardBalance, &amount);
+        Ok(())
+    }
+
     pub fn is_initialized(env: Env) -> bool {
         env.storage().instance().has(&DataKey::Initialized)
     }
@@ -160,9 +169,13 @@ impl VaultContract {
         Ok(Self::balance(&env, &user))
     }
 
-    pub fn pending_rewards(env: Env) -> Result<i128, VaultError> {
+    pub fn pending_rewards(env: Env, user: Address) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
-        Ok(Self::reward_balance(&env))
+        Ok(calculate_pending_rewards(
+            Self::balance(&env, &user),
+            Self::total(&env),
+            Self::reward_balance(&env),
+        ))
     }
 
     fn require_initialized(env: &Env) -> Result<(), VaultError> {
@@ -278,5 +291,27 @@ mod test {
 
         // Reward balance should be cleared
         assert_eq!(client.claim_rewards(&user), 0);
+    }
+
+    #[test]
+    fn pending_rewards_are_proportional_to_deposit_share() {
+        let (env, client, _) = setup();
+        let user_a = Address::generate(&env);
+        let user_b = Address::generate(&env);
+
+        client.deposit(&user_a, &500);
+        client.deposit(&user_b, &500);
+        client.set_reward_balance(&200);
+
+        assert_eq!(client.pending_rewards(&user_a), 100);
+        assert_eq!(client.pending_rewards(&user_b), 100);
+    }
+
+    #[test]
+    fn pending_rewards_are_zero_when_total_deposits_are_zero() {
+        let (env, client, _) = setup();
+        let user = Address::generate(&env);
+        client.set_reward_balance(&200);
+        assert_eq!(client.pending_rewards(&user), 0);
     }
 }
