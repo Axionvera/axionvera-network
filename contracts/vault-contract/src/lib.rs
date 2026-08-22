@@ -233,9 +233,17 @@ impl VaultContract {
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, testutils::Events as _, vec, IntoVal, Val, Vec};
+    use soroban_sdk::testutils::{Address as _, MockAuth, MockAuthInvoke};
+    use soroban_sdk::IntoVal;
 
-    fn setup() -> (Env, VaultContractClient<'static>, Address, Address) {
+    // -------------------------------------------------------------------------
+    // Shared test helpers
+    // -------------------------------------------------------------------------
+
+    /// Create a fully initialized vault and return (env, client, admin,
+    /// deposit_token, reward_token).  All auths are mocked so callers don't
+    /// need to worry about signing.
+    fn setup() -> (Env, VaultContractClient<'static>, Address) {
         let env = Env::default();
         env.mock_all_auths();
         let contract_id = env.register(VaultContract, ());
@@ -270,12 +278,124 @@ mod test {
         assert!(env.events().all().is_empty());
     }
 
+    /// Create an uninitialized vault (no `initialize` call).
+    fn setup_uninitialized() -> (Env, VaultContractClient<'static>) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        (env, client)
+    }
+
+    // =========================================================================
+    // A. REPEATED INITIALIZATION
+    // =========================================================================
+
     #[test]
     fn rejects_repeated_initialization() {
         let (env, client, admin, _) = setup();
         let result =
             client.try_initialize(&admin, &Address::generate(&env), &Address::generate(&env));
         assert_eq!(result.unwrap_err().unwrap(), VaultError::AlreadyInitialized);
+    }
+
+    /// After a failed re-initialization the stored admin must remain the
+    /// original one — the failed call must not overwrite any storage.
+    #[test]
+    fn reinitialize_does_not_overwrite_admin() {
+        let (env, client, original_admin) = setup();
+
+        let attacker = Address::generate(&env);
+        let _ = client.try_initialize(
+            &attacker,
+            &Address::generate(&env),
+            &Address::generate(&env),
+        );
+
+        // AlreadyInitialized was returned, so the stored admin is unchanged.
+        assert_eq!(client.admin(), original_admin);
+    }
+
+    /// After a failed re-initialization `is_initialized` must still be true
+    /// and the token addresses must be unchanged.
+    #[test]
+    fn reinitialize_does_not_corrupt_state() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+        client.initialize(&admin, &deposit_token, &reward_token);
+
+        // Sanity — vault is initialized with the right tokens.
+        assert!(client.is_initialized());
+        assert_eq!(client.deposit_token(), deposit_token);
+        assert_eq!(client.reward_token(), reward_token);
+        assert_eq!(client.total_deposits(), 0);
+
+        // Attempt re-init with completely different arguments.
+        let _ = client.try_initialize(
+            &Address::generate(&env),
+            &Address::generate(&env),
+            &Address::generate(&env),
+        );
+
+        // Everything must be unchanged.
+        assert!(client.is_initialized());
+        assert_eq!(client.admin(), admin);
+        assert_eq!(client.deposit_token(), deposit_token);
+        assert_eq!(client.reward_token(), reward_token);
+        assert_eq!(client.total_deposits(), 0);
+    }
+
+    // =========================================================================
+    // B. UNINITIALIZED PROTECTED METHODS
+    // =========================================================================
+
+    #[test]
+    fn persists_admin_after_initialization() {
+        let (_, client, admin) = setup();
+        assert_eq!(client.admin(), admin);
+    }
+
+    #[test]
+    fn repeated_initialization_cannot_overwrite_admin() {
+        let (env, client, admin) = setup();
+        let other_admin = Address::generate(&env);
+        let result = client.try_initialize(
+            &other_admin,
+            &Address::generate(&env),
+            &Address::generate(&env),
+        );
+        assert_eq!(result.unwrap_err().unwrap(), VaultError::AlreadyInitialized);
+        assert_eq!(client.admin(), admin);
+    }
+
+    #[test]
+    fn initialize_requires_admin_authorization() {
+        let env = Env::default();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        let caller = Address::generate(&env);
+
+        // No auth is mocked: an unsigned caller cannot assign ownership.
+        // require_auth fails before any state is written, surfacing as an
+        // invoke error rather than a VaultError.
+        let result =
+            client.try_initialize(&caller, &Address::generate(&env), &Address::generate(&env));
+        let err = result.unwrap_err();
+        assert!(
+            err.is_err(),
+            "expected an auth invoke error, got a contract error"
+        );
+        assert!(!client.is_initialized());
+        assert_eq!(
+            client.try_admin().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
     }
 
     #[test]
@@ -290,6 +410,393 @@ mod test {
             VaultError::NotInitialized
         );
     }
+
+    #[test]
+    fn deposit_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client.try_deposit(&user, &100).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn withdraw_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client.try_withdraw(&user, &100).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn claim_rewards_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client.try_claim_rewards(&user).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn set_claimable_reward_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client
+                .try_set_claimable_reward(&user, &100)
+                .unwrap_err()
+                .unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn set_reward_balance_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_set_reward_balance(&500).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn deposit_token_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_deposit_token().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn reward_token_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_reward_token().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn total_deposits_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_total_deposits().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn user_balance_query_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client.try_user_balance(&user).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn pending_rewards_query_rejected_before_initialization() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+        assert_eq!(
+            client.try_pending_rewards(&user).unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    /// Calling a protected method on an uninitialized vault must not create
+    /// any storage entries — the vault must remain truly uninitialized.
+    #[test]
+    fn failed_protected_call_does_not_initialize_vault() {
+        let (env, client) = setup_uninitialized();
+        let user = Address::generate(&env);
+
+        // Attempt several protected operations.
+        let _ = client.try_deposit(&user, &100);
+        let _ = client.try_withdraw(&user, &100);
+        let _ = client.try_claim_rewards(&user);
+        let _ = client.try_total_deposits();
+
+        // The vault must still be uninitialized after all those failed calls.
+        assert!(!client.is_initialized());
+    }
+
+    // =========================================================================
+    // C. OWNER / ADMIN QUERY BEFORE INITIALIZATION
+    // =========================================================================
+
+    #[test]
+    fn admin_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_admin().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    /// `is_initialized` must be false before any `initialize` call.
+    #[test]
+    fn is_initialized_returns_false_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert!(!client.is_initialized());
+    }
+
+    // =========================================================================
+    // D. VALID INITIALIZATION (happy path)
+    // =========================================================================
+
+    #[test]
+    fn initialize_succeeds_with_valid_inputs() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+
+        // Must succeed without error.
+        client.initialize(&admin, &deposit_token, &reward_token);
+
+        // Vault is now initialized.
+        assert!(client.is_initialized());
+    }
+
+    #[test]
+    fn initialize_persists_admin_correctly() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        assert_eq!(client.admin(), admin);
+    }
+
+    #[test]
+    fn initialize_persists_tokens_correctly() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+        client.initialize(&admin, &deposit_token, &reward_token);
+
+        assert_eq!(client.deposit_token(), deposit_token);
+        assert_eq!(client.reward_token(), reward_token);
+    }
+
+    #[test]
+    fn initialize_sets_total_deposits_to_zero() {
+        let (_, client, _) = setup();
+        assert_eq!(client.total_deposits(), 0);
+    }
+
+    /// `is_initialized` must return `true` after a successful initialization.
+    #[test]
+    fn is_initialized_returns_true_after_initialization() {
+        let (_, client, _) = setup();
+        assert!(client.is_initialized());
+    }
+
+    // =========================================================================
+    // E. INVALID / UNAUTHORIZED INITIALIZATION
+    // =========================================================================
+
+    /// The `initialize` function calls `admin.require_auth()` before any
+    /// storage write.  When the transaction is not authorized by the admin
+    /// address supplied, the call must be rejected and the vault must remain
+    /// uninitialized.
+    ///
+    /// We simulate this by providing a `MockAuth` that authorizes a *different*
+    /// address (the impostor) for the contract invocation instead of the real
+    /// admin.
+    #[test]
+    fn initialize_rejected_when_admin_auth_not_provided() {
+        let env = Env::default();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        let real_admin = Address::generate(&env);
+        let impostor = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+
+        // Only the impostor authorizes the call — real_admin's auth is absent.
+        env.mock_auths(&[MockAuth {
+            address: &impostor,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "initialize",
+                args: (&real_admin, &deposit_token, &reward_token).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+
+        // The call passes `real_admin` as the admin argument but the auth
+        // provided is for `impostor`, so `real_admin.require_auth()` fails.
+        let result = client.try_initialize(&real_admin, &deposit_token, &reward_token);
+        assert!(result.is_err());
+
+        // The vault must remain uninitialized — no partial state should exist.
+        assert!(!client.is_initialized());
+    }
+
+    // =========================================================================
+    // F. UNAUTHORIZED ACCESS AFTER INITIALIZATION
+    // =========================================================================
+
+    // NOTE: `set_claimable_reward` and `set_reward_balance` deliberately have
+    // no `require_auth` call in the current implementation (they rely solely on
+    // the initialization guard).  The tests below document that existing design
+    // rather than introducing new restrictions.
+
+    /// A non-admin account cannot call `deposit` on behalf of another address
+    /// because `deposit` calls `from.require_auth()` — the `from` address must
+    /// be the signer.
+    ///
+    /// When `mock_all_auths` is NOT used the auth check is enforced.
+    #[test]
+    fn deposit_requires_caller_to_be_authorized_depositor() {
+        let env = Env::default();
+        let contract_id = env.register(VaultContract, ());
+
+        // Initialize with mocked auth, then drop mock_all_auths for the
+        // deposit call below.
+        env.mock_all_auths();
+        let client = VaultContractClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+        let deposit_token = Address::generate(&env);
+        let reward_token = Address::generate(&env);
+        client.initialize(&admin, &deposit_token, &reward_token);
+
+        let legitimate_user = Address::generate(&env);
+        let bystander = Address::generate(&env);
+
+        // Authorize `bystander` for the deposit, but pass `legitimate_user`
+        // as the `from` argument — the auth check for `legitimate_user` will
+        // fail.
+        env.mock_auths(&[MockAuth {
+            address: &bystander,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "deposit",
+                args: (&legitimate_user, 100_i128).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+
+        let result = client.try_deposit(&legitimate_user, &100);
+        assert!(result.is_err());
+
+        // No balance must have been credited to the legitimate_user.
+        env.mock_all_auths();
+        assert_eq!(client.user_balance(&legitimate_user), 0);
+    }
+
+    /// A non-admin account cannot withdraw on behalf of another address
+    /// because `withdraw` calls `to.require_auth()`.
+    #[test]
+    fn withdraw_requires_caller_to_be_authorized_withdrawer() {
+        // Set up and make a deposit.
+        let (env, client, _) = setup();
+        let legitimate_user = Address::generate(&env);
+        client.deposit(&legitimate_user, &50);
+
+        // Now re-register a fresh env without mock_all_auths for the withdraw.
+        let env2 = Env::default();
+        let contract_id2 = env2.register(VaultContract, ());
+        let client2 = VaultContractClient::new(&env2, &contract_id2);
+
+        env2.mock_all_auths();
+        let admin = Address::generate(&env2);
+        let other_user = Address::generate(&env2);
+        client2.initialize(&admin, &Address::generate(&env2), &Address::generate(&env2));
+        client2.deposit(&other_user, &50);
+
+        // Attempt to withdraw as a bystander authorizing the call on behalf
+        // of `other_user`.
+        let bystander = Address::generate(&env2);
+        env2.mock_auths(&[MockAuth {
+            address: &bystander,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id2,
+                fn_name: "withdraw",
+                args: (&other_user, 50_i128).into_val(&env2),
+                sub_invokes: &[],
+            },
+        }]);
+
+        let result = client2.try_withdraw(&other_user, &50);
+        assert!(result.is_err());
+
+        // Balance must remain intact.
+        env2.mock_all_auths();
+        assert_eq!(client2.user_balance(&other_user), 50);
+    }
+
+    // =========================================================================
+    // G. STATE INTEGRITY AFTER FAILED CALLS
+    // =========================================================================
+
+    /// After a rejected re-initialization total_deposits must still be zero
+    /// (or whatever it was before — it must not be reset or corrupted).
+    #[test]
+    fn reinitialize_does_not_reset_total_deposits() {
+        let (env, client, admin) = setup();
+        let user = Address::generate(&env);
+        client.deposit(&user, &42);
+        assert_eq!(client.total_deposits(), 42);
+
+        // Attempt re-init.
+        let _ = client.try_initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        // Total deposits must be unchanged.
+        assert_eq!(client.total_deposits(), 42);
+    }
+
+    /// After a rejected re-initialization the user balance must be intact.
+    #[test]
+    fn reinitialize_does_not_reset_user_balance() {
+        let (env, client, admin) = setup();
+        let user = Address::generate(&env);
+        client.deposit(&user, &99);
+        assert_eq!(client.user_balance(&user), 99);
+
+        let _ = client.try_initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        assert_eq!(client.user_balance(&user), 99);
+    }
+
+    /// After a rejected re-initialization the claimable reward for a user must
+    /// be unchanged.
+    #[test]
+    fn reinitialize_does_not_reset_claimable_rewards() {
+        let (env, client, admin) = setup();
+        let user = Address::generate(&env);
+        client.set_claimable_reward(&user, &77);
+
+        let _ = client.try_initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        // Claim should still return the pre-set amount.
+        assert_eq!(client.claim_rewards(&user), 77);
+    }
+
+    // =========================================================================
+    // Existing regression tests (deposit / withdraw / rewards)
+    // =========================================================================
 
     #[test]
     fn rejects_invalid_amounts_and_insufficient_balance() {
