@@ -1,6 +1,6 @@
 pub mod config;
 
-pub use config::NodeConfig;
+pub use config::{ConfigError, NodeConfig};
 
 pub fn health_status() -> &'static str {
     "ok"
