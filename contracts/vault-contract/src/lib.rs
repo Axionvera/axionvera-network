@@ -161,6 +161,10 @@ impl VaultContract {
         Ok(env.storage().instance().get(&DataKey::Admin).unwrap())
     }
 
+    pub fn owner(env: Env) -> Result<Address, VaultError> {
+        Self::admin(env)
+    }
+
     pub fn deposit_token(env: Env) -> Result<Address, VaultError> {
         Self::require_initialized(&env)?;
         Ok(env
@@ -538,6 +542,21 @@ mod test {
             client.try_admin().unwrap_err().unwrap(),
             VaultError::NotInitialized
         );
+    }
+
+    #[test]
+    fn owner_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_owner().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn owner_returns_admin_after_initialization() {
+        let (_, client, admin) = setup();
+        assert_eq!(client.owner(), admin);
     }
 
     /// `is_initialized` must be false before any `initialize` call.
