@@ -861,6 +861,75 @@ mod test {
         let user = Address::generate(&env);
         client.set_reward_balance(&200);
         assert_eq!(client.pending_rewards(&user), 0);
+        // Claiming with no deposits also pays nothing.
+        assert_eq!(client.claim_rewards(&user), 0);
+    }
+
+    #[test]
+    fn zero_user_balance_returns_zero_reward() {
+        let (env, client, _) = setup();
+        let depositor = Address::generate(&env);
+        let user = Address::generate(&env);
+        client.deposit(&depositor, &1000);
+        client.set_reward_balance(&200);
+        // `user` has never deposited: balance is 0 while total deposits are > 0.
+        assert_eq!(client.user_balance(&user), 0);
+        assert_eq!(client.pending_rewards(&user), 0);
+    }
+
+    #[test]
+    fn large_values_do_not_overflow() {
+        let (env, client, _) = setup();
+        let user = Address::generate(&env);
+        let large = 10_000_000_000_000_000_000_i128;
+        client.deposit(&user, &large);
+        client.set_reward_balance(&large);
+        // (balance * rewards) / total_deposits stays within i128 for these values.
+        assert_eq!(client.pending_rewards(&user), large);
+        // A reward balance large enough to overflow the product resolves to 0,
+        // matching the rewards helper's checked-arithmetic policy. No panic.
+        client.set_reward_balance(&i128::MAX);
+        assert_eq!(client.pending_rewards(&user), 0);
+    }
+
+    #[test]
+    fn repeated_claim_does_not_duplicate_rewards() {
+        let (env, client, _) = setup();
+        let user = Address::generate(&env);
+        client.deposit(&user, &500);
+        client.set_claimable_reward(&user, &100);
+        assert_eq!(client.claim_rewards(&user), 100);
+        // No new reward-earning activity: further claims pay nothing.
+        assert_eq!(client.claim_rewards(&user), 0);
+        assert_eq!(client.claim_rewards(&user), 0);
+        // Claiming does not touch deposit accounting.
+        assert_eq!(client.user_balance(&user), 500);
+        assert_eq!(client.total_deposits(), 500);
+    }
+
+    #[test]
+    fn user_without_balance_cannot_claim_reward() {
+        let (env, client, _) = setup();
+        let depositor = Address::generate(&env);
+        let user = Address::generate(&env);
+        client.deposit(&depositor, &1000);
+        client.set_reward_balance(&200);
+        // No balance and no stored claimable amount: claim pays zero, not an error.
+        assert_eq!(client.user_balance(&user), 0);
+        assert_eq!(client.claim_rewards(&user), 0);
+    }
+
+    #[test]
+    fn valid_user_receives_expected_reward() {
+        let (env, client, _) = setup();
+        let user = Address::generate(&env);
+        client.deposit(&user, &1000);
+        client.set_reward_balance(&100);
+        assert_eq!(client.pending_rewards(&user), 100);
+        client.set_claimable_reward(&user, &100);
+        assert_eq!(client.claim_rewards(&user), 100);
+        // The claimed amount is cleared, so a subsequent claim pays nothing.
+        assert_eq!(client.claim_rewards(&user), 0);
     }
 
     #[test]
