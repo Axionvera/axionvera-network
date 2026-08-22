@@ -2,8 +2,14 @@
 
 use axionvera_rewards::calculate_pending_rewards;
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
 };
+
+const TOPIC_VAULT: Symbol = symbol_short!("vault");
+const TOPIC_INIT: Symbol = symbol_short!("init");
+const TOPIC_DEPOSIT: Symbol = symbol_short!("deposit");
+const TOPIC_WITHDRAW: Symbol = symbol_short!("withdraw");
+const TOPIC_CLAIM: Symbol = symbol_short!("claim");
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -58,10 +64,8 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::RewardBalance, &0_i128);
-        env.events().publish(
-            (symbol_short!("vault"), symbol_short!("init")),
-            admin.clone(),
-        );
+        env.events()
+            .publish((TOPIC_VAULT, TOPIC_INIT), admin.clone());
         Ok(())
     }
 
@@ -84,10 +88,8 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
-        env.events().publish(
-            (symbol_short!("vault"), symbol_short!("deposit")),
-            (from.clone(), amount),
-        );
+        env.events()
+            .publish((TOPIC_VAULT, TOPIC_DEPOSIT), (from.clone(), amount));
         Ok(new_balance)
     }
 
@@ -114,10 +116,8 @@ impl VaultContract {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
-        env.events().publish(
-            (symbol_short!("vault"), symbol_short!("withdraw")),
-            (to.clone(), amount),
-        );
+        env.events()
+            .publish((TOPIC_VAULT, TOPIC_WITHDRAW), (to.clone(), amount));
         Ok(new_balance)
     }
 
@@ -131,10 +131,8 @@ impl VaultContract {
         env.storage()
             .persistent()
             .set(&DataKey::ClaimableReward(user.clone()), &0_i128);
-        env.events().publish(
-            (symbol_short!("vault"), symbol_short!("claim")),
-            (user, claimable),
-        );
+        env.events()
+            .publish((TOPIC_VAULT, TOPIC_CLAIM), (user, claimable));
         Ok(claimable)
     }
 
@@ -252,7 +250,32 @@ mod test {
         let client = VaultContractClient::new(&env, &contract_id);
         let admin = Address::generate(&env);
         client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
-        (env, client, admin)
+        (env, client, admin, contract_id)
+    }
+
+    fn setup_uninitialized() -> (Env, VaultContractClient<'static>, Address) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        (env, client, contract_id)
+    }
+
+    fn expected_vault_event(
+        env: &Env,
+        contract_id: &Address,
+        action: Symbol,
+        data: impl IntoVal<Env, Val>,
+    ) -> (Address, Vec<Val>, Val) {
+        (
+            contract_id.clone(),
+            vec![env, TOPIC_VAULT.into_val(env), action.into_val(env)],
+            data.into_val(env),
+        )
+    }
+
+    fn assert_no_events(env: &Env) {
+        assert!(env.events().all().is_empty());
     }
 
     /// Create an uninitialized vault (no `initialize` call).
@@ -270,7 +293,7 @@ mod test {
 
     #[test]
     fn rejects_repeated_initialization() {
-        let (env, client, admin) = setup();
+        let (env, client, admin, _) = setup();
         let result =
             client.try_initialize(&admin, &Address::generate(&env), &Address::generate(&env));
         assert_eq!(result.unwrap_err().unwrap(), VaultError::AlreadyInitialized);
@@ -777,7 +800,7 @@ mod test {
 
     #[test]
     fn rejects_invalid_amounts_and_insufficient_balance() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_deposit(&user, &0).unwrap_err().unwrap(),
@@ -800,7 +823,7 @@ mod test {
 
     #[test]
     fn tracks_deposits_and_claims_rewards() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         assert_eq!(client.deposit(&user, &10), 10);
         assert_eq!(client.total_deposits(), 10);
@@ -820,7 +843,7 @@ mod test {
 
     #[test]
     fn pending_rewards_are_proportional_to_deposit_share() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user_a = Address::generate(&env);
         let user_b = Address::generate(&env);
 
@@ -834,9 +857,168 @@ mod test {
 
     #[test]
     fn pending_rewards_are_zero_when_total_deposits_are_zero() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         client.set_reward_balance(&200);
         assert_eq!(client.pending_rewards(&user), 0);
+    }
+
+    #[test]
+    fn initialize_emits_stable_init_event() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+
+        client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, TOPIC_INIT, admin,)
+            ],
+        );
+    }
+
+    #[test]
+    fn deposit_emits_stable_deposit_event() {
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let amount = 42_i128;
+
+        client.deposit(&user, &amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, TOPIC_DEPOSIT, (user, amount),)
+            ],
+        );
+    }
+
+    #[test]
+    fn withdraw_emits_stable_withdraw_event() {
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let withdraw_amount = 37_i128;
+
+        client.deposit(&user, &100);
+        client.withdraw(&user, &withdraw_amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, TOPIC_WITHDRAW, (user, withdraw_amount),)
+            ],
+        );
+    }
+
+    #[test]
+    fn claim_rewards_emits_stable_claim_event() {
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let claimable = 250_i128;
+
+        client.set_claimable_reward(&user, &claimable);
+        client.claim_rewards(&user);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, TOPIC_CLAIM, (user, claimable),)
+            ],
+        );
+    }
+
+    #[test]
+    fn failed_deposit_does_not_emit_event() {
+        let (env, client, _, _) = setup();
+        let user = Address::generate(&env);
+
+        let _ = client.try_deposit(&user, &0);
+
+        assert_no_events(&env);
+    }
+
+    #[test]
+    fn failed_withdraw_does_not_emit_event() {
+        let (env, client, _, _) = setup();
+        let user = Address::generate(&env);
+
+        let _ = client.try_withdraw(&user, &1);
+
+        assert_no_events(&env);
+    }
+
+    #[test]
+    fn claim_rewards_with_zero_claimable_does_not_emit_event() {
+        let (env, client, _, _) = setup();
+        let user = Address::generate(&env);
+
+        client.claim_rewards(&user);
+
+        assert_no_events(&env);
+    }
+
+    #[test]
+    fn failed_deposit_on_uninitialized_contract_does_not_emit_event() {
+        let (env, client, _) = setup_uninitialized();
+        let user = Address::generate(&env);
+
+        let _ = client.try_deposit(&user, &10);
+
+        assert_no_events(&env);
+    }
+
+    #[test]
+    fn full_lifecycle_emits_expected_events_per_step() {
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let deposit_amount = 100_i128;
+        let withdraw_amount = 25_i128;
+        let claimable = 50_i128;
+
+        client.deposit(&user, &deposit_amount);
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    TOPIC_DEPOSIT,
+                    (user.clone(), deposit_amount),
+                )
+            ],
+        );
+
+        client.withdraw(&user, &withdraw_amount);
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    TOPIC_WITHDRAW,
+                    (user.clone(), withdraw_amount),
+                )
+            ],
+        );
+
+        client.set_claimable_reward(&user, &claimable);
+        client.claim_rewards(&user);
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, TOPIC_CLAIM, (user, claimable),)
+            ],
+        );
     }
 }
