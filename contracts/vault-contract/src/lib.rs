@@ -1109,4 +1109,43 @@ mod test {
             ],
         );
     }
+
+    #[test]
+    fn multi_user_accounting_maintains_consistent_total_deposits() {
+        let (env, client, _, _) = setup();
+        let user_a = Address::generate(&env);
+        let user_b = Address::generate(&env);
+
+        // Multiple deposits
+        client.deposit(&user_a, &100);
+        assert_eq!(client.user_balance(&user_a), 100);
+        assert_eq!(client.total_deposits(), 100);
+
+        client.deposit(&user_b, &200);
+        assert_eq!(client.user_balance(&user_b), 200);
+        assert_eq!(client.total_deposits(), 300);
+
+        client.deposit(&user_a, &50);
+        assert_eq!(client.user_balance(&user_a), 150);
+        assert_eq!(client.total_deposits(), 350);
+
+        // Partial withdrawal
+        client.withdraw(&user_b, &50);
+        assert_eq!(client.user_balance(&user_b), 150);
+        assert_eq!(client.total_deposits(), 300);
+
+        // Full withdrawal
+        client.withdraw(&user_a, &150);
+        assert_eq!(client.user_balance(&user_a), 0);
+        assert_eq!(client.total_deposits(), 150);
+
+        // Failed withdrawal
+        let _ = client.try_withdraw(&user_b, &1000);
+        assert_eq!(client.user_balance(&user_b), 150);
+        assert_eq!(client.total_deposits(), 150);
+
+        // Balances remain isolated
+        assert_eq!(client.user_balance(&user_a), 0);
+        assert_eq!(client.user_balance(&user_b), 150);
+    }
 }
