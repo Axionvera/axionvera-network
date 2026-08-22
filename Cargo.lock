@@ -173,6 +173,7 @@ version = "0.1.0"
 name = "axionvera-vault-contract"
 version = "0.1.0"
 dependencies = [
+ "axionvera-rewards",
  "soroban-sdk",
 ]
 

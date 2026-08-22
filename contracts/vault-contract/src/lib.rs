@@ -80,7 +80,7 @@ impl VaultContract {
         let new_total = total.checked_add(amount).ok_or(VaultError::InvalidAmount)?;
         env.storage()
             .persistent()
-            .set(&DataKey::Balance(from), &new_balance);
+            .set(&DataKey::Balance(from.clone()), &new_balance);
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
@@ -110,7 +110,7 @@ impl VaultContract {
             .ok_or(VaultError::InvalidAmount)?;
         env.storage()
             .persistent()
-            .set(&DataKey::Balance(to), &new_balance);
+            .set(&DataKey::Balance(to.clone()), &new_balance);
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &new_total);
