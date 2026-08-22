@@ -256,6 +256,49 @@ mod test {
     }
 
     #[test]
+    fn persists_admin_after_initialization() {
+        let (_, client, admin) = setup();
+        assert_eq!(client.admin(), admin);
+    }
+
+    #[test]
+    fn repeated_initialization_cannot_overwrite_admin() {
+        let (env, client, admin) = setup();
+        let other_admin = Address::generate(&env);
+        let result = client.try_initialize(
+            &other_admin,
+            &Address::generate(&env),
+            &Address::generate(&env),
+        );
+        assert_eq!(result.unwrap_err().unwrap(), VaultError::AlreadyInitialized);
+        assert_eq!(client.admin(), admin);
+    }
+
+    #[test]
+    fn initialize_requires_admin_authorization() {
+        let env = Env::default();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        let caller = Address::generate(&env);
+
+        // No auth is mocked: an unsigned caller cannot assign ownership.
+        // require_auth fails before any state is written, surfacing as an
+        // invoke error rather than a VaultError.
+        let result =
+            client.try_initialize(&caller, &Address::generate(&env), &Address::generate(&env));
+        let err = result.unwrap_err();
+        assert!(
+            err.is_err(),
+            "expected an auth invoke error, got a contract error"
+        );
+        assert!(!client.is_initialized());
+        assert_eq!(
+            client.try_admin().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
     fn rejects_uninitialized_usage() {
         let env = Env::default();
         env.mock_all_auths();
