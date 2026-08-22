@@ -59,7 +59,60 @@ mod tests {
     }
 
     #[test]
+    fn zero_user_weight_returns_zero_reward() {
+        assert_eq!(calculate_reward_share(400, 0, 400), 0);
+    }
+
+    #[test]
+    fn zero_total_rewards_returns_zero_reward() {
+        assert_eq!(calculate_reward_share(0, 100, 400), 0);
+    }
+
+    #[test]
+    fn large_reward_share_values_do_not_overflow() {
+        // saturating_mul clamps the product; division still completes without
+        // panicking, and the result is deterministic.
+        assert_eq!(calculate_reward_share(u128::MAX, 2, 3), u128::MAX / 3);
+        assert_eq!(calculate_reward_share(u128::MAX, u128::MAX, 1), u128::MAX);
+        assert_eq!(
+            calculate_reward_share(u128::MAX, 2, 3),
+            calculate_reward_share(u128::MAX, 2, 3)
+        );
+    }
+
+    #[test]
+    fn pending_rewards_are_zero_when_total_rewards_are_zero() {
+        assert_eq!(calculate_pending_rewards(500, 1000, 0), 0);
+    }
+
+    #[test]
+    fn pending_rewards_are_zero_for_negative_inputs() {
+        assert_eq!(calculate_pending_rewards(-500, 1000, 200), 0);
+        assert_eq!(calculate_pending_rewards(500, -1000, 200), 0);
+        assert_eq!(calculate_pending_rewards(500, 1000, -200), 0);
+    }
+
+    #[test]
+    fn large_pending_rewards_values_are_deterministic() {
+        // i128::MAX * 1 does not overflow; floor division truncates without panic.
+        assert_eq!(calculate_pending_rewards(i128::MAX, 2, 1), i128::MAX / 2);
+        assert_eq!(
+            calculate_pending_rewards(i128::MAX, 2, 1),
+            calculate_pending_rewards(i128::MAX, 2, 1)
+        );
+    }
+
+    #[test]
+    fn pending_rewards_truncate_fractional_shares() {
+        // 5 * 1 / 10 truncates to 0; 15 * 1 / 10 truncates to 1. Never rounds up.
+        assert_eq!(calculate_pending_rewards(5, 10, 1), 0);
+        assert_eq!(calculate_pending_rewards(15, 10, 1), 1);
+    }
+
+    #[test]
     fn pending_rewards_return_zero_on_overflow() {
+        // The product overflows i128, so the checked policy returns 0.
         assert_eq!(calculate_pending_rewards(i128::MAX, 1, 2), 0);
+        assert_eq!(calculate_pending_rewards(i128::MAX, 2, i128::MAX), 0);
     }
 }
