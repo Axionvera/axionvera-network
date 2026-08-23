@@ -239,8 +239,8 @@ mod test {
     use soroban_sdk::{testutils::Events, vec, Val, Vec};
 
     use super::*;
-    use soroban_sdk::testutils::{Address as _, MockAuth, MockAuthInvoke};
-    use soroban_sdk::IntoVal;
+    use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
+    use soroban_sdk::{vec, IntoVal, Val, Vec};
 
     // -------------------------------------------------------------------------
     // Shared test helpers
@@ -274,15 +274,6 @@ mod test {
 
     fn assert_no_events(env: &Env) {
         assert!(env.events().all().is_empty());
-    }
-
-    /// Create an uninitialized vault (no `initialize` call).
-    fn setup_uninitialized() -> (Env, VaultContractClient<'static>) {
-        let env = Env::default();
-        env.mock_all_auths();
-        let contract_id = env.register(VaultContract, ());
-        let client = VaultContractClient::new(&env, &contract_id);
-        (env, client)
     }
 
     // =========================================================================
@@ -411,7 +402,7 @@ mod test {
 
     #[test]
     fn deposit_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_deposit(&user, &100).unwrap_err().unwrap(),
@@ -421,7 +412,7 @@ mod test {
 
     #[test]
     fn withdraw_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_withdraw(&user, &100).unwrap_err().unwrap(),
@@ -431,7 +422,7 @@ mod test {
 
     #[test]
     fn claim_rewards_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_claim_rewards(&user).unwrap_err().unwrap(),
@@ -441,7 +432,7 @@ mod test {
 
     #[test]
     fn set_claimable_reward_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client
@@ -454,7 +445,7 @@ mod test {
 
     #[test]
     fn set_reward_balance_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_set_reward_balance(&500).unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -463,7 +454,7 @@ mod test {
 
     #[test]
     fn deposit_token_query_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_deposit_token().unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -472,7 +463,7 @@ mod test {
 
     #[test]
     fn reward_token_query_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_reward_token().unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -481,7 +472,7 @@ mod test {
 
     #[test]
     fn total_deposits_query_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_total_deposits().unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -490,7 +481,7 @@ mod test {
 
     #[test]
     fn user_balance_query_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_user_balance(&user).unwrap_err().unwrap(),
@@ -500,7 +491,7 @@ mod test {
 
     #[test]
     fn pending_rewards_query_rejected_before_initialization() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
         assert_eq!(
             client.try_pending_rewards(&user).unwrap_err().unwrap(),
@@ -512,7 +503,7 @@ mod test {
     /// any storage entries — the vault must remain truly uninitialized.
     #[test]
     fn failed_protected_call_does_not_initialize_vault() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
 
         // Attempt several protected operations.
@@ -531,7 +522,7 @@ mod test {
 
     #[test]
     fn admin_query_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_admin().unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -556,7 +547,7 @@ mod test {
     /// `is_initialized` must be false before any `initialize` call.
     #[test]
     fn is_initialized_returns_false_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert!(!client.is_initialized());
     }
 
