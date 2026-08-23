@@ -236,7 +236,6 @@ impl VaultContract {
 
 #[cfg(test)]
 mod test {
-    use soroban_sdk::{testutils::Events, vec, Val, Vec};
 
     use super::*;
     use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
@@ -257,6 +256,16 @@ mod test {
         let admin = Address::generate(&env);
         client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
         (env, client, admin, contract_id)
+    }
+
+    fn setup_uninitialized() -> (Env, VaultContractClient<'static>, Address) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+
+        (env, client, contract_id)
     }
 
     fn expected_vault_event(
@@ -531,7 +540,7 @@ mod test {
 
     #[test]
     fn owner_query_rejected_before_initialization() {
-        let (_, client) = setup_uninitialized();
+        let (_, client, _) = setup_uninitialized();
         assert_eq!(
             client.try_owner().unwrap_err().unwrap(),
             VaultError::NotInitialized
@@ -1040,7 +1049,7 @@ mod test {
 
     #[test]
     fn failed_deposit_on_uninitialized_contract_does_not_emit_event() {
-        let (env, client) = setup_uninitialized();
+        let (env, client, _) = setup_uninitialized();
         let user = Address::generate(&env);
 
         let _ = client.try_deposit(&user, &10);
