@@ -236,6 +236,8 @@ impl VaultContract {
 
 #[cfg(test)]
 mod test {
+    use soroban_sdk::{testutils::Events, vec, Val, Vec};
+
     use super::*;
     use soroban_sdk::testutils::{Address as _, MockAuth, MockAuthInvoke};
     use soroban_sdk::IntoVal;
@@ -247,7 +249,7 @@ mod test {
     /// Create a fully initialized vault and return (env, client, admin,
     /// deposit_token, reward_token).  All auths are mocked so callers don't
     /// need to worry about signing.
-    fn setup() -> (Env, VaultContractClient<'static>, Address) {
+    fn setup() -> (Env, VaultContractClient<'static>, Address, Address) {
         let env = Env::default();
         env.mock_all_auths();
         let contract_id = env.register(VaultContract, ());
@@ -255,14 +257,6 @@ mod test {
         let admin = Address::generate(&env);
         client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
         (env, client, admin, contract_id)
-    }
-
-    fn setup_uninitialized() -> (Env, VaultContractClient<'static>, Address) {
-        let env = Env::default();
-        env.mock_all_auths();
-        let contract_id = env.register(VaultContract, ());
-        let client = VaultContractClient::new(&env, &contract_id);
-        (env, client, contract_id)
     }
 
     fn expected_vault_event(
@@ -307,7 +301,7 @@ mod test {
     /// original one — the failed call must not overwrite any storage.
     #[test]
     fn reinitialize_does_not_overwrite_admin() {
-        let (env, client, original_admin) = setup();
+        let (env, client, original_admin, _) = setup();
 
         let attacker = Address::generate(&env);
         let _ = client.try_initialize(
@@ -361,13 +355,13 @@ mod test {
 
     #[test]
     fn persists_admin_after_initialization() {
-        let (_, client, admin) = setup();
+        let (_, client, admin, _) = setup();
         assert_eq!(client.admin(), admin);
     }
 
     #[test]
     fn repeated_initialization_cannot_overwrite_admin() {
-        let (env, client, admin) = setup();
+        let (env, client, admin, _) = setup();
         let other_admin = Address::generate(&env);
         let result = client.try_initialize(
             &other_admin,
@@ -555,7 +549,7 @@ mod test {
 
     #[test]
     fn owner_returns_admin_after_initialization() {
-        let (_, client, admin) = setup();
+        let (_, client, admin, _) = setup();
         assert_eq!(client.owner(), admin);
     }
 
@@ -619,14 +613,14 @@ mod test {
 
     #[test]
     fn initialize_sets_total_deposits_to_zero() {
-        let (_, client, _) = setup();
+        let (_, client, _, _) = setup();
         assert_eq!(client.total_deposits(), 0);
     }
 
     /// `is_initialized` must return `true` after a successful initialization.
     #[test]
     fn is_initialized_returns_true_after_initialization() {
-        let (_, client, _) = setup();
+        let (_, client, _, _) = setup();
         assert!(client.is_initialized());
     }
 
@@ -730,7 +724,7 @@ mod test {
     #[test]
     fn withdraw_requires_caller_to_be_authorized_withdrawer() {
         // Set up and make a deposit.
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let legitimate_user = Address::generate(&env);
         client.deposit(&legitimate_user, &50);
 
@@ -774,7 +768,7 @@ mod test {
     /// (or whatever it was before — it must not be reset or corrupted).
     #[test]
     fn reinitialize_does_not_reset_total_deposits() {
-        let (env, client, admin) = setup();
+        let (env, client, admin, _) = setup();
         let user = Address::generate(&env);
         client.deposit(&user, &42);
         assert_eq!(client.total_deposits(), 42);
@@ -789,7 +783,7 @@ mod test {
     /// After a rejected re-initialization the user balance must be intact.
     #[test]
     fn reinitialize_does_not_reset_user_balance() {
-        let (env, client, admin) = setup();
+        let (env, client, admin, _) = setup();
         let user = Address::generate(&env);
         client.deposit(&user, &99);
         assert_eq!(client.user_balance(&user), 99);
@@ -803,7 +797,7 @@ mod test {
     /// be unchanged.
     #[test]
     fn reinitialize_does_not_reset_claimable_rewards() {
-        let (env, client, admin) = setup();
+        let (env, client, admin, _) = setup();
         let user = Address::generate(&env);
         client.set_claimable_reward(&user, &77);
 
@@ -886,7 +880,7 @@ mod test {
 
     #[test]
     fn zero_user_balance_returns_zero_reward() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let depositor = Address::generate(&env);
         let user = Address::generate(&env);
         client.deposit(&depositor, &1000);
@@ -898,7 +892,7 @@ mod test {
 
     #[test]
     fn large_values_do_not_overflow() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         let large = 10_000_000_000_000_000_000_i128;
         client.deposit(&user, &large);
@@ -913,7 +907,7 @@ mod test {
 
     #[test]
     fn repeated_claim_does_not_duplicate_rewards() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         client.deposit(&user, &500);
         client.set_claimable_reward(&user, &100);
@@ -928,7 +922,7 @@ mod test {
 
     #[test]
     fn user_without_balance_cannot_claim_reward() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let depositor = Address::generate(&env);
         let user = Address::generate(&env);
         client.deposit(&depositor, &1000);
@@ -940,7 +934,7 @@ mod test {
 
     #[test]
     fn valid_user_receives_expected_reward() {
-        let (env, client, _) = setup();
+        let (env, client, _, _) = setup();
         let user = Address::generate(&env);
         client.deposit(&user, &1000);
         client.set_reward_balance(&100);
@@ -1055,7 +1049,7 @@ mod test {
 
     #[test]
     fn failed_deposit_on_uninitialized_contract_does_not_emit_event() {
-        let (env, client, _) = setup_uninitialized();
+        let (env, client) = setup_uninitialized();
         let user = Address::generate(&env);
 
         let _ = client.try_deposit(&user, &10);
