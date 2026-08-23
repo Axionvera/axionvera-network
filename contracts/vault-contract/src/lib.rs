@@ -161,6 +161,10 @@ impl VaultContract {
         Ok(env.storage().instance().get(&DataKey::Admin).unwrap())
     }
 
+    pub fn owner(env: Env) -> Result<Address, VaultError> {
+        Self::admin(env)
+    }
+
     pub fn deposit_token(env: Env) -> Result<Address, VaultError> {
         Self::require_initialized(&env)?;
         Ok(env
@@ -232,6 +236,8 @@ impl VaultContract {
 
 #[cfg(test)]
 mod test {
+    use soroban_sdk::{testutils::Events, vec, Val, Vec};
+
     use super::*;
     use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
     use soroban_sdk::{vec, IntoVal, Val, Vec};
@@ -240,9 +246,9 @@ mod test {
     // Shared test helpers
     // -------------------------------------------------------------------------
 
-    /// Create a fully initialized vault and return
-    /// `(env, client, admin, contract_id)`. All auths are mocked so callers
-    /// don't need to worry about signing.
+    /// Create a fully initialized vault and return (env, client, admin,
+    /// deposit_token, reward_token).  All auths are mocked so callers don't
+    /// need to worry about signing.
     fn setup() -> (Env, VaultContractClient<'static>, Address, Address) {
         let env = Env::default();
         env.mock_all_auths();
@@ -251,15 +257,6 @@ mod test {
         let admin = Address::generate(&env);
         client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
         (env, client, admin, contract_id)
-    }
-
-    /// Create an uninitialized vault (no `initialize` call).
-    fn setup_uninitialized() -> (Env, VaultContractClient<'static>, Address) {
-        let env = Env::default();
-        env.mock_all_auths();
-        let contract_id = env.register(VaultContract, ());
-        let client = VaultContractClient::new(&env, &contract_id);
-        (env, client, contract_id)
     }
 
     fn expected_vault_event(
@@ -530,6 +527,21 @@ mod test {
             client.try_admin().unwrap_err().unwrap(),
             VaultError::NotInitialized
         );
+    }
+
+    #[test]
+    fn owner_query_rejected_before_initialization() {
+        let (_, client) = setup_uninitialized();
+        assert_eq!(
+            client.try_owner().unwrap_err().unwrap(),
+            VaultError::NotInitialized
+        );
+    }
+
+    #[test]
+    fn owner_returns_admin_after_initialization() {
+        let (_, client, admin, _) = setup();
+        assert_eq!(client.owner(), admin);
     }
 
     /// `is_initialized` must be false before any `initialize` call.
@@ -1028,7 +1040,7 @@ mod test {
 
     #[test]
     fn failed_deposit_on_uninitialized_contract_does_not_emit_event() {
-        let (env, client, _) = setup_uninitialized();
+        let (env, client) = setup_uninitialized();
         let user = Address::generate(&env);
 
         let _ = client.try_deposit(&user, &10);
@@ -1081,5 +1093,44 @@ mod test {
                 expected_vault_event(&env, &contract_id, TOPIC_CLAIM, (user, claimable),)
             ],
         );
+    }
+
+    #[test]
+    fn multi_user_accounting_maintains_consistent_total_deposits() {
+        let (env, client, _, _) = setup();
+        let user_a = Address::generate(&env);
+        let user_b = Address::generate(&env);
+
+        // Multiple deposits
+        client.deposit(&user_a, &100);
+        assert_eq!(client.user_balance(&user_a), 100);
+        assert_eq!(client.total_deposits(), 100);
+
+        client.deposit(&user_b, &200);
+        assert_eq!(client.user_balance(&user_b), 200);
+        assert_eq!(client.total_deposits(), 300);
+
+        client.deposit(&user_a, &50);
+        assert_eq!(client.user_balance(&user_a), 150);
+        assert_eq!(client.total_deposits(), 350);
+
+        // Partial withdrawal
+        client.withdraw(&user_b, &50);
+        assert_eq!(client.user_balance(&user_b), 150);
+        assert_eq!(client.total_deposits(), 300);
+
+        // Full withdrawal
+        client.withdraw(&user_a, &150);
+        assert_eq!(client.user_balance(&user_a), 0);
+        assert_eq!(client.total_deposits(), 150);
+
+        // Failed withdrawal
+        let _ = client.try_withdraw(&user_b, &1000);
+        assert_eq!(client.user_balance(&user_b), 150);
+        assert_eq!(client.total_deposits(), 150);
+
+        // Balances remain isolated
+        assert_eq!(client.user_balance(&user_a), 0);
+        assert_eq!(client.user_balance(&user_b), 150);
     }
 }
