@@ -1,30 +1,265 @@
+<div align="center">
+
 # Axionvera Network
 
-Axionvera Network is a clean Rust and Soroban workspace for vault deposits, withdrawals, rewards, and supporting network-node services.
+**The smart contract and network foundation for transparent vaults, rewards, and community payouts.**
 
-## Current Scope
+Axionvera Network powers the on-chain layer for Axionvera, including vault initialization, deposits, withdrawals, reward claims, accounting, lifecycle events, and SDK-facing contract methods.
 
-- Soroban vault contract
-- Reward distribution engine
-- Rust network node
-- Tests and contributor documentation
+</div>
 
-## Planned Modules
+---
 
-- `contracts/vault-contract` - Soroban vault contract
-- `contracts/rewards` - reward simulation and distribution logic
-- `network-node` - off-chain network service
-- `docs` - architecture and contributor docs
-- `tests` - integration tests
+## Overview
 
-## Documentation
+Axionvera Network is the blockchain foundation for Axionvera.
 
-- [SDK v2 to vault contract interface](docs/sdk-contract-interface.md) — method, argument, response, and event mapping between Axionvera SDK v2 and this network vault.
+It is designed to support communities, builders, and project teams that need transparent fund management, contributor rewards, and reliable payout infrastructure.
 
-## Development
+The current codebase focuses on a clean, tested Soroban foundation before adding more advanced features.
+
+---
+
+## Current Focus
+
+The restarted-codebase campaign is focused on:
+
+- clean Soroban vault contracts
+- reliable deposit and withdrawal accounting
+- reward calculation and claim flows
+- owner/admin initialization safety
+- stable lifecycle events
+- SDK-to-contract interface alignment
+- network-node configuration and health checks
+- local Husky quality checks
+- GitHub Actions pipeline checks
+
+---
+
+## Repository Structure
+
+```text
+axionvera-network/
+├── contracts/
+│   ├── vault-contract/
+│   │   └── Soroban vault contract
+│   │
+│   └── rewards/
+│       └── Reward calculation helpers
+│
+├── network-node/
+│   └── Network configuration and health helpers
+│
+├── docs/
+│   └── Contract and SDK integration documentation
+│
+├── .github/
+│   └── GitHub Actions workflows
+│
+└── .husky/
+    └── Local pre-commit checks
+```
+
+---
+
+## Packages
+
+### `contracts/vault-contract`
+
+The main Soroban vault contract.
+
+Current capabilities include:
+
+- vault initialization
+- owner/admin state
+- deposit accounting
+- withdrawal accounting
+- reward claim flow
+- user balance queries
+- total deposit queries
+- lifecycle events
+- initialization protection
+- authorization checks
+- edge-case tests
+
+### `contracts/rewards`
+
+Reward calculation helper crate.
+
+Current capabilities include:
+
+- proportional reward calculation
+- pending reward calculation
+- zero-value handling
+- overflow-safe behavior
+- large-value edge-case tests
+
+### `network-node`
+
+Network support crate.
+
+Current capabilities include:
+
+- default network configuration
+- config validation
+- structured health status
+- environment checks
+- serialization tests
+
+---
+
+## Quality Standard
+
+Every new function or implementation must include unit tests.
+
+Tests should cover:
+
+- happy path
+- invalid input
+- edge cases
+- expected failure behavior
+- authorization behavior where applicable
+- state consistency where applicable
+
+This rule applies to contract logic, reward helpers, network-node helpers, and SDK-facing behavior.
+
+---
+
+## Local Development
+
+Run the full local quality check:
 
 ```bash
 cargo fmt --all -- --check
 cargo check --workspace --all-targets
 cargo test --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
+```
+
+Or run the checks individually:
+
+```bash
+cargo fmt --all -- --check
+```
+
+```bash
+cargo check --workspace --all-targets
+```
+
+```bash
+cargo test --workspace --all-targets
+```
+
+```bash
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+---
+
+## Local Commit Checks
+
+This repository uses Husky pre-commit checks.
+
+Before a commit is accepted locally, the project should pass:
+
+```bash
+cargo fmt --all -- --check
+cargo check --workspace --all-targets
+cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+This helps keep commits clean before they reach GitHub.
+
+---
+
+## CI Pipeline
+
+GitHub Actions is used to validate pull requests and pushes to `main`.
+
+The pipeline checks:
+
+- formatting
+- workspace compilation
+- tests
+- Clippy warnings
+
+Code should not be merged unless the pipeline is green.
+
+---
+
+## Contract Design Goals
+
+Axionvera Network aims to keep the vault layer:
+
+- simple
+- testable
+- predictable
+- SDK-friendly
+- event-driven
+- safe by default
+- easy to document
+- easy to extend
+
+The current implementation intentionally prioritizes a strong foundation over unnecessary complexity.
+
+---
+
+## SDK Alignment
+
+Axionvera Network is designed to work with the Axionvera SDK.
+
+The SDK should be able to map cleanly to the vault contract methods for:
+
+- reading vault information
+- reading user balances
+- reading pending rewards
+- submitting deposits
+- submitting withdrawals
+- claiming rewards
+- tracking emitted events
+
+Contract method names, argument order, return values, and event behavior should remain stable once documented.
+
+---
+
+## Contributing
+
+Contributions are welcome through assigned issues.
+
+Before opening a pull request:
+
+- make sure the issue is assigned to you
+- keep the PR focused
+- add or update unit tests
+- run all local checks
+- include a clear PR summary
+- reference the issue number
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for full contribution guidance.
+
+---
+
+## Security
+
+Axionvera Network is under active development and has not yet completed a formal security audit.
+
+Do not treat the current codebase as production-audited.
+
+For security guidance, see [SECURITY.md](./SECURITY.md).
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+See [LICENSE](./LICENSE).
+
+---
+
+<div align="center">
+
+**Axionvera Network: clean contracts, tested logic, transparent rewards.**
+
+</div>
