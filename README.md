@@ -17,6 +17,10 @@ Axionvera Network is a clean Rust and Soroban workspace for vault deposits, with
 - `docs` - architecture and contributor docs
 - `tests` - integration tests
 
+## Documentation
+
+- [SDK v2 to vault contract interface](docs/sdk-contract-interface.md) — method, argument, response, and event mapping between Axionvera SDK v2 and this network vault.
+
 ## Development
 
 ```bash
