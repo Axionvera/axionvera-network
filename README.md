@@ -175,16 +175,29 @@ This helps keep commits clean before they reach GitHub.
 
 ## CI Pipeline
 
-GitHub Actions is used to validate pull requests and pushes to `main`.
+GitHub Actions runs on every pull request and every push to `main`.
 
-The pipeline checks:
+The pipeline purpose is to make sure that no formatting issues, compilation errors, broken tests, or Clippy warnings are merged into the main branch.
 
-- formatting
-- workspace compilation
-- tests
-- Clippy warnings
+The pipeline runs four checks in order:
 
-Code should not be merged unless the pipeline is green.
+| Check | Command | What fails it |
+|---|---|---|
+| Formatting | `cargo fmt --all -- --check` | Any unformatted Rust file |
+| Workspace | `cargo check --workspace --all-targets` | Compilation errors |
+| Tests | `cargo test --workspace --all-targets` | Failing assertions |
+| Clippy | `cargo clippy --workspace --all-targets -- -D warnings` | Any lint warning |
+
+All four checks must pass before a PR can be merged.
+
+Common reasons a PR fails CI:
+
+- Code was not formatted before pushing. Run `cargo fmt --all` and commit the result.
+- A Clippy warning was introduced. Run `cargo clippy --workspace --all-targets -- -D warnings` and address every warning.
+- A test was broken by a change. Run `cargo test --workspace --all-targets` locally and fix all failures.
+- A compilation error was introduced. Run `cargo check --workspace --all-targets` and fix all errors.
+
+For full details on each check, how to reproduce failures locally, and how to fix them, see [docs/ci-and-local-checks.md](./docs/ci-and-local-checks.md).
 
 ---
 
