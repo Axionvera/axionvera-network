@@ -39,6 +39,20 @@ pub struct VaultContract;
 
 #[contractimpl]
 impl VaultContract {
+    /// Initializes the vault with an admin and tokens.
+    ///
+    /// The vault must be initialized before any other gated methods are called.
+    /// This method can only be called once.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `admin` - The address that will have administrative rights. Must authorize the call.
+    /// * `deposit_token` - The address of the token accepted for deposits.
+    /// * `reward_token` - The address of the token distributed as rewards.
+    ///
+    /// # Returns
+    /// * `Ok(())` on success.
+    /// * `Err(VaultError::AlreadyInitialized)` if the vault has already been initialized.
     pub fn initialize(
         env: Env,
         admin: Address,
@@ -69,6 +83,21 @@ impl VaultContract {
         Ok(())
     }
 
+    /// Deposits tokens into the vault on behalf of `from`.
+    ///
+    /// Increases the user's stored balance and the vault's total deposits.
+    /// Note: This currently only updates vault accounting and does not transfer the `deposit_token`.
+    /// Requires the vault to be initialized.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `from` - The address making the deposit. Must authorize the call.
+    /// * `amount` - The amount of tokens to deposit. Must be greater than 0.
+    ///
+    /// # Returns
+    /// * `Ok(new_balance)` - The user's new total deposited balance.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
+    /// * `Err(VaultError::InvalidAmount)` if the amount is `<= 0` or overflow occurs.
     pub fn deposit(env: Env, from: Address, amount: i128) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         from.require_auth();
@@ -93,6 +122,22 @@ impl VaultContract {
         Ok(new_balance)
     }
 
+    /// Withdraws tokens from the vault for `to`.
+    ///
+    /// Decreases the user's stored balance and the vault's total deposits.
+    /// Note: This currently only updates vault accounting and does not transfer the `deposit_token`.
+    /// Requires the vault to be initialized.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `to` - The address withdrawing tokens. Must authorize the call.
+    /// * `amount` - The amount of tokens to withdraw. Must be greater than 0.
+    ///
+    /// # Returns
+    /// * `Ok(new_balance)` - The user's new total deposited balance.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
+    /// * `Err(VaultError::InvalidAmount)` if the amount is `<= 0`.
+    /// * `Err(VaultError::InsufficientBalance)` if the user's balance is less than `amount`.
     pub fn withdraw(env: Env, to: Address, amount: i128) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         to.require_auth();
@@ -121,6 +166,19 @@ impl VaultContract {
         Ok(new_balance)
     }
 
+    /// Claims the pending rewards for `user`.
+    ///
+    /// Reads the user's stored claimable amount, resets it to 0, and returns the claimed amount.
+    /// Note: This currently only updates vault accounting and does not transfer the `reward_token`.
+    /// Requires the vault to be initialized.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `user` - The address claiming rewards. Must authorize the call.
+    ///
+    /// # Returns
+    /// * `Ok(claimed)` - The amount claimed (0 if nothing to claim).
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn claim_rewards(env: Env, user: Address) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         user.require_auth();
@@ -136,6 +194,15 @@ impl VaultContract {
         Ok(claimable)
     }
 
+    /// Sets the claimable reward for a user.
+    ///
+    /// This is an internal/administrative method used to allocate rewards (no `require_auth` by default).
+    /// Requires the vault to be initialized.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `user` - The address receiving the claimable reward.
+    /// * `amount` - The amount to set as claimable.
     pub fn set_claimable_reward(env: Env, user: Address, amount: i128) -> Result<(), VaultError> {
         Self::require_initialized(&env)?;
         env.storage()
@@ -144,6 +211,14 @@ impl VaultContract {
         Ok(())
     }
 
+    /// Sets the total reward balance for the vault.
+    ///
+    /// This is an internal/administrative method used to update the total rewards available (no `require_auth` by default).
+    /// Requires the vault to be initialized.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `amount` - The new reward balance amount.
     pub fn set_reward_balance(env: Env, amount: i128) -> Result<(), VaultError> {
         Self::require_initialized(&env)?;
         env.storage()
@@ -152,19 +227,35 @@ impl VaultContract {
         Ok(())
     }
 
+    /// Returns whether the vault has been initialized.
     pub fn is_initialized(env: Env) -> bool {
         env.storage().instance().has(&DataKey::Initialized)
     }
 
+    /// Returns the address of the vault's admin.
+    ///
+    /// # Returns
+    /// * `Ok(admin)` - The admin's address.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn admin(env: Env) -> Result<Address, VaultError> {
         Self::require_initialized(&env)?;
         Ok(env.storage().instance().get(&DataKey::Admin).unwrap())
     }
 
+    /// Returns the address of the vault's owner (same as admin).
+    ///
+    /// # Returns
+    /// * `Ok(owner)` - The owner's address.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn owner(env: Env) -> Result<Address, VaultError> {
         Self::admin(env)
     }
 
+    /// Returns the address of the deposit token.
+    ///
+    /// # Returns
+    /// * `Ok(deposit_token)` - The deposit token's address.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn deposit_token(env: Env) -> Result<Address, VaultError> {
         Self::require_initialized(&env)?;
         Ok(env
@@ -174,21 +265,52 @@ impl VaultContract {
             .unwrap())
     }
 
+    /// Returns the address of the reward token.
+    ///
+    /// # Returns
+    /// * `Ok(reward_token)` - The reward token's address.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn reward_token(env: Env) -> Result<Address, VaultError> {
         Self::require_initialized(&env)?;
         Ok(env.storage().instance().get(&DataKey::RewardToken).unwrap())
     }
 
+    /// Returns the total amount of deposited tokens in the vault.
+    ///
+    /// # Returns
+    /// * `Ok(total_deposits)` - The total amount deposited.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn total_deposits(env: Env) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         Ok(Self::total(&env))
     }
 
+    /// Returns the deposited balance for a specific user.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `user` - The address to check the balance for.
+    ///
+    /// # Returns
+    /// * `Ok(balance)` - The user's deposited balance (0 if none).
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn user_balance(env: Env, user: Address) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         Ok(Self::balance(&env, &user))
     }
 
+    /// Returns the calculated pending rewards for a specific user.
+    ///
+    /// This is a proportional view over the vault's total reward balance.
+    /// It does not reflect the user's actual claimable balance via `claim_rewards`.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `user` - The address to check pending rewards for.
+    ///
+    /// # Returns
+    /// * `Ok(pending)` - The calculated pending reward amount.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
     pub fn pending_rewards(env: Env, user: Address) -> Result<i128, VaultError> {
         Self::require_initialized(&env)?;
         Ok(calculate_pending_rewards(

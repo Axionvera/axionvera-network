@@ -233,6 +233,7 @@ The SDK should be able to map cleanly to the vault contract methods for:
 - tracking emitted events
 
 Contract method names, argument order, return values, and event behavior should remain stable once documented.
+See the [SDK-to-Contract Interface Documentation](./docs/sdk-contract-interface.md) for full integration details.
 
 ---
 
