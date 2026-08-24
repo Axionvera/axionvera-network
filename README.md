@@ -201,6 +201,14 @@ For full details on each check, how to reproduce failures locally, and how to fi
 
 ---
 
+## Testnet Deployment
+
+Before deploying the vault contract to Stellar testnet, follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
+
+The checklist covers local quality checks, the WASM build, explicit testnet network selection, contract ID recording, initialization, and post-deployment validation. It is for testnet preparation only and does not indicate production readiness.
+
+---
+
 ## Contract Design Goals
 
 Axionvera Network aims to keep the vault layer:
