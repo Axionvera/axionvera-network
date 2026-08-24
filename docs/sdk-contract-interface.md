@@ -18,6 +18,78 @@ this contract — those ideas exist in older SDK helpers but are not present her
 
 ---
 
+## Interface version notes
+
+### Current version
+
+This document describes **interface version 0.1** of the Axionvera Network
+vault contract (`axionvera-vault-contract` crate version `0.1.0`).
+
+The contract has not yet completed a formal security audit and has not been
+deployed to Stellar Mainnet. The interface is published now so SDK contributors
+can align their code before a stable release is tagged.
+
+### Stability tiers
+
+Each public method in this document is assigned one of three stability tiers.
+
+| Tier | Label | Meaning |
+| --- | --- | --- |
+| Stable | `Stable` | The method name, argument order, argument types, return type, error variants, and event behaviour are considered locked for this version. Changes to any of these require a new interface version and an SDK issue. |
+| Provisional | `Provisional` | The method exists and works, but its name, arguments, return shape, or event behaviour may change before the interface is declared stable. SDK helpers built on provisional methods should be treated as drafts. |
+| Internal | `Internal` | The method is on the deployed contract but is not intended as a wallet-facing SDK surface. It may be restructured, access-controlled, or removed without notice. |
+
+### What is locked in v0.1
+
+The following are considered stable and will not change without a version bump
+and an accompanying SDK issue:
+
+- `initialize` — name, argument order (`admin`, `deposit_token`,
+  `reward_token`), and the rule that it may only be called once.
+- `deposit` — name, argument order (`from`, `amount`), `require_auth` on
+  `from`, return of the new `i128` user balance, and the `("vault", "deposit")`
+  event with `(from, amount)` data.
+- `withdraw` — same guarantees as `deposit`, with `to` instead of `from` and
+  the `("vault", "withdraw")` event.
+- `claim_rewards` — name, argument (`user`), `require_auth` on `user`,
+  `i128` claimed-amount return, and the `("vault", "claim")` event emitted only
+  when `claimed > 0`.
+- `is_initialized` — name, no arguments, `bool` return, ungated.
+- `user_balance` — name, argument (`user: Address`), `Result<i128, VaultError>`
+  return.
+- `pending_rewards` — name, argument (`user: Address`),
+  `Result<i128, VaultError>` return.
+- `VaultError` variant names and their `u32` discriminant values (1–5).
+- Event topic pair `("vault", <action>)` as two `symbol_short` topics.
+
+### What may change before v1.0
+
+- `admin`, `deposit_token`, `reward_token`, `total_deposits` — currently
+  exposed as individual query methods with no SDK helper; they may be
+  consolidated, renamed, or given a composite query method.
+- `owner` — an alias for `admin`. Provisional; one of the two names will be
+  removed.
+- `set_claimable_reward` and `set_reward_balance` — currently unprotected
+  (no `require_auth`). Access control will be added before v1.0.
+- SDK helper names (`getInfo`, `getBalance`, `getPendingRewards`) — the current
+  symbol gaps documented in this file are known issues that will be resolved by
+  SDK issues before v1.0.
+
+### How breaking changes will be communicated
+
+1. The interface version number at the top of this section will be incremented.
+2. An issue will be opened in the SDK repo referencing the Network issue.
+3. The changed methods and their old/new signatures will be listed in that
+   issue before any PR is merged.
+4. A `## Changelog` entry will be appended to this document describing what
+   changed and when.
+
+SDK contributors should not treat the current symbol gaps (listed in the
+[Current gaps](#current-gaps-between-sdk-v2-and-this-contract) section) as
+stable behaviour — those gaps are bugs that will be fixed.
+
+---
+
 ## Conventions
 
 | Item | Contract rule | SDK v2 expectation |
@@ -49,11 +121,11 @@ not transfer `deposit_token` or `reward_token`.
 SDK v2 reads go through `invoker.read` when present, otherwise `invoker.invoke`.
 They must use the **contract** symbol in the table, not the SDK helper name.
 
-| SDK v2 helper | Current SDK symbol | Contract method | Contract args (after `env`) | Contract return | Status |
-| --- | --- | --- | --- | --- | --- |
-| `getInfo()` | `get_info` | _none_ — compose the config + totals queries below | see [Configuration and totals](#configuration-and-totals) | see below | **gap** |
-| `getBalance(address)` | `get_balance` | `user_balance` | `user: Address` | `i128` stored deposit balance (`0` if the account has never deposited) | **symbol gap** |
-| `getPendingRewards(address)` | `get_pending_rewards` | `pending_rewards` | `user: Address` | `i128` proportional pending share | **symbol gap** |
+| SDK v2 helper | Current SDK symbol | Contract method | Contract args (after `env`) | Contract return | Status | Stability |
+| --- | --- | --- | --- | --- | --- | --- |
+| `getInfo()` | `get_info` | _none_ — compose the config + totals queries below | see [Configuration and totals](#configuration-and-totals) | see below | **gap** | Provisional |
+| `getBalance(address)` | `get_balance` | `user_balance` | `user: Address` | `i128` stored deposit balance (`0` if the account has never deposited) | **symbol gap** | Stable |
+| `getPendingRewards(address)` | `get_pending_rewards` | `pending_rewards` | `user: Address` | `i128` proportional pending share | **symbol gap** | Stable |
 
 ### `getInfo()` → configuration and totals
 
@@ -135,12 +207,12 @@ See [Write methods](#sdk-write-methods).
 
 ## SDK write methods
 
-| SDK v2 helper | Current SDK symbol | Contract method | Contract args (after `env`) | Contract return | Status |
-| --- | --- | --- | --- | --- | --- |
-| _none_ | _none_ | `initialize` | `admin`, `deposit_token`, `reward_token` | `()` | **missing helper** |
-| `deposit(from, amount)` | `deposit` | `deposit` | `from`, `amount` | `i128` **new** user balance | argument order aligned; amount encoding + return type differ |
-| `withdraw(to, amount)` | `withdraw` | `withdraw` | `to`, `amount` | `i128` **new** user balance | argument order aligned; amount encoding + return type differ |
-| `claimRewards(address)` | `claim_rewards` | `claim_rewards` | `user` | `i128` claimed amount (`0` if nothing to claim) | symbol and args aligned; return type differs |
+| SDK v2 helper | Current SDK symbol | Contract method | Contract args (after `env`) | Contract return | Status | Stability |
+| --- | --- | --- | --- | --- | --- | --- |
+| _none_ | _none_ | `initialize` | `admin`, `deposit_token`, `reward_token` | `()` | **missing helper** | Stable |
+| `deposit(from, amount)` | `deposit` | `deposit` | `from`, `amount` | `i128` **new** user balance | argument order aligned; amount encoding + return type differ | Stable |
+| `withdraw(to, amount)` | `withdraw` | `withdraw` | `to`, `amount` | `i128` **new** user balance | argument order aligned; amount encoding + return type differ | Stable |
+| `claimRewards(address)` | `claim_rewards` | `claim_rewards` | `user` | `i128` claimed amount (`0` if nothing to claim) | symbol and args aligned; return type differs | Stable |
 
 ### `initialize`
 
@@ -264,15 +336,15 @@ Maps to `vault.claimRewards(address)`.
 
 Contract argument order is always the Rust parameter order after `env`.
 
-| Action | SDK v2 call | Bytes-to-host args | Required contract types |
-| --- | --- | --- | --- |
-| Read info | `getInfo()` | _compose several no-arg reads_ | see above |
-| Read balance | `getBalance(address)` | `[address]` | `Address` |
-| Read pending rewards | `getPendingRewards(address)` | `[address]` | `Address` |
-| Deposit | `deposit(from, amount)` | `[from, amount]` | `Address`, `i128` |
-| Withdraw | `withdraw(to, amount)` | `[to, amount]` | `Address`, `i128` |
-| Claim | `claimRewards(address)` | `[address]` | `Address` |
-| Initialize | _none yet_ | `[admin, deposit_token, reward_token]` | `Address`, `Address`, `Address` |
+| Action | SDK v2 call | Bytes-to-host args | Required contract types | Stability |
+| --- | --- | --- | --- | --- |
+| Read info | `getInfo()` | _compose several no-arg reads_ | see above | Provisional |
+| Read balance | `getBalance(address)` | `[address]` | `Address` | Stable |
+| Read pending rewards | `getPendingRewards(address)` | `[address]` | `Address` | Stable |
+| Deposit | `deposit(from, amount)` | `[from, amount]` | `Address`, `i128` | Stable |
+| Withdraw | `withdraw(to, amount)` | `[to, amount]` | `Address`, `i128` | Stable |
+| Claim | `claimRewards(address)` | `[address]` | `Address` | Stable |
+| Initialize | _none yet_ | `[admin, deposit_token, reward_token]` | `Address`, `Address`, `Address` | Stable |
 
 Amount rules shared by `deposit` and `withdraw`:
 
@@ -298,12 +370,12 @@ claimable amount is `0` (the call still succeeds and returns `0`).
 
 Topics are `symbol_short` values: `("vault", <action>)`.
 
-| Flow | Topics | Data | When emitted |
-| --- | --- | --- | --- |
-| Initialize | `("vault", "init")` | `admin: Address` | After storage is written |
-| Deposit | `("vault", "deposit")` | `(from: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the deposited amount, not the new balance. |
-| Withdraw | `("vault", "withdraw")` | `(to: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the withdrawn amount, not the new balance. |
-| Claim | `("vault", "claim")` | `(user: Address, claimed: i128)` | Only when `claimed > 0`, after `ClaimableReward` is cleared to `0`. |
+| Flow | Topics | Data | When emitted | Stability |
+| --- | --- | --- | --- | --- |
+| Initialize | `("vault", "init")` | `admin: Address` | After storage is written | Stable |
+| Deposit | `("vault", "deposit")` | `(from: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the deposited amount, not the new balance. | Stable |
+| Withdraw | `("vault", "withdraw")` | `(to: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the withdrawn amount, not the new balance. | Stable |
+| Claim | `("vault", "claim")` | `(user: Address, claimed: i128)` | Only when `claimed > 0`, after `ClaimableReward` is cleared to `0`. | Stable |
 
 `set_claimable_reward` and `set_reward_balance` do not emit events.
 
@@ -329,16 +401,17 @@ alone. The first topic is always `vault`.
 
 These are on the contract today and are not wrapped by `VaultContract`:
 
-| Contract function | Args (after `env`) | Return | Notes |
-| --- | --- | --- | --- |
-| `initialize` | `admin`, `deposit_token`, `reward_token` | `()` | Deployment-time write |
-| `is_initialized` | _(none)_ | `bool` | Ungated |
-| `admin` | _(none)_ | `Address` | |
-| `deposit_token` | _(none)_ | `Address` | |
-| `reward_token` | _(none)_ | `Address` | |
-| `total_deposits` | _(none)_ | `i128` | Needed by `getInfo()` |
-| `set_claimable_reward` | `user`, `amount` | `()` | Writes `ClaimableReward`. **No `require_auth`**. Not a wallet-facing SDK method. |
-| `set_reward_balance` | `amount` | `()` | Writes vault-wide `RewardBalance`. **No `require_auth`**. Not a wallet-facing SDK method. |
+| Contract function | Args (after `env`) | Return | Notes | Stability |
+| --- | --- | --- | --- | --- |
+| `initialize` | `admin`, `deposit_token`, `reward_token` | `()` | Deployment-time write | Stable |
+| `is_initialized` | _(none)_ | `bool` | Ungated | Stable |
+| `admin` | _(none)_ | `Address` | | Provisional |
+| `deposit_token` | _(none)_ | `Address` | | Provisional |
+| `reward_token` | _(none)_ | `Address` | | Provisional |
+| `total_deposits` | _(none)_ | `i128` | Needed by `getInfo()` | Provisional |
+| `owner` | _(none)_ | `Address` | Alias for `admin`; one will be removed | Provisional |
+| `set_claimable_reward` | `user`, `amount` | `()` | Writes `ClaimableReward`. **No `require_auth`**. Not a wallet-facing SDK method. | Internal |
+| `set_reward_balance` | `amount` | `()` | Writes vault-wide `RewardBalance`. **No `require_auth`**. Not a wallet-facing SDK method. | Internal |
 
 ---
 
@@ -375,3 +448,16 @@ Network interface: `preview_deposit`, `preview_withdraw`, `get_shares`,
 `get_exchange_rate`, `shares_of`, `exchange_rate`, `balance`, `get_balance`,
 `get_pending_rewards`, `get_info`, `totalAssets`, `totalSupply`, `apy`,
 `lockPeriod`.
+
+---
+
+## Changelog
+
+### v0.1 — 2026-08-24
+
+- Initial interface version document published.
+- Stability tiers (Stable / Provisional / Internal) assigned to all public
+  contract methods.
+- Inline `Stability` column added to all method tables.
+- Version notes section added covering: current version, what is locked,
+  what may change before v1.0, and how breaking changes will be communicated.
