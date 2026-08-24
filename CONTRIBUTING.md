@@ -56,6 +56,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 All checks must pass.
 
+These are the same checks the CI pipeline runs on every PR and every push to `main`.
+
+For a full explanation of what each check does, how to reproduce CI failures locally, and how to fix common failures, see [docs/ci-and-local-checks.md](./docs/ci-and-local-checks.md).
+
 ---
 
 ## Commit Guidelines
