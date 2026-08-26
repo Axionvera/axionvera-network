@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -24,6 +26,74 @@ pub enum ConfigError {
     EmptyEnvironment,
     #[error("unsupported environment '{0}'; expected one of: development, staging, production")]
     UnsupportedEnvironment(String),
+}
+
+/// Errors returned by [`load_config`].
+#[derive(Debug, Error)]
+pub enum LoadError {
+    /// The file could not be opened or read.
+    #[error("could not read config file '{path}': {source}")]
+    Io {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
+    /// The file contents were not valid JSON or did not match [`NodeConfig`].
+    #[error("could not parse config file '{path}': {source}")]
+    Parse {
+        path: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// The file was loaded and parsed but the resulting config failed
+    /// validation.
+    #[error("invalid config loaded from '{path}': {source}")]
+    Validation {
+        path: String,
+        #[source]
+        source: ConfigError,
+    },
+}
+
+/// Load a [`NodeConfig`] from a JSON file at `path`, then validate it.
+///
+/// Steps:
+/// 1. Read the file contents from `path`.
+/// 2. Deserialise the contents as [`NodeConfig`] using `serde_json`.
+/// 3. Call [`NodeConfig::validate`] on the result.
+///
+/// Any failure in those three steps is returned as the appropriate
+/// [`LoadError`] variant.
+///
+/// # Errors
+///
+/// - [`LoadError::Io`] — the file does not exist or cannot be read.
+/// - [`LoadError::Parse`] — the file is not valid JSON or is missing required
+///   fields.
+/// - [`LoadError::Validation`] — the file was parsed but the config values
+///   failed validation (e.g. unsupported network name or invalid RPC URL).
+pub fn load_config(path: impl AsRef<Path>) -> Result<NodeConfig, LoadError> {
+    let path_str = path.as_ref().to_string_lossy().into_owned();
+
+    let contents = std::fs::read_to_string(path.as_ref()).map_err(|source| LoadError::Io {
+        path: path_str.clone(),
+        source,
+    })?;
+
+    let config: NodeConfig =
+        serde_json::from_str(&contents).map_err(|source| LoadError::Parse {
+            path: path_str.clone(),
+            source,
+        })?;
+
+    config
+        .validate()
+        .map_err(|source| LoadError::Validation {
+            path: path_str,
+            source,
+        })?;
+
+    Ok(config)
 }
 
 /// Lightweight configuration for the network node.
@@ -414,4 +484,212 @@ mod tests {
         let decoded: NodeConfig = serde_json::from_str(&encoded).expect("deserialize node config");
         assert_eq!(decoded, config);
     }
-}
+
+    // -------------------------------------------------------------------------
+    // load_config tests
+    // -------------------------------------------------------------------------
+
+    use std::io::Write as _;
+
+    /// Write `contents` to a named temp file and return the path.  The file
+    /// lives for the lifetime of the returned [`tempfile::NamedTempFile`];
+    /// keep the value alive for the duration of the test.
+    fn write_temp_file(contents: &str) -> tempfile::NamedTempFile {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        file.write_all(contents.as_bytes())
+            .expect("write temp file");
+        file
+    }
+
+    #[test]
+    fn load_config_happy_path_returns_validated_config() {
+        let json = r#"{
+            "network_name": "testnet",
+            "rpc_url": "https://soroban-rpc.example.com",
+            "environment": "staging"
+        }"#;
+        let file = write_temp_file(json);
+        let result = load_config(file.path());
+        assert!(result.is_ok(), "expected Ok, got {:?}", result);
+        let loaded = result.unwrap();
+        assert_eq!(loaded.network_name, "testnet");
+        assert_eq!(loaded.rpc_url, "https://soroban-rpc.example.com");
+        assert_eq!(loaded.environment, "staging");
+    }
+
+    #[test]
+    fn load_config_returns_default_equivalent_when_file_has_default_values() {
+        let default = NodeConfig::default();
+        let json = serde_json::to_string(&default).expect("serialize default config");
+        let file = write_temp_file(&json);
+        let loaded = load_config(file.path()).expect("load default config");
+        assert_eq!(loaded, default);
+    }
+
+    #[test]
+    fn load_config_returns_io_error_when_file_does_not_exist() {
+        let result = load_config("/tmp/axionvera_nonexistent_config_file_12345.json");
+        assert!(
+            matches!(result, Err(LoadError::Io { .. })),
+            "expected LoadError::Io, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_io_error_message_contains_path() {
+        let path = "/tmp/axionvera_nonexistent_config_file_67890.json";
+        let err = load_config(path).unwrap_err();
+        assert!(
+            err.to_string().contains(path),
+            "error message should contain the path, got: {err}"
+        );
+    }
+
+    #[test]
+    fn load_config_returns_parse_error_for_malformed_json() {
+        let file = write_temp_file("this is not json {{{");
+        let result = load_config(file.path());
+        assert!(
+            matches!(result, Err(LoadError::Parse { .. })),
+            "expected LoadError::Parse, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_parse_error_for_empty_file() {
+        let file = write_temp_file("");
+        let result = load_config(file.path());
+        assert!(
+            matches!(result, Err(LoadError::Parse { .. })),
+            "expected LoadError::Parse for empty file, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_parse_error_for_missing_required_fields() {
+        // Valid JSON but missing all NodeConfig fields.
+        let file = write_temp_file(r#"{"foo": "bar"}"#);
+        let result = load_config(file.path());
+        assert!(
+            matches!(result, Err(LoadError::Parse { .. })),
+            "expected LoadError::Parse for missing fields, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_parse_error_for_wrong_value_types() {
+        // network_name is a number instead of a string.
+        let file = write_temp_file(
+            r#"{"network_name": 42, "rpc_url": "http://localhost:8000", "environment": "development"}"#,
+        );
+        let result = load_config(file.path());
+        assert!(
+            matches!(result, Err(LoadError::Parse { .. })),
+            "expected LoadError::Parse for wrong types, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_validation_error_for_unsupported_network() {
+        let json = r#"{
+            "network_name": "devnet",
+            "rpc_url": "http://localhost:8000/soroban/rpc",
+            "environment": "development"
+        }"#;
+        let file = write_temp_file(json);
+        let result = load_config(file.path());
+        assert!(
+            matches!(
+                result,
+                Err(LoadError::Validation {
+                    source: ConfigError::UnsupportedNetworkName(_),
+                    ..
+                })
+            ),
+            "expected LoadError::Validation(UnsupportedNetworkName), got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_validation_error_for_invalid_rpc_url() {
+        let json = r#"{
+            "network_name": "local",
+            "rpc_url": "not-a-url",
+            "environment": "development"
+        }"#;
+        let file = write_temp_file(json);
+        let result = load_config(file.path());
+        assert!(
+            matches!(
+                result,
+                Err(LoadError::Validation {
+                    source: ConfigError::InvalidRpcUrl(_),
+                    ..
+                })
+            ),
+            "expected LoadError::Validation(InvalidRpcUrl), got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_returns_validation_error_for_unsupported_environment() {
+        let json = r#"{
+            "network_name": "mainnet",
+            "rpc_url": "https://soroban-rpc.example.com",
+            "environment": "prod"
+        }"#;
+        let file = write_temp_file(json);
+        let result = load_config(file.path());
+        assert!(
+            matches!(
+                result,
+                Err(LoadError::Validation {
+                    source: ConfigError::UnsupportedEnvironment(_),
+                    ..
+                })
+            ),
+            "expected LoadError::Validation(UnsupportedEnvironment), got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn load_config_validation_error_message_contains_path_and_cause() {
+        let json = r#"{
+            "network_name": "badnet",
+            "rpc_url": "http://localhost:8000/soroban/rpc",
+            "environment": "development"
+        }"#;
+        let file = write_temp_file(json);
+        let err = load_config(file.path()).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("badnet") || msg.contains("invalid config"),
+            "error message should mention the cause, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn load_config_all_supported_networks_and_environments_load_successfully() {
+        for network_name in SUPPORTED_NETWORKS {
+            for environment in SUPPORTED_ENVIRONMENTS {
+                let json = format!(
+                    r#"{{"network_name":"{network_name}","rpc_url":"http://localhost:8000/soroban/rpc","environment":"{environment}"}}"#
+                );
+                let file = write_temp_file(&json);
+                let result = load_config(file.path());
+                assert!(
+                    result.is_ok(),
+                    "expected Ok for {network_name}/{environment}, got {:?}",
+                    result
+                );
+            }
+        }
+    }
