@@ -86,12 +86,10 @@ pub fn load_config(path: impl AsRef<Path>) -> Result<NodeConfig, LoadError> {
             source,
         })?;
 
-    config
-        .validate()
-        .map_err(|source| LoadError::Validation {
-            path: path_str,
-            source,
-        })?;
+    config.validate().map_err(|source| LoadError::Validation {
+        path: path_str,
+        source,
+    })?;
 
     Ok(config)
 }
@@ -693,3 +691,4 @@ mod tests {
             }
         }
     }
+}
