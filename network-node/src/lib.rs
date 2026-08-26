@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod config;
 
-pub use config::{ConfigError, NodeConfig};
+pub use config::{load_config, ConfigError, LoadError, NodeConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HealthResponse {
