@@ -201,6 +201,34 @@ For full details on each check, how to reproduce failures locally, and how to fi
 
 ---
 
+## Building the Vault Contract
+
+The vault contract can be built as a WASM binary for deployment using the provided build script.
+
+### Build Script
+
+A repeatable build script is provided at `scripts/build-vault-wasm.sh`.
+
+To build the vault contract WASM:
+
+```bash
+./scripts/build-vault-wasm.sh
+```
+
+The script will:
+- Check that the wasm32-unknown-unknown target is installed (add it if missing)
+- Build the vault contract for the wasm32 target in release mode
+- Output the WASM file location on success
+
+The built WASM file will be located at:
+```
+contracts/vault-contract/target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+```
+
+If the contract directory is missing or the build fails, the script will exit with a clear error message.
+
+---
+
 ## Testnet Deployment
 
 Before deploying the vault contract to Stellar testnet, follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
