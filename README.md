@@ -106,6 +106,21 @@ Current capabilities include:
 - environment checks
 - serialization tests
 
+#### Configuration
+
+The network-node crate uses environment variables for configuration. See `.env.example` for the supported configuration fields:
+
+- `AXIONVERA_NETWORK_NAME` - Target network (`local`, `testnet`, `mainnet`, `futurenet`)
+- `AXIONVERA_RPC_URL` - Soroban RPC endpoint URL
+- `AXIONVERA_ENVIRONMENT` - Deployment environment (`development`, `staging`, `production`)
+
+To set up local configuration:
+
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
 ---
 
 ## Quality Standard
