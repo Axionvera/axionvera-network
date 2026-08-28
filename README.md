@@ -237,7 +237,7 @@ The script will:
 
 The built WASM file will be located at:
 ```
-contracts/vault-contract/target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
 ```
 
 If the contract directory is missing or the build fails, the script will exit with a clear error message.
