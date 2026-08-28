@@ -7,10 +7,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_DIR="$PROJECT_ROOT/contracts/vault-contract"
+TARGET_DIR="$PROJECT_ROOT/target"
 
 echo "Building Axionvera Vault Contract for WASM..."
 echo "Project root: $PROJECT_ROOT"
 echo "Contract directory: $CONTRACT_DIR"
+echo "WASM target directory: $TARGET_DIR"
 echo ""
 
 # Check if contract directory exists
@@ -31,14 +33,17 @@ echo ""
 
 # Build the contract for wasm32 target
 echo "Building vault contract for wasm32-unknown-unknown..."
-cd "$CONTRACT_DIR"
-cargo build --target wasm32-unknown-unknown --release
+cargo build --locked --release \
+    --manifest-path "$PROJECT_ROOT/Cargo.toml" \
+    --package axionvera-vault-contract \
+    --target wasm32-unknown-unknown \
+    --target-dir "$TARGET_DIR"
 
 # Check if build succeeded
 if [ $? -eq 0 ]; then
     echo ""
     echo "Build successful!"
-    echo "WASM file location: $CONTRACT_DIR/target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+    echo "WASM file location: $TARGET_DIR/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
 else
     echo ""
     echo "Build failed!"

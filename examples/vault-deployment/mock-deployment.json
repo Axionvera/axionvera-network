@@ -1,0 +1,21 @@
+{
+  "schema_version": "1",
+  "mocked": true,
+  "status": "ready_for_maintainer_deployment",
+  "source_commit": "UNCOMMITTED",
+  "network_mode": "testnet",
+  "wasm": {
+    "path": "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm",
+    "sha256": "SHA256_PLACEHOLDER"
+  },
+  "contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "initialization": {
+    "admin": "ADDRESS_PLACEHOLDER",
+    "deposit_token": "ADDRESS_PLACEHOLDER",
+    "reward_token": "ADDRESS_PLACEHOLDER"
+  },
+  "maintainer_deployment_boundary": {
+    "required": true,
+    "real_deployment_performed": false
+  }
+}
