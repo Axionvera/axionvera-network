@@ -67,21 +67,13 @@ testnet. Run commands from the repository root unless a step says otherwise.
   target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
   ```
 
-- [ ] Record a SHA-256 checksum of that exact WASM file. Keep the checksum with
-      the deployment record so the deployed build can be traced back to an
-      artifact and source commit.
+- [ ] The `build-vault-wasm.sh` script automatically generates a build metadata file at:
 
-  On Linux or macOS:
-
-  ```bash
-  sha256sum target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+  ```text
+  target/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json
   ```
 
-  On PowerShell:
-
-  ```powershell
-  Get-FileHash target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm -Algorithm SHA256
-  ```
+  This file includes the SHA-256 checksum, source commit, and build timestamp. Keep this metadata file with the deployment record so the deployed build can be traced back to an artifact and source commit. If building manually, calculate the SHA-256 manually.
 
 ## 4. Deploy to testnet
 

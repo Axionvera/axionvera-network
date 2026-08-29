@@ -41,9 +41,50 @@ cargo build --locked --release \
 
 # Check if build succeeded
 if [ $? -eq 0 ]; then
+    WASM_PATH="target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+    METADATA_PATH="target/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json"
+    
+    echo "Generating build metadata..."
+    
+    # Get git commit or default to UNCOMMITTED
+    if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "UNCOMMITTED")
+        # Check for uncommitted changes
+        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+            COMMIT="UNCOMMITTED"
+        fi
+    else
+        COMMIT="UNCOMMITTED"
+    fi
+    
+    TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Cross-platform sha256
+    if command -v sha256sum > /dev/null; then
+        SHA256=$(sha256sum "$PROJECT_ROOT/$WASM_PATH" | awk '{print $1}')
+    elif command -v shasum > /dev/null; then
+        SHA256=$(shasum -a 256 "$PROJECT_ROOT/$WASM_PATH" | awk '{print $1}')
+    else
+        echo "Warning: No sha256sum or shasum found, using placeholder"
+        SHA256="0000000000000000000000000000000000000000000000000000000000000000"
+    fi
+    
+    cat > "$PROJECT_ROOT/$METADATA_PATH" << EOF
+{
+  "schema_version": "1",
+  "package": "axionvera-vault-contract",
+  "target": "wasm32-unknown-unknown",
+  "artifact_path": "$WASM_PATH",
+  "sha256": "$SHA256",
+  "build_timestamp": "$TIMESTAMP",
+  "source_commit": "$COMMIT"
+}
+EOF
+    
     echo ""
     echo "Build successful!"
     echo "WASM file location: $TARGET_DIR/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+    echo "Metadata file location: $TARGET_DIR/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json"
 else
     echo ""
     echo "Build failed!"
