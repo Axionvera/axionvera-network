@@ -517,6 +517,26 @@ mod test {
         assert_eq!(fields[1]["value"], amount_value);
     }
 
+    #[test]
+    fn event_fixture_catalog_covers_all_indexed_flows() {
+        let fixtures = [
+            (
+                INITIALIZE_EVENT_FIXTURE,
+                "initialize",
+                "init",
+                "initialized",
+            ),
+            (DEPOSIT_EVENT_FIXTURE, "deposit", "deposit", "deposit"),
+            (WITHDRAW_EVENT_FIXTURE, "withdraw", "withdraw", "withdraw"),
+            (CLAIM_EVENT_FIXTURE, "claim", "claim", "claim_rewards"),
+        ];
+
+        for (raw_fixture, flow, second_topic, sdk_event_type) in fixtures {
+            let fixture = parse_event_fixture(raw_fixture);
+            assert_fixture_header(&fixture, flow, second_topic, sdk_event_type);
+        }
+    }
+
     // =========================================================================
     // Helper function unit tests
     // =========================================================================
