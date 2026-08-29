@@ -1253,6 +1253,29 @@ mod test {
     }
 
     #[test]
+    fn initialize_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(INITIALIZE_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "initialize", "init", "initialized");
+        assert_address_payload_fixture(&fixture, "admin");
+
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+
+        client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, fixture_action(&fixture), admin,)
+            ],
+        );
+    }
+
+    #[test]
     fn deposit_emits_stable_deposit_event() {
         let (env, client, _, contract_id) = setup();
         let user = Address::generate(&env);
@@ -1265,6 +1288,32 @@ mod test {
             vec![
                 &env,
                 expected_vault_event(&env, &contract_id, TOPIC_DEPOSIT, (user, amount),)
+            ],
+        );
+    }
+
+    #[test]
+    fn deposit_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(DEPOSIT_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "deposit", "deposit", "deposit");
+        assert_address_amount_payload_fixture(&fixture, "from", "amount", "100");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let amount = 100_i128;
+
+        client.deposit(&user, &amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    fixture_action(&fixture),
+                    (user, amount),
+                )
             ],
         );
     }
@@ -1288,6 +1337,33 @@ mod test {
     }
 
     #[test]
+    fn withdraw_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(WITHDRAW_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "withdraw", "withdraw", "withdraw");
+        assert_address_amount_payload_fixture(&fixture, "to", "amount", "25");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let withdraw_amount = 25_i128;
+
+        client.deposit(&user, &100);
+        client.withdraw(&user, &withdraw_amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    fixture_action(&fixture),
+                    (user, withdraw_amount),
+                )
+            ],
+        );
+    }
+
+    #[test]
     fn claim_rewards_emits_stable_claim_event() {
         let (env, client, _, contract_id) = setup();
         let user = Address::generate(&env);
@@ -1301,6 +1377,33 @@ mod test {
             vec![
                 &env,
                 expected_vault_event(&env, &contract_id, TOPIC_CLAIM, (user, claimable),)
+            ],
+        );
+    }
+
+    #[test]
+    fn claim_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(CLAIM_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "claim", "claim", "claim_rewards");
+        assert_address_amount_payload_fixture(&fixture, "user", "claimable", "50");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let claimable = 50_i128;
+
+        client.set_claimable_reward(&user, &claimable);
+        client.claim_rewards(&user);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    fixture_action(&fixture),
+                    (user, claimable),
+                )
             ],
         );
     }
