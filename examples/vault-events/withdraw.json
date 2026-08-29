@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "flow": "withdraw",
+  "sdk_event_type": "withdraw",
+  "event": {
+    "type": "contract",
+    "topics": ["vault", "withdraw"],
+    "data": {
+      "kind": "tuple",
+      "fields": [
+        {
+          "name": "to",
+          "type": "Address",
+          "value": "ADDRESS_PLACEHOLDER"
+        },
+        {
+          "name": "amount",
+          "type": "i128",
+          "value": "25"
+        }
+      ]
+    }
+  },
+  "indexing": {
+    "mocked": true,
+    "network_mode": "testnet",
+    "source": "compatibility_fixture",
+    "failed_calls_emit": false,
+    "notes": [
+      "The amount is the withdrawn amount, not the resulting user balance.",
+      "A failed withdrawal emits no event and must not advance indexed balances."
+    ]
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AxionVera vault event compatibility fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "interface_version",
+    "contract",
+    "flow",
+    "sdk_event_type",
+    "event",
+    "indexing"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1" },
+    "interface_version": { "type": "string", "const": "0.1" },
+    "contract": { "type": "string", "const": "axionvera-vault-contract" },
+    "flow": {
+      "type": "string",
+      "enum": ["initialize", "deposit", "withdraw", "claim"]
+    },
+    "sdk_event_type": {
+      "type": "string",
+      "enum": ["initialized", "deposit", "withdraw", "claim_rewards"]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "topics", "data"],
+      "properties": {
+        "type": { "type": "string", "const": "contract" },
+        "topics": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "string", "const": "vault" },
+            {
+              "type": "string",
+              "enum": ["init", "deposit", "withdraw", "claim"]
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "data": {
+          "oneOf": [
+            { "$ref": "#/$defs/address_payload" },
+            { "$ref": "#/$defs/address_amount_payload" }
+          ]
+        }
+      }
+    },
+    "indexing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mocked",
+        "network_mode",
+        "source",
+        "failed_calls_emit",
+        "notes"
+      ],
+      "properties": {
+        "mocked": { "type": "boolean", "const": true },
+        "network_mode": { "type": "string", "const": "testnet" },
+        "source": { "type": "string", "const": "compatibility_fixture" },
+        "failed_calls_emit": { "type": "boolean", "const": false },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|G[A-Z2-7]{55}|C[A-Z2-7]{55})$"
+    },
+    "i128": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)$"
+    },
+    "address_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "field", "value"],
+      "properties": {
+        "kind": { "type": "string", "const": "address" },
+        "field": { "type": "string", "const": "admin" },
+        "value": { "$ref": "#/$defs/address" }
+      }
+    },
+    "address_amount_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "fields"],
+      "properties": {
+        "kind": { "type": "string", "const": "tuple" },
+        "fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type", "value"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": ["from", "to", "user"]
+                },
+                "type": { "type": "string", "const": "Address" },
+                "value": { "$ref": "#/$defs/address" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type", "value"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": ["amount", "claimable"]
+                },
+                "type": { "type": "string", "const": "i128" },
+                "value": { "$ref": "#/$defs/i128" }
+              }
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "schema": "schemas/vault-event.schema.json",
+  "fixtures": [
+    {
+      "flow": "initialize",
+      "path": "examples/vault-events/initialize.json",
+      "topics": ["vault", "init"],
+      "sdk_event_type": "initialized"
+    },
+    {
+      "flow": "deposit",
+      "path": "examples/vault-events/deposit.json",
+      "topics": ["vault", "deposit"],
+      "sdk_event_type": "deposit"
+    },
+    {
+      "flow": "withdraw",
+      "path": "examples/vault-events/withdraw.json",
+      "topics": ["vault", "withdraw"],
+      "sdk_event_type": "withdraw"
+    },
+    {
+      "flow": "claim",
+      "path": "examples/vault-events/claim.json",
+      "topics": ["vault", "claim"],
+      "sdk_event_type": "claim_rewards"
+    }
+  ],
+  "indexing": {
+    "mocked": true,
+    "network_mode": "testnet",
+    "failed_calls_emit": false,
+    "live_indexer_included": false
+  }
+}

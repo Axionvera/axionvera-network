@@ -1,5 +1,8 @@
 #![no_std]
 
+#[cfg(test)]
+extern crate std;
+
 use axionvera_rewards::calculate_pending_rewards;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
@@ -360,8 +363,17 @@ impl VaultContract {
 mod test {
 
     use super::*;
+    use serde_json::Value;
     use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
     use soroban_sdk::{vec, IntoVal, Val, Vec};
+
+    const INITIALIZE_EVENT_FIXTURE: &str =
+        include_str!("../../../examples/vault-events/initialize.json");
+    const DEPOSIT_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/deposit.json");
+    const WITHDRAW_EVENT_FIXTURE: &str =
+        include_str!("../../../examples/vault-events/withdraw.json");
+    const CLAIM_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/claim.json");
+    const EVENT_FIXTURE_CATALOG: &str = include_str!("../../../examples/vault-events/catalog.json");
 
     // -------------------------------------------------------------------------
     // Shared test helpers
@@ -432,6 +444,154 @@ mod test {
 
     fn assert_no_events(env: &Env) {
         assert!(env.events().all().is_empty());
+    }
+
+    fn parse_event_fixture(raw: &str) -> Value {
+        serde_json::from_str(raw).expect("vault event fixture must be valid JSON")
+    }
+
+    fn fixture_action(fixture: &Value) -> Symbol {
+        match fixture["event"]["topics"][1]
+            .as_str()
+            .expect("fixture must include a second event topic")
+        {
+            "init" => TOPIC_INIT,
+            "deposit" => TOPIC_DEPOSIT,
+            "withdraw" => TOPIC_WITHDRAW,
+            "claim" => TOPIC_CLAIM,
+            other => panic!("unexpected vault event fixture action topic: {other}"),
+        }
+    }
+
+    fn assert_fixture_header(
+        fixture: &Value,
+        flow: &str,
+        second_topic: &str,
+        sdk_event_type: &str,
+    ) {
+        assert_eq!(fixture["schema_version"], "1");
+        assert_eq!(fixture["interface_version"], "0.1");
+        assert_eq!(fixture["contract"], "axionvera-vault-contract");
+        assert_eq!(fixture["flow"], flow);
+        assert_eq!(fixture["sdk_event_type"], sdk_event_type);
+        assert_eq!(fixture["event"]["type"], "contract");
+        assert_eq!(fixture["event"]["topics"][0], "vault");
+        assert_eq!(fixture["event"]["topics"][1], second_topic);
+        assert_eq!(fixture["indexing"]["mocked"], true);
+        assert_eq!(fixture["indexing"]["network_mode"], "testnet");
+        assert_eq!(fixture["indexing"]["source"], "compatibility_fixture");
+        assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
+        assert!(!fixture["indexing"]["notes"]
+            .as_array()
+            .expect("fixture notes must be an array")
+            .is_empty());
+    }
+
+    fn assert_address_payload_fixture(fixture: &Value, field: &str) {
+        let data = &fixture["event"]["data"];
+        assert_eq!(data["kind"], "address");
+        assert_eq!(data["field"], field);
+        assert_eq!(data["value"], "ADDRESS_PLACEHOLDER");
+    }
+
+    fn assert_address_amount_payload_fixture(
+        fixture: &Value,
+        address_field_name: &str,
+        amount_field_name: &str,
+        amount_value: &str,
+    ) {
+        let data = &fixture["event"]["data"];
+        assert_eq!(data["kind"], "tuple");
+
+        let fields = data["fields"]
+            .as_array()
+            .expect("tuple fixture data must include ordered fields");
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[0]["name"], address_field_name);
+        assert_eq!(fields[0]["type"], "Address");
+        assert_eq!(fields[0]["value"], "ADDRESS_PLACEHOLDER");
+        assert_eq!(fields[1]["name"], amount_field_name);
+        assert_eq!(fields[1]["type"], "i128");
+        assert_eq!(fields[1]["value"], amount_value);
+    }
+
+    #[test]
+    fn event_fixture_catalog_covers_all_indexed_flows() {
+        let fixtures = [
+            (
+                INITIALIZE_EVENT_FIXTURE,
+                "initialize",
+                "init",
+                "initialized",
+            ),
+            (DEPOSIT_EVENT_FIXTURE, "deposit", "deposit", "deposit"),
+            (WITHDRAW_EVENT_FIXTURE, "withdraw", "withdraw", "withdraw"),
+            (CLAIM_EVENT_FIXTURE, "claim", "claim", "claim_rewards"),
+        ];
+
+        for (raw_fixture, flow, second_topic, sdk_event_type) in fixtures {
+            let fixture = parse_event_fixture(raw_fixture);
+            assert_fixture_header(&fixture, flow, second_topic, sdk_event_type);
+        }
+    }
+
+    #[test]
+    fn event_fixture_catalog_manifest_matches_fixture_files() {
+        let catalog = parse_event_fixture(EVENT_FIXTURE_CATALOG);
+        assert_eq!(catalog["schema_version"], "1");
+        assert_eq!(catalog["interface_version"], "0.1");
+        assert_eq!(catalog["contract"], "axionvera-vault-contract");
+        assert_eq!(catalog["schema"], "schemas/vault-event.schema.json");
+        assert_eq!(catalog["indexing"]["mocked"], true);
+        assert_eq!(catalog["indexing"]["network_mode"], "testnet");
+        assert_eq!(catalog["indexing"]["failed_calls_emit"], false);
+        assert_eq!(catalog["indexing"]["live_indexer_included"], false);
+
+        let catalog_fixtures = catalog["fixtures"]
+            .as_array()
+            .expect("fixture catalog must include fixtures");
+        assert_eq!(catalog_fixtures.len(), 4);
+
+        let expected = [
+            (
+                "initialize",
+                "examples/vault-events/initialize.json",
+                "init",
+            ),
+            ("deposit", "examples/vault-events/deposit.json", "deposit"),
+            (
+                "withdraw",
+                "examples/vault-events/withdraw.json",
+                "withdraw",
+            ),
+            ("claim", "examples/vault-events/claim.json", "claim"),
+        ];
+
+        for (entry, (flow, path, second_topic)) in catalog_fixtures.iter().zip(expected) {
+            assert_eq!(entry["flow"], flow);
+            assert_eq!(entry["path"], path);
+            assert_eq!(entry["topics"][0], "vault");
+            assert_eq!(entry["topics"][1], second_topic);
+        }
+    }
+
+    #[test]
+    fn fixtures_document_failed_calls_as_non_emitting() {
+        for raw_fixture in [
+            INITIALIZE_EVENT_FIXTURE,
+            DEPOSIT_EVENT_FIXTURE,
+            WITHDRAW_EVENT_FIXTURE,
+            CLAIM_EVENT_FIXTURE,
+        ] {
+            let fixture = parse_event_fixture(raw_fixture);
+            assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
+        }
+
+        let (env, client, _) = setup_uninitialized();
+        let user = Address::generate(&env);
+        let _ = client.try_deposit(&user, &100);
+
+        assert_no_events(&env);
     }
 
     // =========================================================================
@@ -1170,6 +1330,29 @@ mod test {
     }
 
     #[test]
+    fn initialize_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(INITIALIZE_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "initialize", "init", "initialized");
+        assert_address_payload_fixture(&fixture, "admin");
+
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(VaultContract, ());
+        let client = VaultContractClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+
+        client.initialize(&admin, &Address::generate(&env), &Address::generate(&env));
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, fixture_action(&fixture), admin,)
+            ],
+        );
+    }
+
+    #[test]
     fn deposit_emits_stable_deposit_event() {
         let (env, client, _, contract_id) = setup();
         let user = Address::generate(&env);
@@ -1182,6 +1365,27 @@ mod test {
             vec![
                 &env,
                 expected_vault_event(&env, &contract_id, TOPIC_DEPOSIT, (user, amount),)
+            ],
+        );
+    }
+
+    #[test]
+    fn deposit_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(DEPOSIT_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "deposit", "deposit", "deposit");
+        assert_address_amount_payload_fixture(&fixture, "from", "amount", "100");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let amount = 100_i128;
+
+        client.deposit(&user, &amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(&env, &contract_id, fixture_action(&fixture), (user, amount),)
             ],
         );
     }
@@ -1205,6 +1409,33 @@ mod test {
     }
 
     #[test]
+    fn withdraw_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(WITHDRAW_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "withdraw", "withdraw", "withdraw");
+        assert_address_amount_payload_fixture(&fixture, "to", "amount", "25");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let withdraw_amount = 25_i128;
+
+        client.deposit(&user, &100);
+        client.withdraw(&user, &withdraw_amount);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    fixture_action(&fixture),
+                    (user, withdraw_amount),
+                )
+            ],
+        );
+    }
+
+    #[test]
     fn claim_rewards_emits_stable_claim_event() {
         let (env, client, _, contract_id) = setup();
         let user = Address::generate(&env);
@@ -1218,6 +1449,33 @@ mod test {
             vec![
                 &env,
                 expected_vault_event(&env, &contract_id, TOPIC_CLAIM, (user, claimable),)
+            ],
+        );
+    }
+
+    #[test]
+    fn claim_event_matches_documented_fixture_shape() {
+        let fixture = parse_event_fixture(CLAIM_EVENT_FIXTURE);
+        assert_fixture_header(&fixture, "claim", "claim", "claim_rewards");
+        assert_address_amount_payload_fixture(&fixture, "user", "claimable", "50");
+
+        let (env, client, _, contract_id) = setup();
+        let user = Address::generate(&env);
+        let claimable = 50_i128;
+
+        client.set_claimable_reward(&user, &claimable);
+        client.claim_rewards(&user);
+
+        assert_eq!(
+            env.events().all(),
+            vec![
+                &env,
+                expected_vault_event(
+                    &env,
+                    &contract_id,
+                    fixture_action(&fixture),
+                    (user, claimable),
+                )
             ],
         );
     }

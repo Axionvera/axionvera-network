@@ -169,6 +169,10 @@ ledger.
 - [ ] Confirm the initialization transaction succeeded and emitted the
       `(vault, init)` contract event using the team's testnet explorer or
       RPC tooling.
+- [ ] Compare emitted vault events against the mocked compatibility fixtures in
+      `examples/vault-events/` before wiring dashboard or SDK parsers to live
+      testnet data. These fixtures document expected topics, payload field
+      order, and the fact that failed calls emit no vault event.
 - [ ] Update the testnet consumer configuration with the recorded contract ID,
       then perform any SDK or integration smoke tests against **testnet only**.
 - [ ] Save the validation results with the deployment record, including any

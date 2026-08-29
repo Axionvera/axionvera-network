@@ -370,6 +370,11 @@ claimable amount is `0` (the call still succeeds and returns `0`).
 
 Topics are `symbol_short` values: `("vault", <action>)`.
 
+SDK and dashboard consumers can use `examples/vault-events/*.json` as mocked
+compatibility fixtures before live indexing is available. The fixture files
+follow `schemas/vault-event.schema.json`, use the same topic names documented
+below, and include placeholder address values suitable for testnet replay.
+
 | Flow | Topics | Data | When emitted | Stability |
 | --- | --- | --- | --- | --- |
 | Initialize | `("vault", "init")` | `admin: Address` | After storage is written | Stable |
@@ -394,6 +399,11 @@ That union does not match the on-chain second topic:
 Indexers and the SDK event helper should match on topics `("vault", "deposit")`,
 `("vault", "withdraw")`, and `("vault", "claim")` rather than on the SDK string
 alone. The first topic is always `vault`.
+
+Failed calls are intentionally absent from these fixtures and from the event
+stream. Use transaction status or simulation errors to inspect failed calls;
+do not expect an emitted vault event for `NotInitialized`, `InvalidAmount`,
+`InsufficientBalance`, missing auth, or zero-claim success.
 
 ---
 
