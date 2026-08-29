@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "flow": "claim",
+  "sdk_event_type": "claim_rewards",
+  "event": {
+    "type": "contract",
+    "topics": ["vault", "claim"],
+    "data": {
+      "kind": "tuple",
+      "fields": [
+        {
+          "name": "user",
+          "type": "Address",
+          "value": "ADDRESS_PLACEHOLDER"
+        },
+        {
+          "name": "claimable",
+          "type": "i128",
+          "value": "50"
+        }
+      ]
+    }
+  },
+  "indexing": {
+    "mocked": true,
+    "network_mode": "testnet",
+    "source": "compatibility_fixture",
+    "failed_calls_emit": false,
+    "notes": [
+      "The event is emitted only when the claimed amount is greater than zero.",
+      "The SDK-facing event name is claim_rewards; the on-chain second topic is claim."
+    ]
+  }
+}
