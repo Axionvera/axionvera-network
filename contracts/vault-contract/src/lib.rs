@@ -1347,12 +1347,7 @@ mod test {
             env.events().all(),
             vec![
                 &env,
-                expected_vault_event(
-                    &env,
-                    &contract_id,
-                    fixture_action(&fixture),
-                    (user, amount),
-                )
+                expected_vault_event(&env, &contract_id, fixture_action(&fixture), (user, amount),)
             ],
         );
     }
