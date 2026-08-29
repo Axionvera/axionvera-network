@@ -481,11 +481,10 @@ mod test {
         assert_eq!(fixture["indexing"]["source"], "compatibility_fixture");
         assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
         assert!(
-            fixture["indexing"]["notes"]
+            !fixture["indexing"]["notes"]
                 .as_array()
                 .expect("fixture notes must be an array")
-                .len()
-                >= 1
+                .is_empty()
         );
     }
 
