@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "flow": "initialize",
+  "sdk_event_type": "initialized",
+  "event": {
+    "type": "contract",
+    "topics": ["vault", "init"],
+    "data": {
+      "kind": "address",
+      "field": "admin",
+      "value": "ADDRESS_PLACEHOLDER"
+    }
+  },
+  "indexing": {
+    "mocked": true,
+    "network_mode": "testnet",
+    "source": "compatibility_fixture",
+    "failed_calls_emit": false,
+    "notes": [
+      "Use the emitted contract id as the event source when replaying a deployed vault.",
+      "The SDK-facing event name is initialized; the on-chain second topic is init."
+    ]
+  }
+}
