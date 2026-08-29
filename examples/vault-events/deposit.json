@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "flow": "deposit",
+  "sdk_event_type": "deposit",
+  "event": {
+    "type": "contract",
+    "topics": ["vault", "deposit"],
+    "data": {
+      "kind": "tuple",
+      "fields": [
+        {
+          "name": "from",
+          "type": "Address",
+          "value": "ADDRESS_PLACEHOLDER"
+        },
+        {
+          "name": "amount",
+          "type": "i128",
+          "value": "100"
+        }
+      ]
+    }
+  },
+  "indexing": {
+    "mocked": true,
+    "network_mode": "testnet",
+    "source": "compatibility_fixture",
+    "failed_calls_emit": false,
+    "notes": [
+      "The amount is the deposited amount, not the resulting user balance.",
+      "Encode amount as a Soroban i128 integer in smallest token units."
+    ]
+  }
+}
