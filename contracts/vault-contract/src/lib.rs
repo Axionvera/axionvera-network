@@ -1,5 +1,8 @@
 #![no_std]
 
+#[cfg(test)]
+extern crate std;
+
 use axionvera_rewards::calculate_pending_rewards;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
@@ -360,8 +363,16 @@ impl VaultContract {
 mod test {
 
     use super::*;
+    use serde_json::Value;
     use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
     use soroban_sdk::{vec, IntoVal, Val, Vec};
+
+    const INITIALIZE_EVENT_FIXTURE: &str =
+        include_str!("../../../examples/vault-events/initialize.json");
+    const DEPOSIT_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/deposit.json");
+    const WITHDRAW_EVENT_FIXTURE: &str =
+        include_str!("../../../examples/vault-events/withdraw.json");
+    const CLAIM_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/claim.json");
 
     // -------------------------------------------------------------------------
     // Shared test helpers
@@ -432,6 +443,78 @@ mod test {
 
     fn assert_no_events(env: &Env) {
         assert!(env.events().all().is_empty());
+    }
+
+    fn parse_event_fixture(raw: &str) -> Value {
+        serde_json::from_str(raw).expect("vault event fixture must be valid JSON")
+    }
+
+    fn fixture_action(fixture: &Value) -> Symbol {
+        match fixture["event"]["topics"][1]
+            .as_str()
+            .expect("fixture must include a second event topic")
+        {
+            "init" => TOPIC_INIT,
+            "deposit" => TOPIC_DEPOSIT,
+            "withdraw" => TOPIC_WITHDRAW,
+            "claim" => TOPIC_CLAIM,
+            other => panic!("unexpected vault event fixture action topic: {other}"),
+        }
+    }
+
+    fn assert_fixture_header(
+        fixture: &Value,
+        flow: &str,
+        second_topic: &str,
+        sdk_event_type: &str,
+    ) {
+        assert_eq!(fixture["schema_version"], "1");
+        assert_eq!(fixture["interface_version"], "0.1");
+        assert_eq!(fixture["contract"], "axionvera-vault-contract");
+        assert_eq!(fixture["flow"], flow);
+        assert_eq!(fixture["sdk_event_type"], sdk_event_type);
+        assert_eq!(fixture["event"]["type"], "contract");
+        assert_eq!(fixture["event"]["topics"][0], "vault");
+        assert_eq!(fixture["event"]["topics"][1], second_topic);
+        assert_eq!(fixture["indexing"]["mocked"], true);
+        assert_eq!(fixture["indexing"]["network_mode"], "testnet");
+        assert_eq!(fixture["indexing"]["source"], "compatibility_fixture");
+        assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
+        assert!(
+            fixture["indexing"]["notes"]
+                .as_array()
+                .expect("fixture notes must be an array")
+                .len()
+                >= 1
+        );
+    }
+
+    fn assert_address_payload_fixture(fixture: &Value, field: &str) {
+        let data = &fixture["event"]["data"];
+        assert_eq!(data["kind"], "address");
+        assert_eq!(data["field"], field);
+        assert_eq!(data["value"], "ADDRESS_PLACEHOLDER");
+    }
+
+    fn assert_address_amount_payload_fixture(
+        fixture: &Value,
+        address_field_name: &str,
+        amount_field_name: &str,
+        amount_value: &str,
+    ) {
+        let data = &fixture["event"]["data"];
+        assert_eq!(data["kind"], "tuple");
+
+        let fields = data["fields"]
+            .as_array()
+            .expect("tuple fixture data must include ordered fields");
+        assert_eq!(fields.len(), 2);
+        assert_eq!(fields[0]["name"], address_field_name);
+        assert_eq!(fields[0]["type"], "Address");
+        assert_eq!(fields[0]["value"], "ADDRESS_PLACEHOLDER");
+        assert_eq!(fields[1]["name"], amount_field_name);
+        assert_eq!(fields[1]["type"], "i128");
+        assert_eq!(fields[1]["value"], amount_value);
     }
 
     // =========================================================================
