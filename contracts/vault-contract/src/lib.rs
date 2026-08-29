@@ -480,12 +480,10 @@ mod test {
         assert_eq!(fixture["indexing"]["network_mode"], "testnet");
         assert_eq!(fixture["indexing"]["source"], "compatibility_fixture");
         assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
-        assert!(
-            !fixture["indexing"]["notes"]
-                .as_array()
-                .expect("fixture notes must be an array")
-                .is_empty()
-        );
+        assert!(!fixture["indexing"]["notes"]
+            .as_array()
+            .expect("fixture notes must be an array")
+            .is_empty());
     }
 
     fn assert_address_payload_fixture(fixture: &Value, field: &str) {
