@@ -176,6 +176,7 @@ name = "axionvera-vault-contract"
 version = "0.1.0"
 dependencies = [
  "axionvera-rewards",
+ "serde_json",
  "soroban-sdk",
 ]
 
