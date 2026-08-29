@@ -252,10 +252,13 @@ If the contract directory is missing or the build fails, the script will exit wi
 
 ## Testnet Deployment
 
-Before deploying the vault contract to Stellar testnet, follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
+Before deploying the vault contract to Stellar testnet, review the [Maintainer Handoff Guide](./docs/maintainer-handoff-guide.md) and follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
 
-The checklist covers local quality checks, the WASM build, explicit testnet network selection, contract ID recording, initialization, and post-deployment validation. It is for testnet preparation only and does not indicate production readiness.
+The handoff guide establishes the security boundary between contributor preparation and maintainer execution, while the checklist covers local quality checks, WASM builds, testnet network selection, contract ID recording, initialization, and post-deployment validation.
 
+### Maintainer Handoff Guide
+
+For clear separation of responsibilities, non-secret preparation, and maintainer-only deployment steps, see [Maintainer Handoff Guide (Testnet Deployment)](./docs/maintainer-handoff-guide.md).
 ### Dry-Run Deployment
 
 A dry-run template is provided at `scripts/deploy-vault-template.sh`. Contributors can use this script to validate deployment configuration and view the intended command structure. 
