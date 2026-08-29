@@ -1,0 +1,620 @@
+{
+  "schema": "schemas/vault-interface.schema.json",
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-vault-contract",
+  "contract_version": "0.1.0",
+  "source": "contracts/vault-contract/src/lib.rs",
+  "types": {
+    "Address": {
+      "soroban_type": "Address",
+      "sdk_representation": "Encode a Stellar account or contract address as a Soroban Address ScVal."
+    },
+    "i128": {
+      "soroban_type": "i128",
+      "sdk_representation": "Use bigint or a base-10 integer string and encode it as a Soroban i128 ScVal; never use a floating-point value."
+    },
+    "bool": {
+      "soroban_type": "bool",
+      "sdk_representation": "Decode as a boolean."
+    },
+    "void": {
+      "soroban_type": "()",
+      "sdk_representation": "No success value."
+    },
+    "VaultError": {
+      "soroban_type": "contracterror(u32)",
+      "sdk_representation": "Decode the contract error discriminant using the errors table."
+    }
+  },
+  "errors": [
+    {
+      "name": "AlreadyInitialized",
+      "code": 1,
+      "returned_by": ["initialize"],
+      "description": "The vault has already been initialized."
+    },
+    {
+      "name": "NotInitialized",
+      "code": 2,
+      "returned_by": [
+        "deposit",
+        "withdraw",
+        "claim_rewards",
+        "set_claimable_reward",
+        "set_reward_balance",
+        "admin",
+        "owner",
+        "deposit_token",
+        "reward_token",
+        "total_deposits",
+        "user_balance",
+        "pending_rewards"
+      ],
+      "description": "A method that requires initialized state was called before initialize succeeded."
+    },
+    {
+      "name": "InvalidAmount",
+      "code": 3,
+      "returned_by": ["deposit", "withdraw"],
+      "description": "The amount is not positive or checked accounting arithmetic failed."
+    },
+    {
+      "name": "InsufficientBalance",
+      "code": 4,
+      "returned_by": ["withdraw"],
+      "description": "The requested withdrawal exceeds the user's stored deposit balance."
+    },
+    {
+      "name": "InvalidRewardState",
+      "code": 5,
+      "returned_by": [],
+      "description": "This error is defined by the current contract but is not returned by any current public method."
+    }
+  ],
+  "methods": [
+    {
+      "name": "initialize",
+      "arguments": [
+        {
+          "name": "admin",
+          "position": 0,
+          "type": "Address",
+          "description": "Address assigned as vault admin and required to authorize this invocation."
+        },
+        {
+          "name": "deposit_token",
+          "position": 1,
+          "type": "Address",
+          "description": "Address recorded as the accepted deposit token."
+        },
+        {
+          "name": "reward_token",
+          "position": 2,
+          "type": "Address",
+          "description": "Address recorded as the reward token."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "VaultError",
+        "description": "Returns success with no value, or AlreadyInitialized when state already exists."
+      },
+      "authorization": {
+        "required": true,
+        "address_argument": "admin",
+        "mechanism": "Address.require_auth",
+        "description": "The admin argument must authorize the invocation."
+      },
+      "initialization": "must_be_uninitialized",
+      "mutability": "write",
+      "stability": "stable",
+      "sdk_visibility": "deployment",
+      "emits": ["init"],
+      "notes": [
+        "May succeed only once.",
+        "Stores the admin and token addresses and initializes total deposits and reward balance to zero."
+      ]
+    },
+    {
+      "name": "deposit",
+      "arguments": [
+        {
+          "name": "from",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose stored deposit balance is credited and that must authorize the invocation."
+        },
+        {
+          "name": "amount",
+          "position": 1,
+          "type": "i128",
+          "description": "Positive number of smallest token units to add to accounting."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the user's new stored deposit balance."
+      },
+      "authorization": {
+        "required": true,
+        "address_argument": "from",
+        "mechanism": "Address.require_auth",
+        "description": "The from argument must authorize the invocation."
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "stability": "stable",
+      "sdk_visibility": "wallet",
+      "emits": ["deposit"],
+      "notes": [
+        "Rejects amounts less than or equal to zero.",
+        "Updates vault accounting only; no deposit-token transfer is implemented."
+      ]
+    },
+    {
+      "name": "withdraw",
+      "arguments": [
+        {
+          "name": "to",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose stored deposit balance is debited and that must authorize the invocation."
+        },
+        {
+          "name": "amount",
+          "position": 1,
+          "type": "i128",
+          "description": "Positive number of smallest token units to subtract from accounting."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the user's new stored deposit balance."
+      },
+      "authorization": {
+        "required": true,
+        "address_argument": "to",
+        "mechanism": "Address.require_auth",
+        "description": "The to argument must authorize the invocation."
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "stability": "stable",
+      "sdk_visibility": "wallet",
+      "emits": ["withdraw"],
+      "notes": [
+        "Rejects non-positive amounts and amounts greater than the user's stored balance.",
+        "Updates vault accounting only; no deposit-token transfer is implemented."
+      ]
+    },
+    {
+      "name": "claim_rewards",
+      "arguments": [
+        {
+          "name": "user",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose stored claimable reward is cleared and that must authorize the invocation."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the stored amount claimed, or zero when no amount is claimable."
+      },
+      "authorization": {
+        "required": true,
+        "address_argument": "user",
+        "mechanism": "Address.require_auth",
+        "description": "The user argument must authorize the invocation."
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "stability": "stable",
+      "sdk_visibility": "wallet",
+      "emits": ["claim"],
+      "notes": [
+        "The claim event is emitted whenever the stored claimable amount is nonzero.",
+        "Clears per-user claimable accounting only; no reward-token transfer is implemented.",
+        "The amount paid by this method is distinct from the pending_rewards proportional view."
+      ]
+    },
+    {
+      "name": "set_claimable_reward",
+      "arguments": [
+        {
+          "name": "user",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose claimable reward entry is replaced."
+        },
+        {
+          "name": "amount",
+          "position": 1,
+          "type": "i128",
+          "description": "Value written to claimable reward storage without amount validation."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "VaultError",
+        "description": "Returns success with no value or NotInitialized."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "The current implementation performs no authorization check."
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "stability": "internal",
+      "sdk_visibility": "internal",
+      "emits": [],
+      "notes": [
+        "This callable contract method is not intended as a wallet-facing SDK operation.",
+        "No require_auth call or amount validation is implemented."
+      ]
+    },
+    {
+      "name": "set_reward_balance",
+      "arguments": [
+        {
+          "name": "amount",
+          "position": 0,
+          "type": "i128",
+          "description": "Value written to the vault-wide reward balance without amount validation."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "VaultError",
+        "description": "Returns success with no value or NotInitialized."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "The current implementation performs no authorization check."
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "stability": "internal",
+      "sdk_visibility": "internal",
+      "emits": [],
+      "notes": [
+        "This callable contract method is not intended as a wallet-facing SDK operation.",
+        "No require_auth call or amount validation is implemented."
+      ]
+    },
+    {
+      "name": "is_initialized",
+      "arguments": [],
+      "returns": {
+        "kind": "value",
+        "type": "bool",
+        "description": "Returns true when initialized state exists and false otherwise."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "not_required",
+      "mutability": "read",
+      "stability": "stable",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["This is the only public method that can be queried before initialization without returning NotInitialized."]
+    },
+    {
+      "name": "admin",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "Address",
+        "error": "VaultError",
+        "description": "Returns the stored admin address."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "provisional",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["Returns NotInitialized before initialization."]
+    },
+    {
+      "name": "owner",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "Address",
+        "error": "VaultError",
+        "description": "Returns the same stored address as admin."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "provisional",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["This method is currently an alias for admin."]
+    },
+    {
+      "name": "deposit_token",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "Address",
+        "error": "VaultError",
+        "description": "Returns the deposit-token address recorded at initialization."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "provisional",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["The token address is configuration only; current deposit and withdrawal methods do not invoke it."]
+    },
+    {
+      "name": "reward_token",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "Address",
+        "error": "VaultError",
+        "description": "Returns the reward-token address recorded at initialization."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "provisional",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["The token address is configuration only; current claim_rewards does not invoke it."]
+    },
+    {
+      "name": "total_deposits",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the vault-wide stored deposit total."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "provisional",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["The value is accounting state and does not query the configured token contract."]
+    },
+    {
+      "name": "user_balance",
+      "arguments": [
+        {
+          "name": "user",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose stored deposit balance is requested."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the user's stored deposit balance, defaulting to zero when no balance entry exists."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "stable",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": ["Invoke the exact contract symbol user_balance; get_balance is not implemented."]
+    },
+    {
+      "name": "pending_rewards",
+      "arguments": [
+        {
+          "name": "user",
+          "position": 0,
+          "type": "Address",
+          "description": "Address whose proportional pending reward view is requested."
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "VaultError",
+        "description": "Returns the calculated proportional share of the vault-wide reward balance."
+      },
+      "authorization": {
+        "required": false,
+        "address_argument": null,
+        "mechanism": "none",
+        "description": "This query requires no authorization."
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "stability": "stable",
+      "sdk_visibility": "query",
+      "emits": [],
+      "notes": [
+        "Calculates user_balance multiplied by reward balance and divided by total deposits using checked arithmetic.",
+        "Returns zero for non-positive inputs or multiplication overflow.",
+        "This is not the per-user amount consumed by claim_rewards."
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "init",
+      "sdk_event_type": "initialized",
+      "emitted_by": "initialize",
+      "type": "contract",
+      "topics": [
+        { "position": 0, "type": "Symbol", "value": "vault" },
+        { "position": 1, "type": "Symbol", "value": "init" }
+      ],
+      "data": {
+        "kind": "value",
+        "fields": [
+          {
+            "name": "admin",
+            "position": 0,
+            "type": "Address",
+            "description": "The initialized admin address is the complete event data value."
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false,
+      "description": "Emitted after a successful initialization has written vault state."
+    },
+    {
+      "name": "deposit",
+      "sdk_event_type": "deposit",
+      "emitted_by": "deposit",
+      "type": "contract",
+      "topics": [
+        { "position": 0, "type": "Symbol", "value": "vault" },
+        { "position": 1, "type": "Symbol", "value": "deposit" }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "from",
+            "position": 0,
+            "type": "Address",
+            "description": "The address credited by the deposit."
+          },
+          {
+            "name": "amount",
+            "position": 1,
+            "type": "i128",
+            "description": "The deposited amount, not the resulting balance."
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false,
+      "description": "Emitted after deposit accounting is updated successfully."
+    },
+    {
+      "name": "withdraw",
+      "sdk_event_type": "withdraw",
+      "emitted_by": "withdraw",
+      "type": "contract",
+      "topics": [
+        { "position": 0, "type": "Symbol", "value": "vault" },
+        { "position": 1, "type": "Symbol", "value": "withdraw" }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "to",
+            "position": 0,
+            "type": "Address",
+            "description": "The address debited by the withdrawal."
+          },
+          {
+            "name": "amount",
+            "position": 1,
+            "type": "i128",
+            "description": "The withdrawn amount, not the resulting balance."
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false,
+      "description": "Emitted after withdrawal accounting is updated successfully."
+    },
+    {
+      "name": "claim",
+      "sdk_event_type": "claim_rewards",
+      "emitted_by": "claim_rewards",
+      "type": "contract",
+      "topics": [
+        { "position": 0, "type": "Symbol", "value": "vault" },
+        { "position": 1, "type": "Symbol", "value": "claim" }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "user",
+            "position": 0,
+            "type": "Address",
+            "description": "The address whose claimable accounting was cleared."
+          },
+          {
+            "name": "claimable",
+            "position": 1,
+            "type": "i128",
+            "description": "The nonzero amount returned by claim_rewards."
+          }
+        ]
+      },
+      "emission": "on_success_when_claimed_amount_is_nonzero",
+      "failed_calls_emit": false,
+      "description": "Emitted when claim_rewards succeeds with a nonzero stored claimable amount."
+    }
+  ],
+  "event_policy": {
+    "failed_calls_emit": false,
+    "zero_claim_emits": false
+  },
+  "limitations": [
+    "Deposit and withdrawal change internal accounting but do not transfer deposit tokens.",
+    "Claiming changes internal accounting but does not transfer reward tokens.",
+    "No share token, exchange rate, lock period, get_info, get_balance, or get_pending_rewards method is implemented.",
+    "set_claimable_reward and set_reward_balance are publicly invocable in the current contract and currently have no authorization check.",
+    "pending_rewards is a proportional view and is not the claimable amount consumed by claim_rewards."
+  ]
+}

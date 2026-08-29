@@ -29,7 +29,7 @@
     "source": "compatibility_fixture",
     "failed_calls_emit": false,
     "notes": [
-      "The event is emitted only when the claimed amount is greater than zero.",
+      "The event is emitted when the claimed amount is non-zero.",
       "The SDK-facing event name is claim_rewards; the on-chain second topic is claim."
     ]
   }

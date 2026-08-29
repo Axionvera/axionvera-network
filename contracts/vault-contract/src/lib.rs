@@ -365,7 +365,9 @@ mod test {
     use super::*;
     use serde_json::Value;
     use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
+    use soroban_sdk::xdr::{Limits, ReadXdr, ScSpecEntry, ScSpecFunctionV0, ScSpecTypeDef};
     use soroban_sdk::{vec, IntoVal, Val, Vec};
+    use std::string::ToString;
 
     const INITIALIZE_EVENT_FIXTURE: &str =
         include_str!("../../../examples/vault-events/initialize.json");
@@ -374,6 +376,25 @@ mod test {
         include_str!("../../../examples/vault-events/withdraw.json");
     const CLAIM_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/claim.json");
     const EVENT_FIXTURE_CATALOG: &str = include_str!("../../../examples/vault-events/catalog.json");
+    const VAULT_INTERFACE_SCHEMA: &str =
+        include_str!("../../../schemas/vault-interface.schema.json");
+    const VAULT_INTERFACE_V0_1: &str = include_str!("../../../schemas/vault-interface-v0.1.json");
+    const PUBLIC_METHOD_NAMES: [&str; 14] = [
+        "initialize",
+        "deposit",
+        "withdraw",
+        "claim_rewards",
+        "set_claimable_reward",
+        "set_reward_balance",
+        "is_initialized",
+        "admin",
+        "owner",
+        "deposit_token",
+        "reward_token",
+        "total_deposits",
+        "user_balance",
+        "pending_rewards",
+    ];
 
     // -------------------------------------------------------------------------
     // Shared test helpers
@@ -450,6 +471,127 @@ mod test {
         serde_json::from_str(raw).expect("vault event fixture must be valid JSON")
     }
 
+    fn interface_item<'a>(interface: &'a Value, collection: &str, name: &str) -> &'a Value {
+        interface[collection]
+            .as_array()
+            .expect("interface collection must be an array")
+            .iter()
+            .find(|item| item["name"] == name)
+            .unwrap_or_else(|| panic!("interface {collection} must include {name}"))
+    }
+
+    fn assert_string_array(actual: &Value, expected: &[&str]) {
+        let actual = actual.as_array().expect("value must be a string array");
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            assert_eq!(actual.as_str(), Some(*expected));
+        }
+    }
+
+    fn decode_function_spec<const N: usize>(encoded: [u8; N]) -> ScSpecFunctionV0 {
+        match ScSpecEntry::from_xdr(encoded, Limits::none())
+            .expect("generated contract function spec must be valid XDR")
+        {
+            ScSpecEntry::FunctionV0(function) => function,
+            _ => panic!("generated function spec must contain a function"),
+        }
+    }
+
+    fn contract_function_specs() -> std::vec::Vec<ScSpecFunctionV0> {
+        std::vec![
+            decode_function_spec(VaultContract::spec_xdr_initialize()),
+            decode_function_spec(VaultContract::spec_xdr_deposit()),
+            decode_function_spec(VaultContract::spec_xdr_withdraw()),
+            decode_function_spec(VaultContract::spec_xdr_claim_rewards()),
+            decode_function_spec(VaultContract::spec_xdr_set_claimable_reward()),
+            decode_function_spec(VaultContract::spec_xdr_set_reward_balance()),
+            decode_function_spec(VaultContract::spec_xdr_is_initialized()),
+            decode_function_spec(VaultContract::spec_xdr_admin()),
+            decode_function_spec(VaultContract::spec_xdr_owner()),
+            decode_function_spec(VaultContract::spec_xdr_deposit_token()),
+            decode_function_spec(VaultContract::spec_xdr_reward_token()),
+            decode_function_spec(VaultContract::spec_xdr_total_deposits()),
+            decode_function_spec(VaultContract::spec_xdr_user_balance()),
+            decode_function_spec(VaultContract::spec_xdr_pending_rewards()),
+        ]
+    }
+
+    fn spec_type_name(spec_type: &ScSpecTypeDef) -> std::string::String {
+        match spec_type {
+            ScSpecTypeDef::Address => "Address".into(),
+            ScSpecTypeDef::I128 => "i128".into(),
+            ScSpecTypeDef::Bool => "bool".into(),
+            ScSpecTypeDef::Void => "void".into(),
+            ScSpecTypeDef::Tuple(tuple) if tuple.value_types.is_empty() => "void".into(),
+            ScSpecTypeDef::Udt(udt) => udt.name.to_string(),
+            other => panic!("unexpected public interface type: {other:?}"),
+        }
+    }
+
+    struct ExpectedMethod<'a> {
+        name: &'a str,
+        arguments: &'a [(&'a str, &'a str)],
+        return_kind: &'a str,
+        success_type: &'a str,
+        auth_argument: Option<&'a str>,
+        initialization: &'a str,
+        mutability: &'a str,
+        stability: &'a str,
+        sdk_visibility: &'a str,
+        emits: &'a [&'a str],
+    }
+
+    fn assert_interface_method(interface: &Value, expected: &ExpectedMethod<'_>) {
+        let method = interface_item(interface, "methods", expected.name);
+        let arguments = method["arguments"]
+            .as_array()
+            .expect("method arguments must be an array");
+        assert_eq!(arguments.len(), expected.arguments.len());
+        for (position, (argument, (name, argument_type))) in
+            arguments.iter().zip(expected.arguments.iter()).enumerate()
+        {
+            assert_eq!(argument["position"], position);
+            assert_eq!(argument["name"], *name);
+            assert_eq!(argument["type"], *argument_type);
+        }
+
+        let returns = &method["returns"];
+        assert_eq!(returns["kind"], expected.return_kind);
+        let success_type = if expected.return_kind == "result" {
+            assert_eq!(returns["error"], "VaultError");
+            &returns["ok"]
+        } else {
+            &returns["type"]
+        };
+        assert_eq!(success_type, expected.success_type);
+
+        let authorization = &method["authorization"];
+        assert_eq!(
+            authorization["required"],
+            Value::Bool(expected.auth_argument.is_some())
+        );
+        match expected.auth_argument {
+            Some(argument) => {
+                assert_eq!(authorization["address_argument"], argument);
+                assert_eq!(authorization["mechanism"], "Address.require_auth");
+            }
+            None => {
+                assert!(authorization["address_argument"].is_null());
+                assert_eq!(authorization["mechanism"], "none");
+            }
+        }
+
+        assert_eq!(method["initialization"], expected.initialization);
+        assert_eq!(method["mutability"], expected.mutability);
+        assert_eq!(method["stability"], expected.stability);
+        assert_eq!(method["sdk_visibility"], expected.sdk_visibility);
+        assert_string_array(&method["emits"], expected.emits);
+        assert!(!method["notes"]
+            .as_array()
+            .expect("method notes must be an array")
+            .is_empty());
+    }
+
     fn fixture_action(fixture: &Value) -> Symbol {
         match fixture["event"]["topics"][1]
             .as_str()
@@ -513,6 +655,389 @@ mod test {
         assert_eq!(fields[1]["name"], amount_field_name);
         assert_eq!(fields[1]["type"], "i128");
         assert_eq!(fields[1]["value"], amount_value);
+    }
+
+    #[test]
+    fn vault_interface_schema_is_versioned_and_pins_current_names() {
+        let schema: Value = serde_json::from_str(VAULT_INTERFACE_SCHEMA)
+            .expect("vault interface schema must be valid JSON");
+
+        assert_eq!(
+            schema["$schema"],
+            "https://json-schema.org/draft/2020-12/schema"
+        );
+        assert_eq!(schema["properties"]["schema_version"]["const"], "1");
+        assert_eq!(schema["properties"]["interface_version"]["const"], "0.1");
+        assert_eq!(schema["properties"]["methods"]["minItems"], 14);
+        assert_eq!(schema["properties"]["methods"]["maxItems"], 14);
+        assert_string_array(
+            &schema["$defs"]["method_name"]["enum"],
+            &PUBLIC_METHOD_NAMES,
+        );
+        assert_string_array(
+            &schema["$defs"]["event_name"]["enum"],
+            &["init", "deposit", "withdraw", "claim"],
+        );
+    }
+
+    #[test]
+    fn vault_interface_document_matches_generated_contract_spec() {
+        let interface: Value = serde_json::from_str(VAULT_INTERFACE_V0_1)
+            .expect("vault interface document must be valid JSON");
+        let specs = contract_function_specs();
+        let methods = interface["methods"]
+            .as_array()
+            .expect("interface methods must be an array");
+        assert_eq!(specs.len(), PUBLIC_METHOD_NAMES.len());
+        assert_eq!(methods.len(), specs.len());
+
+        for (spec, expected_name) in specs.iter().zip(PUBLIC_METHOD_NAMES) {
+            let spec_name = spec.name.to_string();
+            assert_eq!(spec_name, expected_name);
+            let method = interface_item(&interface, "methods", &spec_name);
+            let arguments = method["arguments"]
+                .as_array()
+                .expect("method arguments must be an array");
+            assert_eq!(arguments.len(), spec.inputs.len());
+            for (position, (argument, input)) in
+                arguments.iter().zip(spec.inputs.iter()).enumerate()
+            {
+                assert_eq!(argument["position"], position);
+                assert_eq!(argument["name"], input.name.to_string());
+                assert_eq!(argument["type"], spec_type_name(&input.type_));
+            }
+
+            assert_eq!(spec.outputs.len(), 1);
+            let returns = &method["returns"];
+            match &spec.outputs[0] {
+                ScSpecTypeDef::Result(result) => {
+                    assert_eq!(returns["kind"], "result");
+                    assert_eq!(returns["ok"], spec_type_name(&result.ok_type));
+                    assert_eq!(returns["error"], spec_type_name(&result.error_type));
+                }
+                output => {
+                    assert_eq!(returns["kind"], "value");
+                    assert_eq!(returns["type"], spec_type_name(output));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn vault_interface_document_covers_current_public_method_signatures() {
+        let interface: Value = serde_json::from_str(VAULT_INTERFACE_V0_1)
+            .expect("vault interface document must be valid JSON");
+        assert_eq!(interface["schema"], "schemas/vault-interface.schema.json");
+        assert_eq!(interface["schema_version"], "1");
+        assert_eq!(interface["interface_version"], "0.1");
+        assert_eq!(interface["contract"], "axionvera-vault-contract");
+        assert_eq!(interface["contract_version"], env!("CARGO_PKG_VERSION"));
+        assert_eq!(interface["source"], "contracts/vault-contract/src/lib.rs");
+
+        let expected = [
+            ExpectedMethod {
+                name: "initialize",
+                arguments: &[
+                    ("admin", "Address"),
+                    ("deposit_token", "Address"),
+                    ("reward_token", "Address"),
+                ],
+                return_kind: "result",
+                success_type: "void",
+                auth_argument: Some("admin"),
+                initialization: "must_be_uninitialized",
+                mutability: "write",
+                stability: "stable",
+                sdk_visibility: "deployment",
+                emits: &["init"],
+            },
+            ExpectedMethod {
+                name: "deposit",
+                arguments: &[("from", "Address"), ("amount", "i128")],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: Some("from"),
+                initialization: "required",
+                mutability: "write",
+                stability: "stable",
+                sdk_visibility: "wallet",
+                emits: &["deposit"],
+            },
+            ExpectedMethod {
+                name: "withdraw",
+                arguments: &[("to", "Address"), ("amount", "i128")],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: Some("to"),
+                initialization: "required",
+                mutability: "write",
+                stability: "stable",
+                sdk_visibility: "wallet",
+                emits: &["withdraw"],
+            },
+            ExpectedMethod {
+                name: "claim_rewards",
+                arguments: &[("user", "Address")],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: Some("user"),
+                initialization: "required",
+                mutability: "write",
+                stability: "stable",
+                sdk_visibility: "wallet",
+                emits: &["claim"],
+            },
+            ExpectedMethod {
+                name: "set_claimable_reward",
+                arguments: &[("user", "Address"), ("amount", "i128")],
+                return_kind: "result",
+                success_type: "void",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "write",
+                stability: "internal",
+                sdk_visibility: "internal",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "set_reward_balance",
+                arguments: &[("amount", "i128")],
+                return_kind: "result",
+                success_type: "void",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "write",
+                stability: "internal",
+                sdk_visibility: "internal",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "is_initialized",
+                arguments: &[],
+                return_kind: "value",
+                success_type: "bool",
+                auth_argument: None,
+                initialization: "not_required",
+                mutability: "read",
+                stability: "stable",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "admin",
+                arguments: &[],
+                return_kind: "result",
+                success_type: "Address",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "provisional",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "owner",
+                arguments: &[],
+                return_kind: "result",
+                success_type: "Address",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "provisional",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "deposit_token",
+                arguments: &[],
+                return_kind: "result",
+                success_type: "Address",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "provisional",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "reward_token",
+                arguments: &[],
+                return_kind: "result",
+                success_type: "Address",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "provisional",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "total_deposits",
+                arguments: &[],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "provisional",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "user_balance",
+                arguments: &[("user", "Address")],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "stable",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+            ExpectedMethod {
+                name: "pending_rewards",
+                arguments: &[("user", "Address")],
+                return_kind: "result",
+                success_type: "i128",
+                auth_argument: None,
+                initialization: "required",
+                mutability: "read",
+                stability: "stable",
+                sdk_visibility: "query",
+                emits: &[],
+            },
+        ];
+
+        assert_eq!(
+            interface["methods"]
+                .as_array()
+                .expect("interface methods must be an array")
+                .len(),
+            PUBLIC_METHOD_NAMES.len()
+        );
+        for method in &expected {
+            assert_interface_method(&interface, method);
+        }
+    }
+
+    #[test]
+    fn vault_interface_document_matches_current_errors() {
+        let interface: Value = serde_json::from_str(VAULT_INTERFACE_V0_1)
+            .expect("vault interface document must be valid JSON");
+        let expected = [
+            ("AlreadyInitialized", 1_u64, &["initialize"][..]),
+            (
+                "NotInitialized",
+                2,
+                &[
+                    "deposit",
+                    "withdraw",
+                    "claim_rewards",
+                    "set_claimable_reward",
+                    "set_reward_balance",
+                    "admin",
+                    "owner",
+                    "deposit_token",
+                    "reward_token",
+                    "total_deposits",
+                    "user_balance",
+                    "pending_rewards",
+                ][..],
+            ),
+            ("InvalidAmount", 3, &["deposit", "withdraw"][..]),
+            ("InsufficientBalance", 4, &["withdraw"][..]),
+            ("InvalidRewardState", 5, &[][..]),
+        ];
+
+        let errors = interface["errors"]
+            .as_array()
+            .expect("interface errors must be an array");
+        assert_eq!(errors.len(), expected.len());
+        for (error, (name, code, returned_by)) in errors.iter().zip(expected) {
+            assert_eq!(error["name"], name);
+            assert_eq!(error["code"].as_u64(), Some(code));
+            assert_string_array(&error["returned_by"], returned_by);
+        }
+    }
+
+    #[test]
+    fn vault_interface_document_matches_current_events() {
+        let interface: Value = serde_json::from_str(VAULT_INTERFACE_V0_1)
+            .expect("vault interface document must be valid JSON");
+        let expected = [
+            (
+                "init",
+                "initialized",
+                "initialize",
+                "value",
+                &["admin:Address"][..],
+                "on_success",
+            ),
+            (
+                "deposit",
+                "deposit",
+                "deposit",
+                "tuple",
+                &["from:Address", "amount:i128"][..],
+                "on_success",
+            ),
+            (
+                "withdraw",
+                "withdraw",
+                "withdraw",
+                "tuple",
+                &["to:Address", "amount:i128"][..],
+                "on_success",
+            ),
+            (
+                "claim",
+                "claim_rewards",
+                "claim_rewards",
+                "tuple",
+                &["user:Address", "claimable:i128"][..],
+                "on_success_when_claimed_amount_is_nonzero",
+            ),
+        ];
+
+        let events = interface["events"]
+            .as_array()
+            .expect("interface events must be an array");
+        assert_eq!(events.len(), expected.len());
+        for (event, (name, sdk_name, emitted_by, data_kind, fields, emission)) in
+            events.iter().zip(expected)
+        {
+            assert_eq!(event["name"], name);
+            assert_eq!(event["sdk_event_type"], sdk_name);
+            assert_eq!(event["emitted_by"], emitted_by);
+            assert_eq!(event["type"], "contract");
+            assert_eq!(event["topics"][0]["position"], 0);
+            assert_eq!(event["topics"][0]["type"], "Symbol");
+            assert_eq!(event["topics"][0]["value"], "vault");
+            assert_eq!(event["topics"][1]["position"], 1);
+            assert_eq!(event["topics"][1]["type"], "Symbol");
+            assert_eq!(event["topics"][1]["value"], name);
+            assert_eq!(event["data"]["kind"], data_kind);
+            assert_eq!(event["emission"], emission);
+            assert_eq!(event["failed_calls_emit"], false);
+
+            let actual_fields = event["data"]["fields"]
+                .as_array()
+                .expect("event fields must be an array");
+            assert_eq!(actual_fields.len(), fields.len());
+            for (position, (field, expected_field)) in actual_fields.iter().zip(fields).enumerate()
+            {
+                let (field_name, field_type) = expected_field
+                    .split_once(':')
+                    .expect("expected event field must include a type");
+                assert_eq!(field["position"], position);
+                assert_eq!(field["name"], field_name);
+                assert_eq!(field["type"], field_type);
+            }
+        }
+
+        assert_eq!(interface["event_policy"]["failed_calls_emit"], false);
+        assert_eq!(interface["event_policy"]["zero_claim_emits"], false);
     }
 
     #[test]
