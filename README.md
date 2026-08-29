@@ -250,6 +250,17 @@ Before deploying the vault contract to Stellar testnet, follow the [Vault Contra
 
 The checklist covers local quality checks, the WASM build, explicit testnet network selection, contract ID recording, initialization, and post-deployment validation. It is for testnet preparation only and does not indicate production readiness.
 
+### Dry-Run Deployment
+
+A dry-run template is provided at `scripts/deploy-vault-template.sh`. Contributors can use this script to validate deployment configuration and view the intended command structure. 
+
+To run the dry-run:
+
+```bash
+./scripts/deploy-vault-template.sh
+```
+
+**Note:** This script performs a dry-run by default. It will not deploy the contract. Real deployments are only performed by the maintainer using explicitly loaded keys.
 ---
 
 ## Contract Design Goals

@@ -87,6 +87,13 @@ testnet. Run commands from the repository root unless a step says otherwise.
 
 - [ ] Recheck that the source identity is funded on testnet and that every
       remote command below says `--network testnet`.
+- [ ] Prepare your deployment configuration by running the dry-run script first:
+
+  ```bash
+  ./scripts/deploy-vault-template.sh
+  ```
+
+  *Note: Only the maintainer runs real deployments. The template validates required environment variables and outputs the intended command structure.*
 - [ ] Deploy the WASM. Replace `deployer` if the funded CLI identity has a
       different local name:
 
