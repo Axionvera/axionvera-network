@@ -29,3 +29,12 @@ Contributors must verify that all artifacts, schemas, and contract checks pass l
    cargo check
    cargo clippy --all-targets --all-features -- -D warnings
    cargo test
+   ```
+
+2. **Release Readiness Checklist:**
+   Before handing off, run the automated checklist to confirm all required
+   docs, schemas, examples, scripts, and local quality checks are present:
+   ```bash
+   ./scripts/release-readiness-check.sh
+   ```
+   Use `--full` to include `cargo test` and `cargo clippy`.
