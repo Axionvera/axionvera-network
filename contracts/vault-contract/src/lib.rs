@@ -537,6 +537,25 @@ mod test {
         }
     }
 
+    #[test]
+    fn fixtures_document_failed_calls_as_non_emitting() {
+        for raw_fixture in [
+            INITIALIZE_EVENT_FIXTURE,
+            DEPOSIT_EVENT_FIXTURE,
+            WITHDRAW_EVENT_FIXTURE,
+            CLAIM_EVENT_FIXTURE,
+        ] {
+            let fixture = parse_event_fixture(raw_fixture);
+            assert_eq!(fixture["indexing"]["failed_calls_emit"], false);
+        }
+
+        let (env, client, _) = setup_uninitialized();
+        let user = Address::generate(&env);
+        let _ = client.try_deposit(&user, &100);
+
+        assert_no_events(&env);
+    }
+
     // =========================================================================
     // Helper function unit tests
     // =========================================================================
