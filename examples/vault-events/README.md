@@ -13,6 +13,8 @@ Each file conforms to `schemas/vault-event.schema.json` and documents:
 
 The fixtures are intentionally not an indexer. They provide stable examples for
 parsers, dashboards, and SDK tests before live indexing is implemented.
+`catalog.json` lists the full fixture set for tools that prefer discovering the
+examples from one manifest.
 
 | Fixture | Contract flow | On-chain topics | SDK event type |
 | --- | --- | --- | --- |

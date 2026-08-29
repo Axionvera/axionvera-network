@@ -373,6 +373,7 @@ mod test {
     const WITHDRAW_EVENT_FIXTURE: &str =
         include_str!("../../../examples/vault-events/withdraw.json");
     const CLAIM_EVENT_FIXTURE: &str = include_str!("../../../examples/vault-events/claim.json");
+    const EVENT_FIXTURE_CATALOG: &str = include_str!("../../../examples/vault-events/catalog.json");
 
     // -------------------------------------------------------------------------
     // Shared test helpers
@@ -531,6 +532,46 @@ mod test {
         for (raw_fixture, flow, second_topic, sdk_event_type) in fixtures {
             let fixture = parse_event_fixture(raw_fixture);
             assert_fixture_header(&fixture, flow, second_topic, sdk_event_type);
+        }
+    }
+
+    #[test]
+    fn event_fixture_catalog_manifest_matches_fixture_files() {
+        let catalog = parse_event_fixture(EVENT_FIXTURE_CATALOG);
+        assert_eq!(catalog["schema_version"], "1");
+        assert_eq!(catalog["interface_version"], "0.1");
+        assert_eq!(catalog["contract"], "axionvera-vault-contract");
+        assert_eq!(catalog["schema"], "schemas/vault-event.schema.json");
+        assert_eq!(catalog["indexing"]["mocked"], true);
+        assert_eq!(catalog["indexing"]["network_mode"], "testnet");
+        assert_eq!(catalog["indexing"]["failed_calls_emit"], false);
+        assert_eq!(catalog["indexing"]["live_indexer_included"], false);
+
+        let catalog_fixtures = catalog["fixtures"]
+            .as_array()
+            .expect("fixture catalog must include fixtures");
+        assert_eq!(catalog_fixtures.len(), 4);
+
+        let expected = [
+            (
+                "initialize",
+                "examples/vault-events/initialize.json",
+                "init",
+            ),
+            ("deposit", "examples/vault-events/deposit.json", "deposit"),
+            (
+                "withdraw",
+                "examples/vault-events/withdraw.json",
+                "withdraw",
+            ),
+            ("claim", "examples/vault-events/claim.json", "claim"),
+        ];
+
+        for (entry, (flow, path, second_topic)) in catalog_fixtures.iter().zip(expected) {
+            assert_eq!(entry["flow"], flow);
+            assert_eq!(entry["path"], path);
+            assert_eq!(entry["topics"][0], "vault");
+            assert_eq!(entry["topics"][1], second_topic);
         }
     }
 

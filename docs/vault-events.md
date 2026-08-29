@@ -9,7 +9,8 @@ All events emitted by the vault contract use `Vault` (symbol: `"vault"`) as the 
 The compatibility fixture schema is maintained at
 `schemas/vault-event.schema.json`. Example payloads live in
 `examples/vault-events/` and are intended for SDK and dashboard indexing tests,
-not as a live indexer implementation.
+not as a live indexer implementation. `examples/vault-events/catalog.json`
+provides a machine-readable list of the fixture files.
 
 | Flow | Fixture | On-chain topics | SDK event type |
 | --- | --- | --- | --- |
