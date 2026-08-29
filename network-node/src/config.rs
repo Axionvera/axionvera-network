@@ -234,7 +234,16 @@ impl Default for NodeConfig {
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::BTreeMap, io::Write as _};
+
     use super::*;
+
+    const TESTNET_CONFIG_PATH: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../examples/testnet-config.json"
+    );
+    const ENV_EXAMPLE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../.env.example");
+    const PUBLIC_TESTNET_RPC_URL: &str = "https://soroban-testnet.stellar.org";
 
     fn config(network_name: &str, rpc_url: &str, environment: &str) -> NodeConfig {
         NodeConfig {
@@ -242,6 +251,30 @@ mod tests {
             rpc_url: rpc_url.to_string(),
             environment: environment.to_string(),
         }
+    }
+
+    fn load_env_example() -> BTreeMap<String, String> {
+        let contents = std::fs::read_to_string(ENV_EXAMPLE_PATH).expect("read .env.example");
+        let mut values = BTreeMap::new();
+
+        for (index, line) in contents.lines().enumerate() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            let (key, value) = line
+                .split_once('=')
+                .unwrap_or_else(|| panic!("invalid .env.example entry on line {}", index + 1));
+            assert!(!key.is_empty(), "empty key on line {}", index + 1);
+            assert!(!value.is_empty(), "empty value for {key}");
+            assert!(
+                values.insert(key.to_string(), value.to_string()).is_none(),
+                "duplicate .env.example key: {key}"
+            );
+        }
+
+        values
     }
 
     // -------------------------------------------------------------------------
@@ -484,10 +517,81 @@ mod tests {
     }
 
     // -------------------------------------------------------------------------
-    // load_config tests
+    // Committed testnet example validation
     // -------------------------------------------------------------------------
 
-    use std::io::Write as _;
+    #[test]
+    fn testnet_example_json_loads_with_supported_public_values() {
+        let loaded = load_config(TESTNET_CONFIG_PATH).expect("load committed testnet config");
+
+        assert_eq!(loaded, config("testnet", PUBLIC_TESTNET_RPC_URL, "staging"));
+        assert_eq!(loaded.validate(), Ok(()));
+
+        let contents =
+            std::fs::read_to_string(TESTNET_CONFIG_PATH).expect("read committed testnet config");
+        let json: serde_json::Value =
+            serde_json::from_str(&contents).expect("parse committed testnet config");
+        let fields = json.as_object().expect("testnet config must be an object");
+        assert_eq!(
+            fields.len(),
+            3,
+            "testnet config must contain only NodeConfig fields"
+        );
+        for required in ["network_name", "rpc_url", "environment"] {
+            assert!(
+                fields.contains_key(required),
+                "missing JSON field: {required}"
+            );
+        }
+    }
+
+    #[test]
+    fn testnet_example_env_is_complete_safe_and_matches_json() {
+        let values = load_env_example();
+        let expected = [
+            ("AXIONVERA_NETWORK_NAME", "testnet"),
+            ("AXIONVERA_RPC_URL", PUBLIC_TESTNET_RPC_URL),
+            ("AXIONVERA_ENVIRONMENT", "staging"),
+            ("AXIONVERA_DEPLOYER_SOURCE", "DEPLOYER_IDENTITY_PLACEHOLDER"),
+            ("AXIONVERA_ADMIN_ADDRESS", "G_ADMIN_ADDRESS_PLACEHOLDER"),
+            ("AXIONVERA_DEPOSIT_TOKEN", "C_DEPOSIT_TOKEN_PLACEHOLDER"),
+            ("AXIONVERA_REWARD_TOKEN", "C_REWARD_TOKEN_PLACEHOLDER"),
+        ];
+
+        assert_eq!(
+            values.len(),
+            expected.len(),
+            ".env.example must contain only the documented testnet entries"
+        );
+        for (key, expected_value) in expected {
+            assert_eq!(
+                values.get(key).map(String::as_str),
+                Some(expected_value),
+                "unexpected value for {key}"
+            );
+        }
+
+        let json = load_config(TESTNET_CONFIG_PATH).expect("load committed testnet config");
+        assert_eq!(values["AXIONVERA_NETWORK_NAME"], json.network_name);
+        assert_eq!(values["AXIONVERA_RPC_URL"], json.rpc_url);
+        assert_eq!(values["AXIONVERA_ENVIRONMENT"], json.environment);
+
+        for key in [
+            "AXIONVERA_DEPLOYER_SOURCE",
+            "AXIONVERA_ADMIN_ADDRESS",
+            "AXIONVERA_DEPOSIT_TOKEN",
+            "AXIONVERA_REWARD_TOKEN",
+        ] {
+            assert!(
+                values[key].ends_with("PLACEHOLDER"),
+                "{key} must remain an explicit non-secret placeholder"
+            );
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // load_config tests
+    // -------------------------------------------------------------------------
 
     /// Write `contents` to a named temp file and return the path.  The file
     /// lives for the lifetime of the returned [`tempfile::NamedTempFile`];
