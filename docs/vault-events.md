@@ -117,7 +117,7 @@ env.events().publish(
 ## 4. Claim Event
 
 **When it is emitted:**
-Emitted when a user successfully claims their accumulated rewards via the `claim_rewards` function, provided the claimable amount is greater than 0. 
+Emitted when a user successfully claims their accumulated rewards via the `claim_rewards` function, provided the claimable amount is not equal to 0.
 
 **Topics:**
 1. `symbol_short!("vault")`

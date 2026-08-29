@@ -12,6 +12,14 @@ re-deriving it from either repo in isolation.
 | SDK v2 wrapper | `packages/core/src/contracts/vault.ts` in [axionvera-sdk](https://github.com/Axionvera/axionvera-sdk) |
 | SDK v2 event types | `packages/core/src/events.ts` in axionvera-sdk |
 
+For automated compatibility checks, use the versioned interface document at
+`schemas/vault-interface-v0.1.json`, validated by
+`schemas/vault-interface.schema.json`. See
+[Vault interface schema](./vault-interface-schema.md) for consumption and
+versioning guidance. This prose guide remains the detailed integration
+explanation; the JSON document is the machine-readable mirror of the current
+contract surface.
+
 This document describes only what the current vault implements. It does not
 treat share tokens, exchange rates, lock periods, or token transfers as part of
 this contract — those ideas exist in older SDK helpers but are not present here.
@@ -53,7 +61,7 @@ and an accompanying SDK issue:
   the `("vault", "withdraw")` event.
 - `claim_rewards` — name, argument (`user`), `require_auth` on `user`,
   `i128` claimed-amount return, and the `("vault", "claim")` event emitted only
-  when `claimed > 0`.
+  when `claimed != 0`.
 - `is_initialized` — name, no arguments, `bool` return, ungated.
 - `user_balance` — name, argument (`user: Address`), `Result<i128, VaultError>`
   return.
@@ -380,7 +388,7 @@ below, and include placeholder address values suitable for testnet replay.
 | Initialize | `("vault", "init")` | `admin: Address` | After storage is written | Stable |
 | Deposit | `("vault", "deposit")` | `(from: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the deposited amount, not the new balance. | Stable |
 | Withdraw | `("vault", "withdraw")` | `(to: Address, amount: i128)` | After the user's balance and `total_deposits` are updated. `amount` is the withdrawn amount, not the new balance. | Stable |
-| Claim | `("vault", "claim")` | `(user: Address, claimed: i128)` | Only when `claimed > 0`, after `ClaimableReward` is cleared to `0`. | Stable |
+| Claim | `("vault", "claim")` | `(user: Address, claimed: i128)` | Only when `claimed != 0`, after `ClaimableReward` is cleared to `0`. | Stable |
 
 `set_claimable_reward` and `set_reward_balance` do not emit events.
 

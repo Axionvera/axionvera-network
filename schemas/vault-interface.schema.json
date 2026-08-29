@@ -1,0 +1,379 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AxionVera vault contract public interface",
+  "description": "Schema for the versioned, SDK-facing description of the currently implemented vault contract interface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "interface_version",
+    "contract",
+    "contract_version",
+    "source",
+    "types",
+    "errors",
+    "methods",
+    "events",
+    "event_policy",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "schemas/vault-interface.schema.json"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "interface_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "contract": {
+      "type": "string",
+      "const": "axionvera-vault-contract"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "source": {
+      "type": "string",
+      "const": "contracts/vault-contract/src/lib.rs"
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Address", "i128", "bool", "void", "VaultError"],
+      "properties": {
+        "Address": { "$ref": "#/$defs/type_definition" },
+        "i128": { "$ref": "#/$defs/type_definition" },
+        "bool": { "$ref": "#/$defs/type_definition" },
+        "void": { "$ref": "#/$defs/type_definition" },
+        "VaultError": { "$ref": "#/$defs/type_definition" }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/error" },
+      "minItems": 5,
+      "maxItems": 5,
+      "allOf": [
+        { "contains": { "properties": { "name": { "const": "AlreadyInitialized" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "NotInitialized" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "InvalidAmount" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "InsufficientBalance" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "InvalidRewardState" } }, "required": ["name"] } }
+      ]
+    },
+    "methods": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/method" },
+      "minItems": 14,
+      "maxItems": 14,
+      "allOf": [
+        { "contains": { "properties": { "name": { "const": "initialize" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "deposit" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "withdraw" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "claim_rewards" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "set_claimable_reward" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "set_reward_balance" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "is_initialized" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "admin" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "owner" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "deposit_token" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "reward_token" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "total_deposits" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "user_balance" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "pending_rewards" } }, "required": ["name"] } }
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" },
+      "minItems": 4,
+      "maxItems": 4,
+      "allOf": [
+        { "contains": { "properties": { "name": { "const": "init" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "deposit" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "withdraw" } }, "required": ["name"] } },
+        { "contains": { "properties": { "name": { "const": "claim" } }, "required": ["name"] } }
+      ]
+    },
+    "event_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failed_calls_emit", "zero_claim_emits"],
+      "properties": {
+        "failed_calls_emit": { "type": "boolean", "const": false },
+        "zero_claim_emits": { "type": "boolean", "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "type_name": {
+      "type": "string",
+      "enum": ["Address", "i128", "bool", "void", "VaultError"]
+    },
+    "method_name": {
+      "type": "string",
+      "enum": [
+        "initialize",
+        "deposit",
+        "withdraw",
+        "claim_rewards",
+        "set_claimable_reward",
+        "set_reward_balance",
+        "is_initialized",
+        "admin",
+        "owner",
+        "deposit_token",
+        "reward_token",
+        "total_deposits",
+        "user_balance",
+        "pending_rewards"
+      ]
+    },
+    "event_name": {
+      "type": "string",
+      "enum": ["init", "deposit", "withdraw", "claim"]
+    },
+    "type_definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["soroban_type", "sdk_representation"],
+      "properties": {
+        "soroban_type": { "type": "string", "minLength": 1 },
+        "sdk_representation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "code", "returned_by", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "AlreadyInitialized",
+            "NotInitialized",
+            "InvalidAmount",
+            "InsufficientBalance",
+            "InvalidRewardState"
+          ]
+        },
+        "code": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "returned_by": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/method_name" },
+          "uniqueItems": true
+        },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "position", "type", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "position": { "type": "integer", "minimum": 0 },
+        "type": { "$ref": "#/$defs/type_name" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "result_return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ok", "error", "description"],
+      "properties": {
+        "kind": { "type": "string", "const": "result" },
+        "ok": { "$ref": "#/$defs/type_name" },
+        "error": { "type": "string", "const": "VaultError" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "value_return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "type", "description"],
+      "properties": {
+        "kind": { "type": "string", "const": "value" },
+        "type": { "$ref": "#/$defs/type_name" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "address_argument", "mechanism", "description"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "address_argument": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "mechanism": {
+          "type": "string",
+          "enum": ["Address.require_auth", "none"]
+        },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "required": { "const": true } }, "required": ["required"] },
+          "then": {
+            "properties": {
+              "address_argument": { "type": "string" },
+              "mechanism": { "const": "Address.require_auth" }
+            }
+          },
+          "else": {
+            "properties": {
+              "address_argument": { "type": "null" },
+              "mechanism": { "const": "none" }
+            }
+          }
+        }
+      ]
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "arguments",
+        "returns",
+        "authorization",
+        "initialization",
+        "mutability",
+        "stability",
+        "sdk_visibility",
+        "emits",
+        "notes"
+      ],
+      "properties": {
+        "name": { "$ref": "#/$defs/method_name" },
+        "arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "returns": {
+          "oneOf": [
+            { "$ref": "#/$defs/result_return" },
+            { "$ref": "#/$defs/value_return" }
+          ]
+        },
+        "authorization": { "$ref": "#/$defs/authorization" },
+        "initialization": {
+          "type": "string",
+          "enum": ["not_required", "required", "must_be_uninitialized"]
+        },
+        "mutability": {
+          "type": "string",
+          "enum": ["read", "write"]
+        },
+        "stability": {
+          "type": "string",
+          "enum": ["stable", "provisional", "internal"]
+        },
+        "sdk_visibility": {
+          "type": "string",
+          "enum": ["deployment", "wallet", "query", "internal"]
+        },
+        "emits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/event_name" },
+          "uniqueItems": true,
+          "maxItems": 1
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      }
+    },
+    "topic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["position", "type", "value"],
+      "properties": {
+        "position": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "type": { "type": "string", "const": "Symbol" },
+        "value": { "type": "string", "enum": ["vault", "init", "deposit", "withdraw", "claim"] }
+      }
+    },
+    "event_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "position", "type", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "position": { "type": "integer", "minimum": 0 },
+        "type": { "$ref": "#/$defs/type_name" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "event_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "fields"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["value", "tuple"] },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/event_field" },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "sdk_event_type",
+        "emitted_by",
+        "type",
+        "topics",
+        "data",
+        "emission",
+        "failed_calls_emit",
+        "description"
+      ],
+      "properties": {
+        "name": { "$ref": "#/$defs/event_name" },
+        "sdk_event_type": {
+          "type": "string",
+          "enum": ["initialized", "deposit", "withdraw", "claim_rewards"]
+        },
+        "emitted_by": { "$ref": "#/$defs/method_name" },
+        "type": { "type": "string", "const": "contract" },
+        "topics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/topic" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "data": { "$ref": "#/$defs/event_data" },
+        "emission": {
+          "type": "string",
+          "enum": ["on_success", "on_success_when_claimed_amount_is_nonzero"]
+        },
+        "failed_calls_emit": { "type": "boolean", "const": false },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

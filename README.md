@@ -285,24 +285,6 @@ To run the dry-run:
 **Note:** This script performs a dry-run by default. It will not deploy the contract. Real deployments are only performed by the maintainer using explicitly loaded keys.
 ---
 
-### Release Readiness Checklist
-
-Before maintainer deployment, use the release readiness checklist to verify that required docs, schemas, examples, scripts, and local commands are all present and passing:
-
-```bash
-./scripts/release-readiness-check.sh
-```
-
-For the full check (includes `cargo test` and `cargo clippy`):
-
-```bash
-./scripts/release-readiness-check.sh --full
-```
-
-See the [Release Readiness Checklist](./docs/release-readiness.md) for details, expected outputs, and test instructions. The script performs no secret or privileged actions.
-
----
-
 ## Contract Design Goals
 
 Axionvera Network aims to keep the vault layer:
@@ -335,7 +317,16 @@ The SDK should be able to map cleanly to the vault contract methods for:
 - tracking emitted events
 
 Contract method names, argument order, return values, and event behavior should remain stable once documented.
-See the [SDK-to-Contract Interface Documentation](./docs/sdk-contract-interface.md) for full integration details.
+
+For machine-readable compatibility metadata, SDK tests can consume or mirror
+[`schemas/vault-interface-v0.1.json`](./schemas/vault-interface-v0.1.json).
+It is validated by [`schemas/vault-interface.schema.json`](./schemas/vault-interface.schema.json)
+and records every current public method, ordered arguments, returns,
+authorization requirements, errors, event topics, and known non-features.
+See the [Vault Interface Schema Guide](./docs/vault-interface-schema.md) for
+consumption and versioning rules, and the
+[SDK-to-Contract Interface Documentation](./docs/sdk-contract-interface.md) for
+full integration details.
 
 ---
 
