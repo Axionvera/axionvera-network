@@ -71,7 +71,7 @@ Contributors should:
 
 ## Contract Safety Checklist
 
-For contract changes, check that:
+For contract changes, contributors must ensure:
 
 - initialization cannot be repeated unsafely
 - admin or owner behavior is protected
@@ -83,6 +83,10 @@ For contract changes, check that:
 - failed calls do not mutate state unexpectedly
 - public methods return predictable values
 - event formats remain stable
+
+### Maintainer Review Checklist
+
+Before testnet deployment, maintainers should complete a formal review using the [Vault Security Review Checklist Template](docs/vault-security-review-template.md). See the [example checklist](docs/vault-security-review-example.md) for how this should be filled out.
 
 ---
 
