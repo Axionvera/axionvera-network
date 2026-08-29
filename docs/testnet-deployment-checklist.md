@@ -11,6 +11,9 @@ testnet. Run commands from the repository root unless a step says otherwise.
 
 ## 1. Confirm the deployment inputs
 
+- [ ] Read the [Testnet Configuration Examples](./testnet-configuration.md),
+      then validate the committed examples with
+      `./scripts/validate-testnet-config.sh`.
 - [ ] Install the Rust toolchain, the `wasm32-unknown-unknown` Rust target, and
       the Stellar CLI:
 

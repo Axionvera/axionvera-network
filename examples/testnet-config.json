@@ -1,0 +1,5 @@
+{
+  "network_name": "testnet",
+  "rpc_url": "https://soroban-testnet.stellar.org",
+  "environment": "staging"
+}

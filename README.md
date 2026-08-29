@@ -108,18 +108,31 @@ Current capabilities include:
 
 #### Configuration
 
-The network-node crate uses environment variables for configuration. See `.env.example` for the supported configuration fields:
+The repository includes a complete, non-secret Stellar testnet configuration set for both the network node and contract dry-run tooling:
+
+- `.env.example` contains testnet network values and explicit contract placeholders.
+- `examples/testnet-config.json` is loadable through `axionvera_network_node::load_config`.
+- `docs/testnet-configuration.md` explains every value and the maintainer security boundary.
+
+The network-node fields are:
 
 - `AXIONVERA_NETWORK_NAME` - Target network (`local`, `testnet`, `mainnet`, `futurenet`)
 - `AXIONVERA_RPC_URL` - Soroban RPC endpoint URL
 - `AXIONVERA_ENVIRONMENT` - Deployment environment (`development`, `staging`, `production`)
 
-To set up local configuration:
+Validate the committed testnet examples without a Stellar identity or network request:
+
+```bash
+./scripts/validate-testnet-config.sh
+```
+
+To prepare a private maintainer configuration, copy the template and replace only the documented placeholders in the ignored file:
 
 ```bash
 cp .env.example .env
-# Edit .env with your values
 ```
+
+See the [Testnet Configuration Examples](./docs/testnet-configuration.md) guide for field descriptions, individual validation commands, and safe handling rules.
 
 ---
 
