@@ -271,7 +271,16 @@ The handoff guide establishes the security boundary between contributor preparat
 
 ### Maintainer Handoff Guide
 
-For clear separation of responsibilities, non-secret preparation, and maintainer-only deployment steps, see [Maintainer Handoff Guide (Testnet Deployment)](./docs/maintainer-handoff-guide.md).
+For clear separation of responsibilities, non-secret preparation, maintainer deployment steps, and SDK handoff package generation, see [Maintainer Handoff Guide (Testnet Deployment)](./docs/maintainer-handoff-guide.md).
+
+### SDK Handoff Artifact Package
+
+Network-to-SDK handoffs after maintainer deployment are governed by [`schemas/sdk-handoff.schema.json`](./schemas/sdk-handoff.schema.json) with a non-secret placeholder example at [`examples/sdk-handoff.json`](./examples/sdk-handoff.json). Maintainers populate real contract IDs, initialization addresses, and network parameters post-deployment, then validate compliance and secret safety using:
+
+```bash
+python3 scripts/validate-sdk-handoff.py examples/sdk-handoff.json
+```
+
 ### Dry-Run Deployment
 
 A dry-run template is provided at `scripts/deploy-vault-template.sh`. Contributors can use this script to validate deployment configuration and view the intended command structure. 

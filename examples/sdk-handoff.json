@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "status": "placeholder_for_maintainer_deployment",
+  "network": {
+    "name": "testnet",
+    "rpc_url": "https://soroban-testnet.stellar.org",
+    "network_passphrase": "Test SDF Network ; September 2015"
+  },
+  "contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "interface_version": "0.1",
+  "interface_schema_ref": "schemas/vault-interface-v0.1.json",
+  "event_schema_ref": "schemas/vault-event.schema.json",
+  "initialization": {
+    "admin": "ADDRESS_PLACEHOLDER",
+    "deposit_token": "ADDRESS_PLACEHOLDER",
+    "reward_token": "ADDRESS_PLACEHOLDER"
+  },
+  "maintainer_deployment_boundary": {
+    "no_secrets_included": true,
+    "real_deployment_performed": false
+  }
+}
