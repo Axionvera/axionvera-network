@@ -281,6 +281,14 @@ Network-to-SDK handoffs after maintainer deployment are governed by [`schemas/sd
 python3 scripts/validate-sdk-handoff.py examples/sdk-handoff.json
 ```
 
+### Contract ID Registry
+
+Multi-environment contract ID records are governed by [`schemas/contract-id-registry.schema.json`](./schemas/contract-id-registry.schema.json) with a non-secret placeholder example at [`examples/contract-id-registry.json`](./examples/contract-id-registry.json). Maintainers record deployed contract IDs, WASM hashes, timestamps, and deployer addresses after deployment, then validate using:
+
+```bash
+python3 scripts/validate-contract-id-registry.py examples/contract-id-registry.json
+```
+
 ### Dry-Run Deployment
 
 A dry-run template is provided at `scripts/deploy-vault-template.sh`. Contributors can use this script to validate deployment configuration and view the intended command structure. 

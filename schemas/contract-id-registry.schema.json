@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera Contract ID Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "updated_at",
+    "environments",
+    "maintainer_deployment_boundary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1" },
+    "updated_at": {
+      "type": "string",
+      "pattern": "^(TIMESTAMP_PLACEHOLDER|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)$"
+    },
+    "environments": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["network", "status", "contracts"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": ["local", "testnet", "mainnet", "futurenet"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["placeholder", "deployed"]
+          },
+          "contracts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "contract_id",
+                "wasm_sha256",
+                "deployed_at",
+                "deployer_address"
+              ],
+              "properties": {
+                "contract_id": {
+                  "type": "string",
+                  "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+                },
+                "wasm_sha256": {
+                  "type": "string",
+                  "pattern": "^(SHA256_PLACEHOLDER|[0-9a-fA-F]{64})$"
+                },
+                "deployed_at": {
+                  "type": "string",
+                  "pattern": "^(TIMESTAMP_PLACEHOLDER|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)$"
+                },
+                "deployer_address": {
+                  "$ref": "#/$defs/address_or_placeholder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "maintainer_deployment_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["no_secrets_included", "real_deployments_recorded"],
+      "properties": {
+        "no_secrets_included": { "type": "boolean", "const": true },
+        "real_deployments_recorded": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "address_or_placeholder": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|G[A-Z2-7]{55}|C[A-Z2-7]{55})$"
+    }
+  }
+}

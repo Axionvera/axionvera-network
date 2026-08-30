@@ -94,3 +94,24 @@ After contract deployment, the maintainer completes the following steps:
 
 3. **Deliver to SDK Repo:**
    Publish or commit the validated handoff artifact for consumption by `axionvera-sdk`.
+
+---
+
+## 4. Contract ID Registry
+
+To maintain a clear, non-secret record of deployed contracts across environments (local, testnet, futurenet, mainnet), the repository maintains a contract ID registry defined by `schemas/contract-id-registry.schema.json`.
+
+An example placeholder registry is committed at `examples/contract-id-registry.json`.
+
+### Maintainer Registry Recording Workflow
+
+Post-deployment, the maintainer records deployment details in the registry:
+
+1. Update target environment entry (e.g. `testnet`) status to `"deployed"`.
+2. Record the deployed contract ID (`contract_id`, e.g. `C...`), compiled binary hash (`wasm_sha256`), deployment ISO timestamp (`deployed_at`), and deployer account (`deployer_address`).
+3. Set `maintainer_deployment_boundary.real_deployments_recorded` to `true`.
+4. Run the validation script to verify non-secret compliance and schema structure:
+   ```bash
+   python3 scripts/validate-contract-id-registry.py path/to/contract-id-registry.json
+   ```
+   Publish or commit the validated handoff artifact for consumption by `axionvera-sdk`.
