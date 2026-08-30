@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera SDK handoff package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "network",
+    "contract_id",
+    "interface_version",
+    "interface_schema_ref",
+    "event_schema_ref",
+    "initialization",
+    "maintainer_deployment_boundary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "placeholder_for_maintainer_deployment",
+        "ready_for_sdk_consumption"
+      ]
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "rpc_url", "network_passphrase"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["local", "testnet", "mainnet", "futurenet"]
+        },
+        "rpc_url": { "type": "string", "pattern": "^https?://.+" },
+        "network_passphrase": { "type": "string", "minLength": 1 }
+      }
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "interface_version": { "type": "string", "const": "0.1" },
+    "interface_schema_ref": { "type": "string", "minLength": 1 },
+    "event_schema_ref": { "type": "string", "minLength": 1 },
+    "initialization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["admin", "deposit_token", "reward_token"],
+      "properties": {
+        "admin": { "$ref": "#/$defs/address_or_placeholder" },
+        "deposit_token": { "$ref": "#/$defs/address_or_placeholder" },
+        "reward_token": { "$ref": "#/$defs/address_or_placeholder" }
+      }
+    },
+    "maintainer_deployment_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["no_secrets_included", "real_deployment_performed"],
+      "properties": {
+        "no_secrets_included": { "type": "boolean", "const": true },
+        "real_deployment_performed": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "address_or_placeholder": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|G[A-Z2-7]{55}|C[A-Z2-7]{55})$"
+    }
+  }
+}

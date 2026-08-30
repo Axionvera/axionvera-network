@@ -17,9 +17,9 @@ The quick mode checks required files and runs `cargo fmt --check` and `cargo che
 ## What It Checks
 
 1. **Documentation** — maintainer handoff guide, deployment checklist, CI checks, testnet configuration, README, license, contributing guide, security policy.
-2. **Schemas** — `build-metadata.schema.json`, `mock-vault-deployment.schema.json`, `vault-event.schema.json`.
-3. **Examples** — build metadata, testnet config, vault deployment examples, vault event examples.
-4. **Scripts** — build WASM, deploy template, validate testnet config, validate mock vault deployment.
+2. **Schemas** — `build-metadata.schema.json`, `mock-vault-deployment.schema.json`, `vault-event.schema.json`, `sdk-handoff.schema.json`.
+3. **Examples** — build metadata, testnet config, vault deployment examples, vault event examples, sdk handoff example.
+4. **Scripts** — build WASM, deploy template, validate testnet config, validate mock vault deployment, validate SDK handoff.
 5. **Project files** — `.env.example`, `Cargo.toml`, `Cargo.lock`.
 6. **Local commands** — formatting, workspace compilation, tests, and clippy (full mode only).
 
@@ -46,18 +46,21 @@ Mode: QUICK
 [OK] Build Metadata Schema
 [OK] Mock Vault Deployment Schema
 [OK] Vault Event Schema
+[OK] SDK Handoff Schema
 
 --- Required Examples ---
 [OK] Build Metadata Example
 [OK] Testnet Config Example
 [OK] Vault Deployment Examples
 [OK] Vault Event Examples
+[OK] SDK Handoff Example
 
 --- Required Scripts ---
 [OK] Build Vault WASM
 [OK] Deploy Vault Template
 [OK] Validate Testnet Config
 [OK] Validate Mock Vault Deployment
+[OK] Validate SDK Handoff
 
 --- Required Project Files ---
 [OK] .env Example

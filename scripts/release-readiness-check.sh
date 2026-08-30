@@ -52,6 +52,7 @@ echo "--- Required Schemas ---"
 check_file "schemas/build-metadata.schema.json" "Build Metadata Schema"
 check_file "schemas/mock-vault-deployment.schema.json" "Mock Vault Deployment Schema"
 check_file "schemas/vault-event.schema.json" "Vault Event Schema"
+check_file "schemas/sdk-handoff.schema.json" "SDK Handoff Schema"
 
 echo ""
 echo "--- Required Examples ---"
@@ -59,6 +60,7 @@ check_file "examples/build-metadata.json" "Build Metadata Example"
 check_file "examples/testnet-config.json" "Testnet Config Example"
 check_file "examples/vault-deployment" "Vault Deployment Examples"
 check_file "examples/vault-events" "Vault Event Examples"
+check_file "examples/sdk-handoff.json" "SDK Handoff Example"
 
 echo ""
 echo "--- Required Scripts ---"
@@ -66,6 +68,7 @@ check_file "scripts/build-vault-wasm.sh" "Build Vault WASM"
 check_file "scripts/deploy-vault-template.sh" "Deploy Vault Template"
 check_file "scripts/validate-testnet-config.sh" "Validate Testnet Config"
 check_file "scripts/validate-mock-vault-deployment.py" "Validate Mock Vault Deployment"
+check_file "scripts/validate-sdk-handoff.py" "Validate SDK Handoff"
 
 echo ""
 echo "--- Required Project Files ---"
@@ -92,6 +95,7 @@ run_cmd() {
 
 run_cmd "cargo fmt --all -- --check" "cargo fmt --check"
 run_cmd "cargo check --workspace --all-targets" "cargo check"
+run_cmd "python3 scripts/test-sdk-handoff.py" "SDK handoff validation test"
 
 if [[ $FULL_CHECK -eq 1 ]]; then
   run_cmd "cargo test --workspace --all-targets" "cargo test"
