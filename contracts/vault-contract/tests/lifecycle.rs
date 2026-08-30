@@ -2,8 +2,8 @@
 // These tests verify the full workflow from initialization through deposits, withdrawals, and rewards
 
 use axionvera_vault_contract::VaultContract;
-use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, Env};
+use soroban_sdk::testutils::{Address as _, Events};
+use soroban_sdk::{symbol_short, Address, Env, Symbol, TryFromVal, Val, Vec};
 
 // -------------------------------------------------------------------------
 // Lifecycle test helpers
@@ -310,4 +310,65 @@ fn lifecycle_reward_claim_resets_claimable() {
     // Claim again should return 0
     let claimed = lifecycle.claim_rewards(&mut user_state, &mut vault_state);
     assert_eq!(claimed, 0);
+}
+
+#[test]
+fn lifecycle_events_and_failed_call_no_event_behavior() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(VaultContract, ());
+    let client = axionvera_vault_contract::VaultContractClient::new(&env, &contract_id);
+
+    // 1. Uninitialized failed call emits no events
+    let user = Address::generate(&env);
+    let _ = client.try_deposit(&user, &100);
+    assert!(env.events().all().is_empty());
+
+    // 2. Initialize emits ["vault", "init"]
+    let admin = Address::generate(&env);
+    let deposit_token = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    client.initialize(&admin, &deposit_token, &reward_token);
+    let events = env.events().all();
+    assert_eq!(events.len(), 1);
+    let topics: Vec<Val> = events.get(0).unwrap().1;
+    let topic: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
+    assert_eq!(topic, symbol_short!("init"));
+
+    // 3. Failed deposit (invalid amount) emits no events
+    let _ = client.try_deposit(&user, &0);
+    assert!(env.events().all().is_empty());
+
+    // 4. Successful deposit emits ["vault", "deposit"]
+    client.deposit(&user, &100);
+    let events = env.events().all();
+    assert_eq!(events.len(), 1);
+    let topics: Vec<Val> = events.get(0).unwrap().1;
+    let topic: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
+    assert_eq!(topic, symbol_short!("deposit"));
+
+    // 5. Failed withdraw (insufficient balance) emits no events
+    let _ = client.try_withdraw(&user, &500);
+    assert!(env.events().all().is_empty());
+
+    // 6. Successful withdraw emits ["vault", "withdraw"]
+    client.withdraw(&user, &40);
+    let events = env.events().all();
+    assert_eq!(events.len(), 1);
+    let topics: Vec<Val> = events.get(0).unwrap().1;
+    let topic: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
+    assert_eq!(topic, symbol_short!("withdraw"));
+
+    // 7. Claim with 0 rewards emits no events
+    client.claim_rewards(&user);
+    assert!(env.events().all().is_empty());
+
+    // 8. Successful claim emits ["vault", "claim"]
+    client.set_claimable_reward(&user, &50);
+    client.claim_rewards(&user);
+    let events = env.events().all();
+    assert_eq!(events.len(), 1);
+    let topics: Vec<Val> = events.get(0).unwrap().1;
+    let topic: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
+    assert_eq!(topic, symbol_short!("claim"));
 }
