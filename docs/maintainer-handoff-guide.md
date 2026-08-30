@@ -114,3 +114,4 @@ Post-deployment, the maintainer records deployment details in the registry:
    ```bash
    python3 scripts/validate-contract-id-registry.py path/to/contract-id-registry.json
    ```
+   Publish or commit the validated handoff artifact for consumption by `axionvera-sdk`.
