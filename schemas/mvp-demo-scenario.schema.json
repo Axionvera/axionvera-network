@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera MVP Demo Scenario Schema",
+  "description": "Schema for validating MVP demo scenario fixtures, expected state transitions, and event outputs for Axionvera Vault.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "demo_title",
+    "network",
+    "actors",
+    "tokens",
+    "steps",
+    "maintainer_demo_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "demo_title": {
+      "type": "string"
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "local",
+        "testnet",
+        "futurenet",
+        "mainnet"
+      ]
+    },
+    "actors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "admin",
+        "user_1",
+        "user_2"
+      ],
+      "properties": {
+        "admin": {
+          "type": "string"
+        },
+        "user_1": {
+          "type": "string"
+        },
+        "user_2": {
+          "type": "string"
+        }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deposit_token",
+        "reward_token"
+      ],
+      "properties": {
+        "deposit_token": {
+          "type": "string"
+        },
+        "reward_token": {
+          "type": "string"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_number",
+          "action",
+          "caller",
+          "params",
+          "expected_state",
+          "expected_event"
+        ],
+        "properties": {
+          "step_number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "initialize",
+              "deposit",
+              "reward_setup",
+              "claim",
+              "withdraw"
+            ]
+          },
+          "caller": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object"
+          },
+          "expected_state": {
+            "type": "object"
+          },
+          "expected_event": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "topic": {
+                "type": "string"
+              },
+              "emitted": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "maintainer_demo_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mocked",
+        "no_live_keys_required"
+      ],
+      "properties": {
+        "mocked": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_live_keys_required": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    }
+  }
+}

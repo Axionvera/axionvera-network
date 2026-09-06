@@ -1,0 +1,69 @@
+{
+  "schema_version": "1",
+  "description": "Explicit before and after state vectors for each MVP demo scenario step",
+  "transitions": [
+    {
+      "step": 1,
+      "action": "initialize",
+      "pre_state": {
+        "initialized": false,
+        "admin": null,
+        "total_deposits": 0,
+        "reward_balance": 0
+      },
+      "post_state": {
+        "initialized": true,
+        "admin": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "total_deposits": 0,
+        "reward_balance": 0
+      }
+    },
+    {
+      "step": 2,
+      "action": "deposit",
+      "pre_state": {
+        "total_deposits": 0,
+        "user_1_balance": 0
+      },
+      "post_state": {
+        "total_deposits": 1000,
+        "user_1_balance": 1000
+      }
+    },
+    {
+      "step": 3,
+      "action": "reward_setup",
+      "pre_state": {
+        "reward_balance": 0,
+        "user_1_claimable": 0
+      },
+      "post_state": {
+        "reward_balance": 500,
+        "user_1_claimable": 250
+      }
+    },
+    {
+      "step": 4,
+      "action": "claim",
+      "pre_state": {
+        "user_1_claimable": 250
+      },
+      "post_state": {
+        "user_1_claimable": 0,
+        "user_1_claimed_reward": 250
+      }
+    },
+    {
+      "step": 5,
+      "action": "withdraw",
+      "pre_state": {
+        "total_deposits": 1000,
+        "user_1_balance": 1000
+      },
+      "post_state": {
+        "total_deposits": 600,
+        "user_1_balance": 600
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "1",
+  "description": "Mocked event envelopes emitted during each step of the MVP demo scenario",
+  "events": [
+    {
+      "step": 1,
+      "action": "initialize",
+      "event": {
+        "topics": [
+          "vault",
+          "init"
+        ],
+        "data": {
+          "admin": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        }
+      }
+    },
+    {
+      "step": 2,
+      "action": "deposit",
+      "event": {
+        "topics": [
+          "vault",
+          "deposit"
+        ],
+        "data": {
+          "from": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "amount": 1000
+        }
+      }
+    },
+    {
+      "step": 3,
+      "action": "reward_setup",
+      "event": null
+    },
+    {
+      "step": 4,
+      "action": "claim",
+      "event": {
+        "topics": [
+          "vault",
+          "claim"
+        ],
+        "data": {
+          "user": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "amount": 250
+        }
+      }
+    },
+    {
+      "step": 5,
+      "action": "withdraw",
+      "event": {
+        "topics": [
+          "vault",
+          "withdraw"
+        ],
+        "data": {
+          "to": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "amount": 400
+        }
+      }
+    }
+  ]
+}
