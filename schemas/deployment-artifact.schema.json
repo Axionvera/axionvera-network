@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AxionveraDeploymentArtifact",
+  "description": "Schema for recording non-secret vault contract deployment outputs",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_id",
+    "network",
+    "deployer_public_key",
+    "wasm_hash",
+    "deployment_timestamp",
+    "initialization_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1", "1.0"]
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "network": {
+      "type": "string",
+      "enum": ["testnet", "futurenet", "standalone", "mainnet"]
+    },
+    "deployer_public_key": {
+      "type": "string",
+      "pattern": "^(DEPLOYER_PUBLIC_KEY_PLACEHOLDER|G[A-Z2-7]{55})$"
+    },
+    "wasm_hash": {
+      "type": "string",
+      "pattern": "^(WASM_HASH_PLACEHOLDER|[0-9a-fA-F]{64})$"
+    },
+    "deployment_timestamp": {
+      "type": "string",
+      "pattern": "^(TIMESTAMP_PLACEHOLDER|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))$"
+    },
+    "initialization_status": {
+      "type": "string",
+      "enum": ["uninitialized", "initialized", "pending_initialization"]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "contract_name": { "type": "string" },
+        "source_commit": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
