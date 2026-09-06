@@ -310,6 +310,16 @@ To run verification in dry-run mode:
 ```bash
 python3 scripts/verify-vault-deployment.py examples/post-deployment-verification.json
 ```
+
+### Mocked Post-Deployment Smoke Flow
+
+A mocked post-deployment smoke test flow is provided to verify contract ID loading, initialization input loading, read verification, and lifecycle expectation checks without calling live testnet RPCs or exposing secrets. See [Mocked Post-Deployment Smoke Test Guide](./docs/mock-post-deployment-smoke-test.md).
+
+To run the mocked smoke test flow:
+
+```bash
+./scripts/run-mocked-smoke-test.sh
+```
 ---
 
 ## Contract Design Goals

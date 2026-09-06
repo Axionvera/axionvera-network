@@ -1,0 +1,10 @@
+{
+  "schema_version": "1",
+  "flow_name": "mocked-post-deployment-smoke",
+  "network": "testnet",
+  "contract_id_source": "examples/contract-id-registry.json",
+  "initialization_input_source": "examples/vault-initialization-input.json",
+  "fallback_contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "simulated_deposit_amount": 1000,
+  "simulated_reward_amount": 250
+}

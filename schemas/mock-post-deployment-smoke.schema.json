@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera Mocked Post-Deployment Smoke Test Report",
+  "description": "Schema for mocked post-deployment smoke test flow execution results for Axionvera Vault.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "flow_name",
+    "network",
+    "contract_id",
+    "initialization_summary",
+    "lifecycle_stages",
+    "overall_status",
+    "maintainer_smoke_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "flow_name": {
+      "type": "string",
+      "const": "mocked-post-deployment-smoke"
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "local",
+        "testnet",
+        "futurenet",
+        "mainnet"
+      ]
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "initialization_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "admin_address",
+        "deposit_token",
+        "reward_token",
+        "loaded_from"
+      ],
+      "properties": {
+        "admin_address": {
+          "type": "string",
+          "pattern": "^(ADDRESS_PLACEHOLDER|ADMIN_PUBKEY_PLACEHOLDER|G[A-Z2-7]{55})$"
+        },
+        "deposit_token": {
+          "type": "string",
+          "pattern": "^(ADDRESS_PLACEHOLDER|DEPOSIT_TOKEN_CONTRACT_ID_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+        },
+        "reward_token": {
+          "type": "string",
+          "pattern": "^(ADDRESS_PLACEHOLDER|REWARD_TOKEN_CONTRACT_ID_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+        },
+        "loaded_from": {
+          "type": "string"
+        }
+      }
+    },
+    "lifecycle_stages": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_index",
+          "stage_name",
+          "status",
+          "checks"
+        ],
+        "properties": {
+          "stage_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stage_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASSED",
+              "FAILED"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "check",
+                "result",
+                "expected"
+              ],
+              "properties": {
+                "check": {
+                  "type": "string"
+                },
+                "result": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "expected": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": [
+        "PASSED",
+        "FAILED"
+      ]
+    },
+    "maintainer_smoke_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "no_live_rpc_used",
+        "secrets_exposed"
+      ],
+      "properties": {
+        "no_live_rpc_used": {
+          "type": "boolean",
+          "const": true
+        },
+        "secrets_exposed": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+}
