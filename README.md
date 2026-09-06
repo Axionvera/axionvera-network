@@ -320,6 +320,16 @@ To run the mocked smoke test flow:
 ```bash
 ./scripts/run-mocked-smoke-test.sh
 ```
+
+### MVP Demo Scenario Fixtures
+
+A complete set of static demo scenario fixtures is provided at `examples/mvp-demo-scenario/` covering vault setup, deposit, reward funding, claim, and withdrawal. See [MVP Demo Scenario Guide](./docs/mvp-demo-scenario.md).
+
+To validate the demo scenario fixtures:
+
+```bash
+python3 scripts/validate-mvp-demo-scenario.py
+```
 ---
 
 ## Contract Design Goals

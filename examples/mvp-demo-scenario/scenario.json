@@ -1,0 +1,109 @@
+{
+  "schema_version": "1",
+  "demo_title": "Axionvera Vault Lifecycle MVP Demo",
+  "network": "testnet",
+  "actors": {
+    "admin": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "user_1": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "user_2": "GCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+  },
+  "tokens": {
+    "deposit_token": "CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+    "reward_token": "CEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "initialize",
+      "caller": "admin",
+      "params": {
+        "admin": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "deposit_token": "CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+        "reward_token": "CEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+      },
+      "expected_state": {
+        "is_initialized": true,
+        "total_deposits": 0,
+        "user_1_balance": 0
+      },
+      "expected_event": {
+        "topic": "init",
+        "emitted": true
+      }
+    },
+    {
+      "step_number": 2,
+      "action": "deposit",
+      "caller": "user_1",
+      "params": {
+        "from": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "amount": 1000
+      },
+      "expected_state": {
+        "is_initialized": true,
+        "total_deposits": 1000,
+        "user_1_balance": 1000
+      },
+      "expected_event": {
+        "topic": "deposit",
+        "emitted": true
+      }
+    },
+    {
+      "step_number": 3,
+      "action": "reward_setup",
+      "caller": "admin",
+      "params": {
+        "reward_balance": 500,
+        "user": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "claimable_amount": 250
+      },
+      "expected_state": {
+        "reward_balance": 500,
+        "user_1_pending_rewards": 500,
+        "user_1_claimable": 250
+      },
+      "expected_event": {
+        "topic": "none",
+        "emitted": false
+      }
+    },
+    {
+      "step_number": 4,
+      "action": "claim",
+      "caller": "user_1",
+      "params": {
+        "user": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+      },
+      "expected_state": {
+        "user_1_claimable": 0,
+        "claimed_amount": 250
+      },
+      "expected_event": {
+        "topic": "claim",
+        "emitted": true
+      }
+    },
+    {
+      "step_number": 5,
+      "action": "withdraw",
+      "caller": "user_1",
+      "params": {
+        "to": "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "amount": 400
+      },
+      "expected_state": {
+        "total_deposits": 600,
+        "user_1_balance": 600
+      },
+      "expected_event": {
+        "topic": "withdraw",
+        "emitted": true
+      }
+    }
+  ],
+  "maintainer_demo_boundary": {
+    "mocked": true,
+    "no_live_keys_required": true
+  }
+}
