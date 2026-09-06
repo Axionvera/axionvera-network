@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera Post-Deployment Verification Report",
+  "description": "Schema for post-deployment verification check results on deployed Axionvera Vault contracts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "network",
+    "mode",
+    "verification_checks",
+    "maintainer_verification_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "local",
+        "testnet",
+        "futurenet",
+        "mainnet"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "dry_run",
+        "mocked",
+        "live"
+      ]
+    },
+    "verification_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_id_presence",
+        "network_config_valid",
+        "initialization_state",
+        "read_calls"
+      ],
+      "properties": {
+        "contract_id_presence": {
+          "type": "boolean"
+        },
+        "network_config_valid": {
+          "type": "boolean"
+        },
+        "initialization_state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verified",
+            "admin_address",
+            "deposit_token",
+            "reward_token"
+          ],
+          "properties": {
+            "verified": {
+              "type": "boolean"
+            },
+            "admin_address": {
+              "type": "string",
+              "pattern": "^(ADDRESS_PLACEHOLDER|ADMIN_PUBKEY_PLACEHOLDER|G[A-Z2-7]{55})$"
+            },
+            "deposit_token": {
+              "type": "string",
+              "pattern": "^(ADDRESS_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+            },
+            "reward_token": {
+              "type": "string",
+              "pattern": "^(ADDRESS_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+            }
+          }
+        },
+        "read_calls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total_deposits_accessible",
+            "reward_balance_accessible"
+          ],
+          "properties": {
+            "total_deposits_accessible": {
+              "type": "boolean"
+            },
+            "reward_balance_accessible": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "maintainer_verification_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "live_secrets_used"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "const": true
+        },
+        "live_secrets_used": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+}

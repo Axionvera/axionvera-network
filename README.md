@@ -300,6 +300,16 @@ To run the dry-run:
 ```
 
 **Note:** This script performs a dry-run by default. It will not deploy the contract. Real deployments are only performed by the maintainer using explicitly loaded keys.
+
+### Post-Deployment Verification Template
+
+A contributor-safe verification script template is provided at `scripts/verify-vault-deployment.sh` and `scripts/verify-vault-deployment.py`. Maintainers can verify contract ID presence, network configuration, initialization state, and basic read calls post-deployment, while contributors can run safe dry-run / mocked checks without secrets. See [Post-Deployment Verification Guide](./docs/post-deployment-verification.md).
+
+To run verification in dry-run mode:
+
+```bash
+python3 scripts/verify-vault-deployment.py examples/post-deployment-verification.json
+```
 ---
 
 ## Contract Design Goals

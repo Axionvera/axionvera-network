@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera Post-Deployment Verification Input",
+  "description": "Schema for verification input parameters supplied to verify an Axionvera Vault contract deployment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "network",
+    "admin_address",
+    "deposit_token",
+    "reward_token",
+    "mode"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "local",
+        "testnet",
+        "futurenet",
+        "mainnet"
+      ]
+    },
+    "admin_address": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|ADMIN_PUBKEY_PLACEHOLDER|G[A-Z2-7]{55})$"
+    },
+    "deposit_token": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "reward_token": {
+      "type": "string",
+      "pattern": "^(ADDRESS_PLACEHOLDER|TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "dry_run",
+        "mocked",
+        "live"
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1",
+  "contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "network": "testnet",
+  "mode": "dry_run",
+  "verification_checks": {
+    "contract_id_presence": true,
+    "network_config_valid": true,
+    "initialization_state": {
+      "verified": true,
+      "admin_address": "ADMIN_PUBKEY_PLACEHOLDER",
+      "deposit_token": "TOKEN_CONTRACT_ID_PLACEHOLDER",
+      "reward_token": "TOKEN_CONTRACT_ID_PLACEHOLDER"
+    },
+    "read_calls": {
+      "total_deposits_accessible": true,
+      "reward_balance_accessible": true
+    }
+  },
+  "maintainer_verification_boundary": {
+    "required": true,
+    "live_secrets_used": false
+  }
+}
