@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "network": "testnet",
+  "deployer_public_key": "DEPLOYER_PUBLIC_KEY_PLACEHOLDER",
+  "wasm_hash": "WASM_HASH_PLACEHOLDER",
+  "deployment_timestamp": "2026-09-06T15:00:00Z",
+  "initialization_status": "pending_initialization",
+  "metadata": {
+    "contract_name": "axionvera_vault_contract",
+    "source_commit": "UNCOMMITTED",
+    "notes": "Non-secret mock artifact prepared for maintainer testnet deployment."
+  }
+}
