@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "network": "testnet",
+  "contract_id": "CONTRACT_ID_PLACEHOLDER",
+  "admin_public_key": "ADMIN_PUBKEY_PLACEHOLDER",
+  "deposit_token_contract_id": "DEPOSIT_TOKEN_CONTRACT_ID_PLACEHOLDER",
+  "reward_token_contract_id": "REWARD_TOKEN_CONTRACT_ID_PLACEHOLDER",
+  "maintainer_initialization_boundary": {
+    "required": true,
+    "executed": false
+  }
+}

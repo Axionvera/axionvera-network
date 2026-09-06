@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Axionvera Vault Initialization Input",
+  "description": "Validation schema for post-deployment vault contract initialization parameters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "network",
+    "contract_id",
+    "admin_public_key",
+    "deposit_token_contract_id",
+    "reward_token_contract_id",
+    "maintainer_initialization_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "local",
+        "testnet",
+        "futurenet",
+        "mainnet"
+      ]
+    },
+    "contract_id": {
+      "type": "string",
+      "pattern": "^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "admin_public_key": {
+      "type": "string",
+      "pattern": "^(ADMIN_PUBKEY_PLACEHOLDER|ADMIN_PUBLIC_KEY_PLACEHOLDER|G[A-Z2-7]{55})$"
+    },
+    "deposit_token_contract_id": {
+      "type": "string",
+      "pattern": "^(TOKEN_CONTRACT_ID_PLACEHOLDER|DEPOSIT_TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "reward_token_contract_id": {
+      "type": "string",
+      "pattern": "^(TOKEN_CONTRACT_ID_PLACEHOLDER|REWARD_TOKEN_CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$"
+    },
+    "maintainer_initialization_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "executed"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "const": true
+        },
+        "executed": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+}
