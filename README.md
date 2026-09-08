@@ -334,6 +334,44 @@ To validate the demo scenario fixtures:
 ```bash
 python3 scripts/validate-mvp-demo-scenario.py
 ```
+
+### Release Packet Generator
+
+The release packet generator collects non-secret Network readiness artifacts into a structured folder for maintainer review before testnet deployment. This ensures maintainers have all necessary documentation, schemas, examples, and scripts in one place for comprehensive review. See [Release Packet Generator Guide](./docs/release-packet-generator.md).
+
+To generate a release packet:
+
+```bash
+python3 scripts/generate-release-packet.py
+```
+
+To generate with a custom output directory:
+
+```bash
+python3 scripts/generate-release-packet.py --output-dir my-release-packet
+```
+
+To validate an existing release packet:
+
+```bash
+python3 scripts/validate-release-packet.py release-packet/manifest.json
+```
+
+To test the release packet generator:
+
+```bash
+python3 scripts/test-release-packet.py
+```
+
+The generator:
+- Collects documentation files (deployment guides, checklists, security reviews)
+- Copies JSON schemas for validation
+- Includes example configurations and data files
+- Bundles build, deployment, and validation scripts
+- Generates a manifest following `schemas/release-packet.schema.json`
+- Excludes secrets and private keys using pattern-based filtering
+- Provides SHA-256 checksums for all copied files
+
 ---
 
 ## Contract Design Goals

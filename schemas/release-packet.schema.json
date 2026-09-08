@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://axionvera.network/schemas/release-packet.schema.json",
+  "title": "Release Packet Manifest",
+  "description": "Manifest for non-secret Network readiness artifacts collected for testnet deployment review. This schema ensures no secrets or private keys are included in the release packet.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "generated_at",
+    "source_commit",
+    "artifacts",
+    "security_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Schema version in format MAJOR.MINOR"
+    },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+      "description": "Unique identifier for this release packet (UUID format)"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the packet was generated"
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "Full Git commit SHA of the source code used for this release packet"
+    },
+    "network": {
+      "type": "object",
+      "description": "Target network information (non-secret only)",
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["local", "testnet", "futurenet", "mainnet"],
+          "description": "Target network name"
+        },
+        "rpc_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Public RPC endpoint URL (non-secret)"
+        },
+        "network_passphrase": {
+          "type": "string",
+          "description": "Network passphrase (public information)"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "Collected non-secret artifacts organized by category",
+      "required": ["documentation", "schemas", "examples", "scripts"],
+      "properties": {
+        "documentation": {
+          "type": "array",
+          "description": "Documentation files for maintainer review",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "category"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable name of the document"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path from project root"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["deployment", "configuration", "security", "handoff", "verification", "checklist"],
+                "description": "Document category"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "File size in bytes"
+              },
+              "checksum": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "description": "SHA-256 checksum of the file"
+              }
+            }
+          }
+        },
+        "schemas": {
+          "type": "array",
+          "description": "JSON schema files for validation",
+          "items": {
+            "type": "object",
+            "required": ["name", "path"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Schema name"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path from project root"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "checksum": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "description": "Example configuration and data files",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Example name"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path from project root"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["config", "deployment", "event", "handoff", "registry", "verification"],
+                "description": "Example type"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "checksum": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "scripts": {
+          "type": "array",
+          "description": "Build, deployment, and validation scripts",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Script name"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path from project root"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": ["build", "deploy", "validate", "verify", "test"],
+                "description": "Script purpose"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "checksum": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "build_metadata": {
+          "type": "object",
+          "description": "Build metadata if available",
+          "properties": {
+            "wasm_path": {
+              "type": "string",
+              "description": "Path to WASM binary (if built)"
+            },
+            "metadata_path": {
+              "type": "string",
+              "description": "Path to build metadata JSON (if available)"
+            },
+            "wasm_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "description": "SHA-256 checksum of WASM binary"
+            }
+          }
+        }
+      }
+    },
+    "checklists": {
+      "type": "object",
+      "description": "Pre-deployment checklist status",
+      "properties": {
+        "release_readiness": {
+          "type": "object",
+          "properties": {
+            "checked": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "result": {
+              "type": "string",
+              "enum": ["passed", "failed", "skipped"]
+            }
+          }
+        },
+        "testnet_deployment": {
+          "type": "object",
+          "properties": {
+            "checked": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "result": {
+              "type": "string",
+              "enum": ["passed", "failed", "skipped"]
+            }
+          }
+        }
+      }
+    },
+    "security_boundary": {
+      "type": "object",
+      "required": ["no_secrets_included", "no_private_keys_included"],
+      "description": "Security boundary verification",
+      "properties": {
+        "no_secrets_included": {
+          "type": "boolean",
+          "description": "Verified that no secrets are included in this packet"
+        },
+        "no_private_keys_included": {
+          "type": "boolean",
+          "description": "Verified that no private keys are included in this packet"
+        },
+        "excluded_patterns": {
+          "type": "array",
+          "description": "Patterns that were explicitly excluded during packet generation",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validation_method": {
+          "type": "string",
+          "description": "Method used to verify no secrets are included"
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes for the maintainer reviewer"
+    }
+  }
+}
