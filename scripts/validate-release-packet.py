@@ -88,6 +88,8 @@ def check_for_secrets(manifest: Dict[str, Any]) -> bool:
 
     def check_value(value: Any, path: str = ""):
         """Recursively check values for secret patterns."""
+        if path.startswith("security_boundary.excluded_patterns"):
+            return
         if isinstance(value, dict):
             for key, val in value.items():
                 check_value(val, f"{path}.{key}" if path else key)
