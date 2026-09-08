@@ -88,6 +88,24 @@ For contract changes, contributors must ensure:
 
 Before testnet deployment, maintainers should complete a formal review using the [Vault Security Review Checklist Template](docs/vault-security-review-template.md). See the [example checklist](docs/vault-security-review-example.md) for how this should be filled out.
 
+### Pre-Deployment Evidence Checklist
+
+Before approving testnet deployment, maintainers must complete the [Pre-Deployment Evidence Checklist](docs/pre-deployment-evidence-checklist.md). This checklist ensures that:
+
+- All tests (unit, integration, smoke) have passed
+- Required documentation is complete and accurate
+- JSON schemas are validated and version-consistent
+- Build, validation, and verification scripts are functional
+- Example configurations and data files are validated
+- Security review has been completed with documented findings
+- Release packet has been generated and validated
+- Known limitations are documented and risk-assessed
+- No production audit claims are made
+
+The checklist follows the schema defined in `schemas/pre-deployment-evidence-checklist.schema.json`. An example completed checklist with placeholder values is available at `examples/pre-deployment-evidence-checklist.json`.
+
+**Important:** This checklist is for maintainer decision-making before deployment. Completing this checklist does not make the contract production-ready or production-audited. The current codebase has not completed a formal security audit.
+
 ### Deployment Failure & Recovery Protocol
 
 In the event of deployment or initialization errors, maintainers must follow the [Deployment Failure and Recovery Runbook](docs/deployment-failure-and-recovery-runbook.md). Under no circumstance should private keys, recovery seeds, or unverified secrets be committed to the repository during triage or recovery.

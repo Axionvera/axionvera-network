@@ -265,9 +265,26 @@ If the contract directory is missing or the build fails, the script will exit wi
 
 ## Testnet Deployment
 
-Before deploying the vault contract to Stellar testnet, review the [Maintainer Handoff Guide](./docs/maintainer-handoff-guide.md) and follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
+Before deploying the vault contract to Stellar testnet, review the [Maintainer Handoff Guide](./docs/maintainer-handoff-guide.md), complete the [Pre-Deployment Evidence Checklist](./docs/pre-deployment-evidence-checklist.md), and follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
 
-The handoff guide establishes the security boundary between contributor preparation and maintainer execution, while the checklist covers local quality checks, WASM builds, testnet network selection, contract ID recording, initialization, and post-deployment validation.
+The handoff guide establishes the security boundary between contributor preparation and maintainer execution, the pre-deployment evidence checklist ensures all tests, documentation, schemas, scripts, examples, and security checks are complete, and the deployment checklist covers local quality checks, WASM builds, testnet network selection, contract ID recording, initialization, and post-deployment validation.
+
+### Pre-Deployment Evidence Checklist
+
+Before approving testnet deployment, maintainers must complete the [Pre-Deployment Evidence Checklist](./docs/pre-deployment-evidence-checklist.md). This structured checklist ensures that:
+
+- All tests (unit, integration, smoke) have passed
+- Required documentation is complete and accurate
+- JSON schemas are validated and version-consistent
+- Build, validation, and verification scripts are functional
+- Example configurations and data files are validated
+- Security review has been completed with documented findings
+- Release packet has been generated and validated
+- Known limitations are documented and risk-assessed
+
+The checklist follows the schema defined in `schemas/pre-deployment-evidence-checklist.schema.json`. An example completed checklist with placeholder values is available at `examples/pre-deployment-evidence-checklist.json`.
+
+**Important:** This checklist is for maintainer decision-making before deployment. Completing this checklist does not make the contract production-ready or production-audited. The current codebase has not completed a formal security audit.
 
 ### Maintainer Handoff Guide
 

@@ -1,0 +1,566 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://axionvera.network/schemas/pre-deployment-evidence-checklist.schema.json",
+  "title": "Pre-Deployment Evidence Checklist",
+  "description": "Schema for pre-deployment evidence checklist used by maintainers to verify testnet deployment readiness. This checklist captures required commands, expected artifacts, review status, and known limitations.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "checklist_id",
+    "target_network",
+    "target_commit",
+    "checklist_date",
+    "maintainer",
+    "test_evidence",
+    "documentation_evidence",
+    "schema_evidence",
+    "script_evidence",
+    "example_evidence",
+    "security_review_evidence",
+    "release_packet_evidence",
+    "known_limitations",
+    "maintainer_approval"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Schema version in format MAJOR.MINOR"
+    },
+    "checklist_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+      "description": "Unique identifier for this checklist (UUID format)"
+    },
+    "target_network": {
+      "type": "string",
+      "enum": ["local", "testnet", "futurenet", "mainnet"],
+      "description": "Target network for deployment"
+    },
+    "target_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "Full Git commit SHA being evaluated"
+    },
+    "checklist_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when checklist was completed"
+    },
+    "maintainer": {
+      "type": "object",
+      "description": "Maintainer information",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Maintainer name or identifier"
+        },
+        "contact": {
+          "type": "string",
+          "description": "Optional contact information"
+        }
+      }
+    },
+    "test_evidence": {
+      "type": "object",
+      "description": "Test execution evidence",
+      "required": ["unit_tests", "integration_tests", "smoke_tests"],
+      "properties": {
+        "unit_tests": {
+          "type": "object",
+          "required": ["command", "status", "notes"],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Command executed for unit tests"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["passed", "failed", "skipped"],
+              "description": "Test execution status"
+            },
+            "evidence": {
+              "type": "string",
+              "description": "Path to test output or evidence file"
+            },
+            "notes": {
+              "type": "string",
+              "description": "Additional notes about test execution"
+            }
+          }
+        },
+        "integration_tests": {
+          "type": "object",
+          "required": ["command", "status"],
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["passed", "failed", "skipped"]
+            },
+            "evidence": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "smoke_tests": {
+          "type": "object",
+          "required": ["command", "status"],
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["passed", "failed", "skipped"]
+            },
+            "evidence": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "documentation_evidence": {
+      "type": "object",
+      "description": "Documentation completeness evidence",
+      "required": ["required_files", "accuracy_status"],
+      "properties": {
+        "required_files": {
+          "type": "array",
+          "description": "List of required documentation files and their status",
+          "items": {
+            "type": "object",
+            "required": ["path", "present"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Relative path to documentation file"
+              },
+              "present": {
+                "type": "boolean",
+                "description": "Whether the file exists"
+              },
+              "reviewed": {
+                "type": "boolean",
+                "description": "Whether the file has been reviewed"
+              }
+            }
+          }
+        },
+        "accuracy_status": {
+          "type": "string",
+          "enum": ["accurate", "inaccurate", "needs_update"],
+          "description": "Documentation accuracy assessment"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "schema_evidence": {
+      "type": "object",
+      "description": "Schema validation evidence",
+      "required": ["schema_files", "validation_status", "version_consistency"],
+      "properties": {
+        "schema_files": {
+          "type": "array",
+          "description": "List of schema files and their status",
+          "items": {
+            "type": "object",
+            "required": ["path", "present"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "validated": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": ["valid", "invalid"],
+          "description": "Overall schema validation status"
+        },
+        "version_consistency": {
+          "type": "string",
+          "enum": ["consistent", "inconsistent"],
+          "description": "Schema version consistency check"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "script_evidence": {
+      "type": "object",
+      "description": "Script verification evidence",
+      "required": ["build_scripts", "validation_scripts", "verification_scripts", "release_packet_scripts"],
+      "properties": {
+        "build_scripts": {
+          "type": "array",
+          "description": "Build script verification",
+          "items": {
+            "type": "object",
+            "required": ["path", "functional"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "functional": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "validation_scripts": {
+          "type": "array",
+          "description": "Validation script verification",
+          "items": {
+            "type": "object",
+            "required": ["path", "functional"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "functional": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "verification_scripts": {
+          "type": "array",
+          "description": "Verification script verification",
+          "items": {
+            "type": "object",
+            "required": ["path", "functional"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "functional": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "release_packet_scripts": {
+          "type": "array",
+          "description": "Release packet script verification",
+          "items": {
+            "type": "object",
+            "required": ["path", "functional"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "functional": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "example_evidence": {
+      "type": "object",
+      "description": "Example file validation evidence",
+      "required": ["example_files", "validation_status"],
+      "properties": {
+        "example_files": {
+          "type": "array",
+          "description": "List of example files and their status",
+          "items": {
+            "type": "object",
+            "required": ["path", "present"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "validated": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": ["valid", "invalid"],
+          "description": "Overall example validation status"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "security_review_evidence": {
+      "type": "object",
+      "description": "Security review evidence",
+      "required": ["security_review_status", "known_issues", "secret_exclusion_verified"],
+      "properties": {
+        "security_review_status": {
+          "type": "string",
+          "enum": ["reviewed", "not_reviewed", "partial"],
+          "description": "Security review completion status"
+        },
+        "known_issues": {
+          "type": "array",
+          "description": "List of known security issues",
+          "items": {
+            "type": "object",
+            "required": ["description", "impact", "mitigation_status"],
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Issue description"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Issue impact level"
+              },
+              "mitigation_status": {
+                "type": "string",
+                "enum": ["mitigated", "accepted_risk", "blocked"],
+                "description": "Mitigation status"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "secret_exclusion_verified": {
+          "type": "boolean",
+          "description": "Whether secret exclusion has been verified"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "release_packet_evidence": {
+      "type": "object",
+      "description": "Release packet generation and validation evidence",
+      "required": ["generation_status", "validation_status", "review_status"],
+      "properties": {
+        "generation_status": {
+          "type": "object",
+          "required": ["status", "packet_path"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["generated", "failed"]
+            },
+            "packet_path": {
+              "type": "string",
+              "description": "Path to generated release packet"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "validation_status": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["valid", "invalid"]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "review_status": {
+          "type": "object",
+          "required": ["documentation_review", "schema_review", "example_review", "script_review"],
+          "properties": {
+            "documentation_review": {
+              "type": "boolean"
+            },
+            "schema_review": {
+              "type": "boolean"
+            },
+            "example_review": {
+              "type": "boolean"
+            },
+            "script_review": {
+              "type": "boolean"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "known_limitations": {
+      "type": "object",
+      "description": "Known limitations and risk assessment",
+      "required": ["codebase_limitations", "testnet_limitations", "documentation_limitations"],
+      "properties": {
+        "codebase_limitations": {
+          "type": "array",
+          "description": "Current codebase limitations",
+          "items": {
+            "type": "object",
+            "required": ["description", "impact", "mitigation"],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "testnet_limitations": {
+          "type": "array",
+          "description": "Testnet-specific limitations",
+          "items": {
+            "type": "object",
+            "required": ["description", "impact", "mitigation"],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "documentation_limitations": {
+          "type": "array",
+          "description": "Documentation limitations",
+          "items": {
+            "type": "object",
+            "required": ["description", "impact", "mitigation"],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "maintainer_approval": {
+      "type": "object",
+      "description": "Final maintainer approval decision",
+      "required": ["checklist_complete", "evidence_collected", "validations_passed", "approval_status", "approval_date"],
+      "properties": {
+        "checklist_complete": {
+          "type": "boolean",
+          "description": "Whether all checklist sections are complete"
+        },
+        "evidence_collected": {
+          "type": "boolean",
+          "description": "Whether all evidence has been collected"
+        },
+        "validations_passed": {
+          "type": "boolean",
+          "description": "Whether all validations have passed"
+        },
+        "risk_assessment": {
+          "type": "object",
+          "required": ["risk_level", "rationale"],
+          "properties": {
+            "risk_level": {
+              "type": "string",
+              "enum": ["low", "medium", "high"]
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        },
+        "approval_status": {
+          "type": "string",
+          "enum": ["approved", "deferred", "rejected"],
+          "description": "Final deployment approval status"
+        },
+        "approval_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of approval decision"
+        },
+        "approver_name": {
+          "type": "string",
+          "description": "Name of approving maintainer"
+        },
+        "approval_rationale": {
+          "type": "string",
+          "description": "Rationale for approval decision"
+        },
+        "deployment_conditions": {
+          "type": "object",
+          "properties": {
+            "preconditions": {
+              "type": "string"
+            },
+            "post_deployment_verification_required": {
+              "type": "boolean"
+            },
+            "rollback_plan": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes for the checklist"
+    }
+  }
+}
