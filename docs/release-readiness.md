@@ -16,13 +16,10 @@ The quick mode checks required files and runs `cargo fmt --check` and `cargo che
 
 ## What It Checks
 
-1. **Documentation** — maintainer handoff guide, deployment checklist, CI checks, testnet configuration, README, license, contributing guide, security policy.
+1. **Documentation** — maintainer handoff guide, deployment checklist, deployment failure and recovery runbook, CI checks, testnet configuration, README, license, contributing guide, security policy.
 2. **Schemas** — `build-metadata.schema.json`, `mock-vault-deployment.schema.json`, `vault-event.schema.json`, `sdk-handoff.schema.json`, `contract-id-registry.schema.json`.
-3. **Examples** — build metadata, testnet config, vault deployment examples, vault event examples, sdk handoff example, contract id registry example.
+3. **Examples** — build metadata, testnet config, vault deployment examples, vault event examples, sdk handoff example, contract id registry example, deployment failure mock logs.
 4. **Scripts** — build WASM, deploy template, validate testnet config, validate mock vault deployment, validate SDK handoff, validate contract ID registry.
-2. **Schemas** — `build-metadata.schema.json`, `mock-vault-deployment.schema.json`, `vault-event.schema.json`, `sdk-handoff.schema.json`.
-3. **Examples** — build metadata, testnet config, vault deployment examples, vault event examples, sdk handoff example.
-4. **Scripts** — build WASM, deploy template, validate testnet config, validate mock vault deployment, validate SDK handoff.
 5. **Project files** — `.env.example`, `Cargo.toml`, `Cargo.lock`.
 6. **Local commands** — formatting, workspace compilation, tests, and clippy (full mode only).
 

@@ -180,3 +180,8 @@ ledger.
 - [ ] Save the validation results with the deployment record, including any
       failed checks. Do not describe this checklist, deployment, or validation
       as evidence of production readiness.
+
+## 6. Failure Recovery and Troubleshooting
+
+If any step during compilation, deployment, initialization, or smoke testing fails, immediately consult the [Deployment Failure and Recovery Runbook](./deployment-failure-and-recovery-runbook.md) for root-cause diagnosis, containment steps, and maintainer recovery procedures.
+

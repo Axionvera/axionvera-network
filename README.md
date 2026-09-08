@@ -273,6 +273,10 @@ The handoff guide establishes the security boundary between contributor preparat
 
 For clear separation of responsibilities, non-secret preparation, maintainer deployment steps, and SDK handoff package generation, see [Maintainer Handoff Guide (Testnet Deployment)](./docs/maintainer-handoff-guide.md).
 
+### Deployment Failure and Recovery Runbook
+
+For step-by-step maintainer triage, containment, and recovery across failed builds, RPC submission timeouts, initialization errors, mismatched contract IDs, and smoke test failures, see [Deployment Failure and Recovery Runbook](./docs/deployment-failure-and-recovery-runbook.md) and review mock failure examples at [`examples/deployment-failures/`](./examples/deployment-failures/).
+
 ### SDK Handoff Artifact Package
 
 Network-to-SDK handoffs after maintainer deployment are governed by [`schemas/sdk-handoff.schema.json`](./schemas/sdk-handoff.schema.json) with a non-secret placeholder example at [`examples/sdk-handoff.json`](./examples/sdk-handoff.json). Maintainers populate real contract IDs, initialization addresses, and network parameters post-deployment, then validate compliance and secret safety using:
