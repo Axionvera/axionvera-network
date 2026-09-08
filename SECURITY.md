@@ -88,6 +88,10 @@ For contract changes, contributors must ensure:
 
 Before testnet deployment, maintainers should complete a formal review using the [Vault Security Review Checklist Template](docs/vault-security-review-template.md). See the [example checklist](docs/vault-security-review-example.md) for how this should be filled out.
 
+### Deployment Failure & Recovery Protocol
+
+In the event of deployment or initialization errors, maintainers must follow the [Deployment Failure and Recovery Runbook](docs/deployment-failure-and-recovery-runbook.md). Under no circumstance should private keys, recovery seeds, or unverified secrets be committed to the repository during triage or recovery.
+
 ---
 
 ## Dependency Security

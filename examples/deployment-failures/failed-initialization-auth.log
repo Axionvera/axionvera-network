@@ -1,0 +1,8 @@
+$ stellar contract invoke --id CD5...VAULT --source deployer --network testnet -- initialize --admin GADMIN... --deposit_token GDEP... --reward_token GREW...
+error: HostError: Error(Contract, #1)
+  Contract call failed: initialize
+  Event: ["vault", "initialize_failed", "already_initialized"]
+  Backtrace:
+    0: soroban_env_host::host::Host::call_n_internal
+    1: vault_contract::initialize at contracts/vault-contract/src/lib.rs:42
+  cause: Contract state is already initialized or caller is not authorized

@@ -1,0 +1,5 @@
+$ python3 scripts/verify-vault-deployment.py --contract-id CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA --network testnet
+Validating deployment for Contract ID: CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+[FAIL] Contract ID not found on Testnet ledger sequence 1245892
+[ERROR] Ledger entry missing for contract instance storage key
+[CAUSE] Contract was deployed to Standalone/Localnet or Contract ID in sdk-handoff.json belongs to a prior testnet reset

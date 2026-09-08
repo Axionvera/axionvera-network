@@ -1,0 +1,7 @@
+$ stellar contract deploy --wasm target/wasm32-unknown-unknown/release/vault_contract.wasm --source deployer --network testnet
+ℹ️ Submitting transaction to Soroban RPC: https://soroban-testnet.stellar.org...
+error: transaction submission failed
+  caused by: HTTP request timed out after 30000ms
+  status: 504 Gateway Timeout
+  detail: RPC server upstream testnet horizon did not acknowledge ledger sequence in time
+  recommendation: Check testnet health at https://dashboard.stellar.org, inspect account balance, or retry with --fee 100000

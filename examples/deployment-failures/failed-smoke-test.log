@@ -1,0 +1,9 @@
+$ python3 scripts/run-mocked-smoke-test.py --input examples/mock-post-deployment-smoke-input.json
+Running Mocked Smoke Test Suite...
+[STEP 1] Initialization Verification: PASS
+[STEP 2] Mock Deposit: PASS (Amount: 1,000,000)
+[STEP 3] Mock Withdrawal Simulation: FAIL
+  Expected Total Deposit: 500,000
+  Observed Total Deposit: 1,000,000
+  Error: Balance underflow or event not emitted for partial withdrawal
+[RESULT] Smoke test suite failed at step 3. Aborting release gate.
