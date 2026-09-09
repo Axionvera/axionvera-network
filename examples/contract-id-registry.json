@@ -1,22 +1,24 @@
 {
-  "schema_version": "1",
-  "updated_at": "TIMESTAMP_PLACEHOLDER",
-  "environments": {
-    "testnet": {
-      "network": "testnet",
-      "status": "placeholder",
-      "contracts": {
-        "axionvera_vault_contract": {
-          "contract_id": "CONTRACT_ID_PLACEHOLDER",
-          "wasm_sha256": "SHA256_PLACEHOLDER",
-          "deployed_at": "TIMESTAMP_PLACEHOLDER",
-          "deployer_address": "ADDRESS_PLACEHOLDER"
-        }
-      }
+  "network": "testnet",
+  "updated_at": "2026-09-09T11:09:51.061389+00:00",
+  "contracts": {
+    "vault": {
+      "status": "deployed",
+      "contract_id": "CBJ4WUI3R64OPDQMOJJGNOT6UQY3WFUHZI5P4BS6SCPQ6WGFICIUL6BO",
+      "wasm_sha256": "c9c6a0b24a41d982fd563023250d20c1aaaf83cf71f8f93c34f379e2e3be69ba",
+      "deployed_at": "2026-09-09T11:09:51.061389+00:00",
+      "deployer_address": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
+      "source_commit": "6f16bebacd1664f5c68e3f46f493fc848661670c"
+    },
+    "deposit_token": {
+      "status": "deployed",
+      "contract_id": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "asset": "native"
+    },
+    "reward_token": {
+      "status": "deployed",
+      "contract_id": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "asset": "native"
     }
-  },
-  "maintainer_deployment_boundary": {
-    "no_secrets_included": true,
-    "real_deployments_recorded": false
   }
 }

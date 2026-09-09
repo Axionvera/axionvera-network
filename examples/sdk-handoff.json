@@ -1,22 +1,19 @@
 {
-  "schema_version": "1",
-  "status": "placeholder_for_maintainer_deployment",
-  "network": {
-    "name": "testnet",
-    "rpc_url": "https://soroban-testnet.stellar.org",
-    "network_passphrase": "Test SDF Network ; September 2015"
+  "status": "ready_for_testnet_dashboard_integration",
+  "network": "testnet",
+  "rpc_url": "https://soroban-testnet.stellar.org",
+  "horizon_url": "https://horizon-testnet.stellar.org",
+  "contract_id": "CBJ4WUI3R64OPDQMOJJGNOT6UQY3WFUHZI5P4BS6SCPQ6WGFICIUL6BO",
+  "addresses": {
+    "admin": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
+    "deposit_token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+    "reward_token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
   },
-  "contract_id": "CONTRACT_ID_PLACEHOLDER",
-  "interface_version": "0.1",
-  "interface_schema_ref": "schemas/vault-interface-v0.1.json",
-  "event_schema_ref": "schemas/vault-event.schema.json",
-  "initialization": {
-    "admin": "ADDRESS_PLACEHOLDER",
-    "deposit_token": "ADDRESS_PLACEHOLDER",
-    "reward_token": "ADDRESS_PLACEHOLDER"
-  },
-  "maintainer_deployment_boundary": {
-    "no_secrets_included": true,
-    "real_deployment_performed": false
-  }
+  "source_commit": "6f16bebacd1664f5c68e3f46f493fc848661670c",
+  "wasm_sha256": "c9c6a0b24a41d982fd563023250d20c1aaaf83cf71f8f93c34f379e2e3be69ba",
+  "notes": [
+    "Testnet deployment only.",
+    "Native testnet asset contract is used for deposit and reward token placeholders.",
+    "The current vault records accounting values and does not transfer tokens."
+  ]
 }
