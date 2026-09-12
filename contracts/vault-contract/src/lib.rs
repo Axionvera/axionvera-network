@@ -199,7 +199,7 @@ impl VaultContract {
 
     /// Sets the claimable reward for a user.
     ///
-    /// This is an internal/administrative method used to allocate rewards (no `require_auth` by default).
+    /// This is an internal/administrative method used to allocate rewards. Requires admin authorization.
     /// Requires the vault to be initialized.
     ///
     /// # Arguments
@@ -207,6 +207,7 @@ impl VaultContract {
     /// * `user` - The address receiving the claimable reward.
     /// * `amount` - The amount to set as claimable.
     pub fn set_claimable_reward(env: Env, user: Address, amount: i128) -> Result<(), VaultError> {
+        Self::require_admin_auth(&env)?;
         Self::require_initialized(&env)?;
         env.storage()
             .persistent()
@@ -216,13 +217,14 @@ impl VaultContract {
 
     /// Sets the total reward balance for the vault.
     ///
-    /// This is an internal/administrative method used to update the total rewards available (no `require_auth` by default).
+    /// This is an internal/administrative method used to update the total rewards available. Requires admin authorization.
     /// Requires the vault to be initialized.
     ///
     /// # Arguments
     /// * `env` - The environment.
     /// * `amount` - The new reward balance amount.
     pub fn set_reward_balance(env: Env, amount: i128) -> Result<(), VaultError> {
+        Self::require_admin_auth(&env)?;
         Self::require_initialized(&env)?;
         env.storage()
             .instance()
@@ -233,6 +235,18 @@ impl VaultContract {
     /// Returns whether the vault has been initialized.
     pub fn is_initialized(env: Env) -> bool {
         env.storage().instance().has(&DataKey::Initialized)
+    }
+
+    fn require_admin_auth(env: &Env) -> Result<Address, VaultError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(VaultError::NotInitialized)?;
+
+        admin.require_auth();
+
+        Ok(admin)
     }
 
     /// Returns the address of the vault's admin.

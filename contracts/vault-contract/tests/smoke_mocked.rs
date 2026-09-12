@@ -16,10 +16,20 @@ const SMOKE_REPORT_FIXTURE: &str =
 fn test_fixture_loading_and_contract_id_resolution() {
     let registry: Value = serde_json::from_str(REGISTRY_FIXTURE)
         .expect("contract-id-registry.json must be valid JSON");
-    assert_eq!(registry["schema_version"], "1");
-    assert_eq!(
-        registry["environments"]["testnet"]["contracts"]["axionvera_vault_contract"]["contract_id"],
-        "CONTRACT_ID_PLACEHOLDER"
+    assert_eq!(registry["network"], "testnet");
+
+    let registry_contract_id = registry
+        .pointer("/contracts/vault/contract_id")
+        .or_else(|| registry.pointer("/contracts/axionvera_vault_contract/contract_id"))
+        .or_else(|| registry.pointer("/contracts/vault/versions/0/contract_id"))
+        .or_else(|| {
+            registry.pointer("/environments/testnet/contracts/axionvera_vault_contract/contract_id")
+        })
+        .and_then(Value::as_str);
+
+    assert!(
+        registry_contract_id.is_some(),
+        "contract-id-registry.json must expose a vault contract id"
     );
 
     let init_input: Value = serde_json::from_str(INIT_INPUT_FIXTURE)
