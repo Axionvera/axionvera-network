@@ -1,19 +1,30 @@
 {
-  "status": "ready_for_testnet_dashboard_integration",
-  "network": "testnet",
-  "rpc_url": "https://soroban-testnet.stellar.org",
-  "horizon_url": "https://horizon-testnet.stellar.org",
-  "contract_id": "CBJ4WUI3R64OPDQMOJJGNOT6UQY3WFUHZI5P4BS6SCPQ6WGFICIUL6BO",
-  "addresses": {
+  "schema_version": "1",
+  "status": "ready_for_sdk_consumption",
+  "network": {
+    "name": "testnet",
+    "rpc_url": "https://soroban-testnet.stellar.org",
+    "network_passphrase": "Test SDF Network ; September 2015"
+  },
+  "contract_id": "CD34FXP4BOSZ64DKFMGTFNPANEKN7XWB5SMGVYEPH7VPTB3HSZD5HGFL",
+  "interface_version": "0.1",
+  "interface_schema_ref": "docs/sdk-contract-interface.md",
+  "event_schema_ref": "docs/vault-events.md",
+  "initialization": {
     "admin": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
     "deposit_token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
     "reward_token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
   },
-  "source_commit": "6f16bebacd1664f5c68e3f46f493fc848661670c",
-  "wasm_sha256": "c9c6a0b24a41d982fd563023250d20c1aaaf83cf71f8f93c34f379e2e3be69ba",
+  "maintainer_deployment_boundary": {
+    "no_secrets_included": true,
+    "real_deployment_performed": true
+  },
+  "source_commit": "192c37f3953ba7bf71c600f57e11c719cebdb530",
+  "wasm_sha256": "fde9c40ad6dde2cb630717e06f7c9ed7134a53a89a4536dbef77bc1ca7a2fbd8",
   "notes": [
     "Testnet deployment only.",
     "Native testnet asset contract is used for deposit and reward token placeholders.",
-    "The current vault records accounting values and does not transfer tokens."
+    "The current vault records accounting values and does not transfer tokens.",
+    "This deployment includes admin authorization hardening for reward mutation functions."
   ]
 }
