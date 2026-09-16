@@ -72,7 +72,7 @@ fn admin_can_set_claimable_reward() {
 
     client.set_claimable_reward(&user, &250);
 
-    assert_eq!(client.pending_rewards(&user), 250);
+    assert_eq!(client.claimable_rewards(&user), 250);
 }
 
 #[test]
@@ -106,5 +106,5 @@ fn non_admin_cannot_set_claimable_reward() {
     );
 
     assert!(client.try_set_claimable_reward(&user, &250).is_err());
-    assert_eq!(client.pending_rewards(&user), 0);
+    assert_eq!(client.claimable_rewards(&user), 0);
 }

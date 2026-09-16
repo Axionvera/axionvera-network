@@ -337,6 +337,22 @@ impl VaultContract {
         ))
     }
 
+    /// Returns the stored claimable reward amount for a specific user.
+    ///
+    /// This reflects the actual amount that `claim_rewards` will claim and reset.
+    ///
+    /// # Arguments
+    /// * `env` - The environment.
+    /// * `user` - The address to check claimable rewards for.
+    ///
+    /// # Returns
+    /// * `Ok(claimable)` - The user's stored claimable reward amount.
+    /// * `Err(VaultError::NotInitialized)` if the vault is not initialized.
+    pub fn claimable_rewards(env: Env, user: Address) -> Result<i128, VaultError> {
+        Self::require_initialized(&env)?;
+        Ok(Self::claimable_reward(&env, &user))
+    }
+
     fn require_initialized(env: &Env) -> Result<(), VaultError> {
         if !env.storage().instance().has(&DataKey::Initialized) {
             return Err(VaultError::NotInitialized);
