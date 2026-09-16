@@ -6,7 +6,7 @@
     "rpc_url": "https://soroban-testnet.stellar.org",
     "network_passphrase": "Test SDF Network ; September 2015"
   },
-  "contract_id": "CD34FXP4BOSZ64DKFMGTFNPANEKN7XWB5SMGVYEPH7VPTB3HSZD5HGFL",
+  "contract_id": "CAZGEBQ3MAU7CAUOCKGFUSC2MVLAPOHWJ4V3H4NY2L6RNV3MEHQIIP6J",
   "interface_version": "0.1",
   "interface_schema_ref": "docs/sdk-contract-interface.md",
   "event_schema_ref": "docs/vault-events.md",
@@ -19,8 +19,8 @@
     "no_secrets_included": true,
     "real_deployment_performed": true
   },
-  "source_commit": "192c37f3953ba7bf71c600f57e11c719cebdb530",
-  "wasm_sha256": "fde9c40ad6dde2cb630717e06f7c9ed7134a53a89a4536dbef77bc1ca7a2fbd8",
+  "source_commit": "d8010c077c609c030dcd744ffbab9f2c0e31ac3f",
+  "wasm_sha256": "d1ea47fce1eb7d5f8efc39d4c8462d496b11f2632ed1b40631eb0d7e8a0f2b45",
   "notes": [
     "Testnet deployment only.",
     "Native testnet asset contract is used for deposit and reward token placeholders.",
