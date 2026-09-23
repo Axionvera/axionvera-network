@@ -251,3 +251,43 @@ fn unknown_activation_rule_is_rejected() {
 
     assert_eq!(result, Err(Ok(CampaignError::RuleNotFound)));
 }
+
+#[test]
+fn registered_verifier_must_authorize_reward_allocation() {
+    let s = setup(100, 0);
+
+    let merchant = String::from_str(&s.env, "merchant-auth-test");
+    let milestone = String::from_str(&s.env, "KYC_VERIFIED");
+
+    // The verifier is registered by setup(), but no account
+    // authorisation is provided for this invocation.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_verify_and_allocate_reward(
+        &s.campaign_id,
+        &s.verifier,
+        &s.agent,
+        &merchant,
+        &milestone,
+    );
+
+    assert!(result.is_err());
+
+    // Failed authentication must not allocate or reserve any reward.
+    s.env.mock_all_auths();
+
+    assert_eq!(s.client.claimable_reward(&s.campaign_id, &s.agent), 0);
+    assert_eq!(s.client.agent_total_earned(&s.campaign_id, &s.agent), 0);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).allocated_amount, 0);
+
+    // The failed attempt must also not consume the merchant/milestone pair.
+    let reward = s.client.verify_and_allocate_reward(
+        &s.campaign_id,
+        &s.verifier,
+        &s.agent,
+        &merchant,
+        &milestone,
+    );
+
+    assert_eq!(reward, 2);
+}

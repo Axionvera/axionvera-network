@@ -216,3 +216,38 @@ fn zero_or_negative_unused_withdrawal_is_rejected() {
         Err(Ok(CampaignError::InvalidAmount))
     );
 }
+
+#[test]
+fn campaign_admin_must_authorize_unused_fund_withdrawal() {
+    let s = setup();
+
+    let token = TokenClient::new(&s.env, &s.token_address);
+
+    s.client.close_campaign(&s.campaign_id);
+
+    assert_eq!(token.balance(&s.campaign_admin), 900);
+    assert_eq!(token.balance(&s.contract_id), 100);
+
+    // Campaign is closed and funds are available, but the admin
+    // provides no authorisation for the withdrawal.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_withdraw_unused_funds(&s.campaign_id, &40);
+
+    assert!(result.is_err());
+
+    // Failed authentication must leave treasury state and tokens untouched.
+    s.env.mock_all_auths();
+
+    assert_eq!(token.balance(&s.campaign_admin), 900);
+    assert_eq!(token.balance(&s.contract_id), 100);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).withdrawn_amount, 0);
+    assert_eq!(s.client.available_unused_funds(&s.campaign_id), 100);
+
+    // A properly authorised withdrawal must still work afterwards.
+    let remaining = s.client.withdraw_unused_funds(&s.campaign_id, &40);
+
+    assert_eq!(remaining, 60);
+    assert_eq!(token.balance(&s.campaign_admin), 940);
+    assert_eq!(token.balance(&s.contract_id), 60);
+}

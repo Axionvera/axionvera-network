@@ -136,3 +136,58 @@ fn rejects_negative_agent_cap() {
 
     drop(env);
 }
+
+#[test]
+fn create_campaign_requires_campaign_admin_authorization() {
+    let env = Env::default();
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let name = String::from_str(&env, "Unauthorized Campaign");
+
+    // Initialise successfully first.
+    env.mock_all_auths();
+    client.initialize(&protocol_admin);
+
+    // Disable mocked authorisation and provide no signatures.
+    env.set_auths(&[]);
+
+    let result =
+        client.try_create_campaign(&campaign_admin, &reward_token, &name, &100, &1_000, &0);
+
+    assert!(result.is_err());
+
+    // Failed auth must not consume a campaign ID or write campaign state.
+    env.mock_all_auths();
+    assert_eq!(client.next_campaign_id(), 1);
+}
+
+#[test]
+fn initialize_requires_protocol_admin_authorization() {
+    let env = Env::default();
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+
+    // No authorisation is provided for the proposed protocol admin.
+    env.set_auths(&[]);
+
+    let result = client.try_initialize(&protocol_admin);
+
+    assert!(result.is_err());
+
+    // Failed authentication must leave the protocol completely uninitialised.
+    assert!(!client.is_initialized());
+
+    // A properly authorised initialisation must still succeed afterwards.
+    env.mock_all_auths();
+    client.initialize(&protocol_admin);
+
+    assert!(client.is_initialized());
+    assert_eq!(client.protocol_admin(), protocol_admin);
+    assert_eq!(client.next_campaign_id(), 1);
+}

@@ -140,3 +140,60 @@ fn rejects_zero_or_negative_funding() {
 
     assert_eq!(client.get_campaign(&campaign_id).funded_amount, 0);
 }
+
+#[test]
+fn campaign_admin_must_authorize_campaign_funding() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let issuer = Address::generate(&env);
+    let stellar_asset = env.register_stellar_asset_contract_v2(issuer);
+    let token_address = stellar_asset.address();
+
+    let token_admin = StellarAssetClient::new(&env, &token_address);
+    let token = TokenClient::new(&env, &token_address);
+
+    token_admin.mint(&campaign_admin, &1_000);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &token_address,
+        &String::from_str(&env, "Funding Auth Test"),
+        &100,
+        &1_000,
+        &0,
+    );
+
+    assert_eq!(token.balance(&campaign_admin), 1_000);
+    assert_eq!(token.balance(&contract_id), 0);
+
+    // No campaign-admin authorisation is provided.
+    env.set_auths(&[]);
+
+    let result = client.try_fund_campaign(&campaign_id, &100);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not move tokens or alter accounting.
+    env.mock_all_auths();
+
+    assert_eq!(token.balance(&campaign_admin), 1_000);
+    assert_eq!(token.balance(&contract_id), 0);
+    assert_eq!(client.get_campaign(&campaign_id).funded_amount, 0);
+
+    // Properly authorised funding must still work afterwards.
+    let funded = client.fund_campaign(&campaign_id, &100);
+
+    assert_eq!(funded, 100);
+    assert_eq!(token.balance(&campaign_admin), 900);
+    assert_eq!(token.balance(&contract_id), 100);
+    assert_eq!(client.get_campaign(&campaign_id).funded_amount, 100);
+}

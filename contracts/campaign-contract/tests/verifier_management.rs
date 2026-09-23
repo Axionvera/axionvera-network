@@ -113,3 +113,56 @@ fn missing_campaign_returns_error() {
 
     assert_eq!(result, Err(Ok(CampaignError::CampaignNotFound)));
 }
+
+#[test]
+fn campaign_admin_must_authorize_adding_verifier() {
+    let (env, client, campaign_id, _) = setup_campaign();
+
+    let verifier = Address::generate(&env);
+
+    assert!(!client.is_verifier(&campaign_id, &verifier));
+
+    // No campaign-admin authorisation is provided.
+    env.set_auths(&[]);
+
+    let result = client.try_add_verifier(&campaign_id, &verifier);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not create verifier permission.
+    env.mock_all_auths();
+
+    assert!(!client.is_verifier(&campaign_id, &verifier));
+
+    // A properly authorised call must still work afterwards.
+    client.add_verifier(&campaign_id, &verifier);
+
+    assert!(client.is_verifier(&campaign_id, &verifier));
+}
+
+#[test]
+fn campaign_admin_must_authorize_removing_verifier() {
+    let (env, client, campaign_id, _) = setup_campaign();
+
+    let verifier = Address::generate(&env);
+
+    client.add_verifier(&campaign_id, &verifier);
+    assert!(client.is_verifier(&campaign_id, &verifier));
+
+    // No campaign-admin authorisation is provided.
+    env.set_auths(&[]);
+
+    let result = client.try_remove_verifier(&campaign_id, &verifier);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not revoke verifier permission.
+    env.mock_all_auths();
+
+    assert!(client.is_verifier(&campaign_id, &verifier));
+
+    // A properly authorised removal must still work afterwards.
+    client.remove_verifier(&campaign_id, &verifier);
+
+    assert!(!client.is_verifier(&campaign_id, &verifier));
+}

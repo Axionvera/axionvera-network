@@ -235,3 +235,104 @@ fn allocated_reward_can_be_claimed_after_close() {
     assert_eq!(campaign.allocated_amount, 2);
     assert_eq!(campaign.claimed_amount, 2);
 }
+
+#[test]
+fn campaign_admin_must_authorize_pause() {
+    let s = setup();
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Active
+    );
+
+    // No campaign-admin authorisation is provided.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_pause_campaign(&s.campaign_id);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not change campaign state.
+    s.env.mock_all_auths();
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Active
+    );
+
+    // A properly authorised pause must still work afterwards.
+    s.client.pause_campaign(&s.campaign_id);
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Paused
+    );
+}
+
+#[test]
+fn campaign_admin_must_authorize_resume() {
+    let s = setup();
+
+    s.client.pause_campaign(&s.campaign_id);
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Paused
+    );
+
+    // No campaign-admin authorisation is provided.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_resume_campaign(&s.campaign_id);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not change campaign state.
+    s.env.mock_all_auths();
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Paused
+    );
+
+    // A properly authorised resume must still work afterwards.
+    s.client.resume_campaign(&s.campaign_id);
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Active
+    );
+}
+
+#[test]
+fn campaign_admin_must_authorize_close() {
+    let s = setup();
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Active
+    );
+
+    // No campaign-admin authorisation is provided.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_close_campaign(&s.campaign_id);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not change campaign state.
+    s.env.mock_all_auths();
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Active
+    );
+
+    // A properly authorised close must still work afterwards.
+    s.client.close_campaign(&s.campaign_id);
+
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Closed
+    );
+}

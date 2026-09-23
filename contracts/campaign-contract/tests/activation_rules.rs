@@ -145,3 +145,33 @@ fn returns_rule_not_found_for_missing_rule() {
 
     assert_eq!(result, Err(Ok(CampaignError::RuleNotFound)));
 }
+
+#[test]
+fn campaign_admin_must_authorize_adding_activation_rule() {
+    let (env, client, campaign_id, _) = setup_campaign();
+
+    let milestone = String::from_str(&env, "AUTH_TEST");
+
+    // No campaign-admin authorisation is provided.
+    env.set_auths(&[]);
+
+    let result = client.try_add_activation_rule(&campaign_id, &milestone, &5);
+
+    assert!(result.is_err());
+
+    // Failed authentication must not create the rule.
+    env.mock_all_auths();
+
+    assert_eq!(
+        client.try_get_activation_rule(&campaign_id, &milestone),
+        Err(Ok(CampaignError::RuleNotFound))
+    );
+
+    // A properly authorised call must still work afterwards.
+    client.add_activation_rule(&campaign_id, &milestone, &5);
+
+    let rule = client.get_activation_rule(&campaign_id, &milestone);
+
+    assert_eq!(rule.reward_amount, 5);
+    assert!(rule.enabled);
+}

@@ -243,3 +243,46 @@ fn agent_with_no_reward_cannot_claim() {
 
     assert_eq!(result, Err(Ok(CampaignError::NothingToClaim)));
 }
+
+#[test]
+fn agent_must_authorize_reward_claim() {
+    let s = setup();
+
+    let token = TokenClient::new(&s.env, &s.token_address);
+
+    s.client.verify_and_allocate_reward(
+        &s.campaign_id,
+        &s.verifier,
+        &s.agent,
+        &String::from_str(&s.env, "merchant-auth-claim"),
+        &String::from_str(&s.env, "KYC_VERIFIED"),
+    );
+
+    assert_eq!(s.client.claimable_reward(&s.campaign_id, &s.agent), 2);
+    assert_eq!(token.balance(&s.agent), 0);
+
+    // The reward exists, but the agent provides no authorisation.
+    s.env.set_auths(&[]);
+
+    let result = s.client.try_claim_reward(&s.campaign_id, &s.agent);
+
+    assert!(result.is_err());
+
+    // Failed authentication must leave both accounting and tokens untouched.
+    s.env.mock_all_auths();
+
+    assert_eq!(s.client.claimable_reward(&s.campaign_id, &s.agent), 2);
+    assert_eq!(token.balance(&s.agent), 0);
+    assert_eq!(token.balance(&s.contract_id), 100);
+
+    let campaign = s.client.get_campaign(&s.campaign_id);
+
+    assert_eq!(campaign.allocated_amount, 2);
+    assert_eq!(campaign.claimed_amount, 0);
+
+    // A properly authorised claim must still work afterwards.
+    let claimed = s.client.claim_reward(&s.campaign_id, &s.agent);
+
+    assert_eq!(claimed, 2);
+    assert_eq!(token.balance(&s.agent), 2);
+}
