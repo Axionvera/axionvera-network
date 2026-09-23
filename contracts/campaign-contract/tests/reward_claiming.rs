@@ -1,6 +1,6 @@
 use axionvera_campaign_contract::{CampaignContract, CampaignContractClient, CampaignError};
 use soroban_sdk::{
-    testutils::Address as _,
+    testutils::{Address as _, Ledger},
     token::{StellarAssetClient, TokenClient},
     Address, Env, String,
 };
@@ -18,6 +18,7 @@ struct Setup {
 fn setup() -> Setup {
     let env = Env::default();
     env.mock_all_auths();
+    env.ledger().set_timestamp(100);
 
     let contract_id = env.register(CampaignContract, ());
     let client = CampaignContractClient::new(&env, &contract_id);

@@ -19,6 +19,11 @@ const TOPIC_REMOVED: Symbol = symbol_short!("removed");
 const TOPIC_ACTIVATION: Symbol = symbol_short!("activate");
 const TOPIC_REWARD: Symbol = symbol_short!("reward");
 const TOPIC_CLAIM: Symbol = symbol_short!("claim");
+const TOPIC_PAUSED: Symbol = symbol_short!("paused");
+const TOPIC_RESUMED: Symbol = symbol_short!("resumed");
+const TOPIC_CLOSED: Symbol = symbol_short!("closed");
+const TOPIC_UNUSED: Symbol = symbol_short!("unused");
+const TOPIC_WITHDRAW: Symbol = symbol_short!("withdraw");
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -45,6 +50,12 @@ pub enum CampaignError {
     AgentCapExceeded = 19,
     NothingToClaim = 20,
     InvalidAccountingState = 21,
+    CampaignNotPaused = 22,
+    CampaignAlreadyClosed = 23,
+    CampaignNotClosed = 24,
+    InsufficientUnusedFunds = 25,
+    CampaignNotStarted = 26,
+    CampaignEnded = 27,
 }
 
 #[contracttype]
@@ -70,6 +81,7 @@ pub struct Campaign {
     pub funded_amount: i128,
     pub allocated_amount: i128,
     pub claimed_amount: i128,
+    pub withdrawn_amount: i128,
 
     // 0 means no per-agent cap.
     pub per_agent_cap: i128,
@@ -175,6 +187,7 @@ impl CampaignContract {
             funded_amount: 0,
             allocated_amount: 0,
             claimed_amount: 0,
+            withdrawn_amount: 0,
             per_agent_cap,
         };
 
@@ -293,6 +306,179 @@ impl CampaignContract {
         Ok(())
     }
 
+    /// Pauses an active campaign.
+    ///
+    /// New reward allocations stop while paused, but agents may still
+    /// claim rewards that were allocated before the pause.
+    pub fn pause_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
+        Self::require_initialized(&env)?;
+
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        campaign.admin.require_auth();
+
+        if campaign.status != CampaignStatus::Active {
+            return Err(CampaignError::CampaignNotActive);
+        }
+
+        campaign.status = CampaignStatus::Paused;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        env.events().publish(
+            (TOPIC_CAMPAIGN, TOPIC_PAUSED),
+            (campaign_id, campaign.admin.clone()),
+        );
+
+        Ok(())
+    }
+
+    /// Resumes a paused campaign.
+    pub fn resume_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
+        Self::require_initialized(&env)?;
+
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        campaign.admin.require_auth();
+
+        if campaign.status != CampaignStatus::Paused {
+            return Err(CampaignError::CampaignNotPaused);
+        }
+
+        campaign.status = CampaignStatus::Active;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        env.events().publish(
+            (TOPIC_CAMPAIGN, TOPIC_RESUMED),
+            (campaign_id, campaign.admin.clone()),
+        );
+
+        Ok(())
+    }
+
+    /// Permanently closes a campaign.
+    ///
+    /// A closed campaign cannot be resumed and cannot receive new
+    /// reward allocations. Previously allocated rewards remain claimable.
+    pub fn close_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
+        Self::require_initialized(&env)?;
+
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        campaign.admin.require_auth();
+
+        if campaign.status == CampaignStatus::Closed {
+            return Err(CampaignError::CampaignAlreadyClosed);
+        }
+
+        campaign.status = CampaignStatus::Closed;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        env.events().publish(
+            (TOPIC_CAMPAIGN, TOPIC_CLOSED),
+            (campaign_id, campaign.admin.clone()),
+        );
+
+        Ok(())
+    }
+
+    /// Returns campaign funds that have not been allocated to agents.
+    pub fn available_unused_funds(env: Env, campaign_id: u64) -> Result<i128, CampaignError> {
+        Self::require_initialized(&env)?;
+
+        let campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        campaign
+            .funded_amount
+            .checked_sub(campaign.allocated_amount)
+            .and_then(|value| value.checked_sub(campaign.withdrawn_amount))
+            .ok_or(CampaignError::InvalidAccountingState)
+    }
+
+    /// Withdraws unused campaign funds after the campaign has been closed.
+    ///
+    /// Rewards already allocated to agents remain fully reserved and
+    /// cannot be withdrawn by the campaign admin.
+    pub fn withdraw_unused_funds(
+        env: Env,
+        campaign_id: u64,
+        amount: i128,
+    ) -> Result<i128, CampaignError> {
+        Self::require_initialized(&env)?;
+
+        if amount <= 0 {
+            return Err(CampaignError::InvalidAmount);
+        }
+
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        campaign.admin.require_auth();
+
+        if campaign.status != CampaignStatus::Closed {
+            return Err(CampaignError::CampaignNotClosed);
+        }
+
+        let available = campaign
+            .funded_amount
+            .checked_sub(campaign.allocated_amount)
+            .and_then(|value| value.checked_sub(campaign.withdrawn_amount))
+            .ok_or(CampaignError::InvalidAccountingState)?;
+
+        if amount > available {
+            return Err(CampaignError::InsufficientUnusedFunds);
+        }
+
+        let new_withdrawn = campaign
+            .withdrawn_amount
+            .checked_add(amount)
+            .ok_or(CampaignError::ArithmeticOverflow)?;
+
+        campaign.withdrawn_amount = new_withdrawn;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        let token_client = token::Client::new(&env, &campaign.reward_token);
+
+        token_client.transfer(&env.current_contract_address(), &campaign.admin, &amount);
+
+        env.events().publish(
+            (TOPIC_CAMPAIGN, TOPIC_UNUSED, TOPIC_WITHDRAW),
+            (campaign_id, campaign.admin.clone(), amount),
+        );
+
+        Ok(available - amount)
+    }
+
     /// Adds an authorised verifier to a campaign.
     ///
     /// Only the campaign admin may manage verifier permissions.
@@ -402,6 +588,16 @@ impl CampaignContract {
 
         if campaign.status != CampaignStatus::Active {
             return Err(CampaignError::CampaignNotActive);
+        }
+
+        let now = env.ledger().timestamp();
+
+        if now < campaign.start_time {
+            return Err(CampaignError::CampaignNotStarted);
+        }
+
+        if now >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
         }
 
         let verifier_key = DataKey::Verifier(campaign_id, verifier.clone());
