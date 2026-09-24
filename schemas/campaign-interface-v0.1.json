@@ -1,0 +1,1510 @@
+{
+  "schema": "schemas/campaign-interface.schema.json",
+  "schema_version": "1",
+  "interface_version": "0.1",
+  "contract": "axionvera-campaign-contract",
+  "contract_version": "0.1.0",
+  "source": "contracts/campaign-contract/src/lib.rs",
+  "methods": [
+    {
+      "name": "initialize",
+      "arguments": [
+        {
+          "name": "protocol_admin",
+          "position": 0,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "argument",
+        "address_argument": "protocol_admin",
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "must_be_uninitialized",
+      "mutability": "write",
+      "emits": [
+        "init"
+      ]
+    },
+    {
+      "name": "create_campaign",
+      "arguments": [
+        {
+          "name": "admin",
+          "position": 0,
+          "type": "Address"
+        },
+        {
+          "name": "reward_token",
+          "position": 1,
+          "type": "Address"
+        },
+        {
+          "name": "name",
+          "position": 2,
+          "type": "String"
+        },
+        {
+          "name": "start_time",
+          "position": 3,
+          "type": "u64"
+        },
+        {
+          "name": "end_time",
+          "position": 4,
+          "type": "u64"
+        },
+        {
+          "name": "per_agent_cap",
+          "position": 5,
+          "type": "i128"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "u64",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "argument",
+        "address_argument": "admin",
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "created"
+      ]
+    },
+    {
+      "name": "fund_campaign",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "position": 1,
+          "type": "i128"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "funded"
+      ]
+    },
+    {
+      "name": "add_activation_rule",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "milestone",
+          "position": 1,
+          "type": "String"
+        },
+        {
+          "name": "reward_amount",
+          "position": 2,
+          "type": "i128"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "rule_added"
+      ]
+    },
+    {
+      "name": "pause_campaign",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "paused"
+      ]
+    },
+    {
+      "name": "resume_campaign",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "resumed"
+      ]
+    },
+    {
+      "name": "close_campaign",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "closed"
+      ]
+    },
+    {
+      "name": "available_unused_funds",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "withdraw_unused_funds",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "position": 1,
+          "type": "i128"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "unused_withdraw"
+      ]
+    },
+    {
+      "name": "add_verifier",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "verifier",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "verifier_added"
+      ]
+    },
+    {
+      "name": "remove_verifier",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "verifier",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "void",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "stored_campaign_admin",
+        "address_argument": null,
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "verifier_removed"
+      ]
+    },
+    {
+      "name": "is_verifier",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "verifier",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "bool",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "verify_and_allocate_reward",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "verifier",
+          "position": 1,
+          "type": "Address"
+        },
+        {
+          "name": "agent",
+          "position": 2,
+          "type": "Address"
+        },
+        {
+          "name": "merchant_ref",
+          "position": 3,
+          "type": "String"
+        },
+        {
+          "name": "milestone",
+          "position": 4,
+          "type": "String"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "argument",
+        "address_argument": "verifier",
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "reward_allocated"
+      ]
+    },
+    {
+      "name": "claim_reward",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "agent",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": true,
+        "source": "argument",
+        "address_argument": "agent",
+        "mechanism": "Address.require_auth"
+      },
+      "initialization": "required",
+      "mutability": "write",
+      "emits": [
+        "reward_claimed"
+      ]
+    },
+    {
+      "name": "claimable_reward",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "agent",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "agent_total_earned",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "agent",
+          "position": 1,
+          "type": "Address"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "i128",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "get_activation_rule",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        },
+        {
+          "name": "milestone",
+          "position": 1,
+          "type": "String"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "ActivationRule",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "get_campaign",
+      "arguments": [
+        {
+          "name": "campaign_id",
+          "position": 0,
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "kind": "result",
+        "ok": "Campaign",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "is_initialized",
+      "arguments": [],
+      "returns": {
+        "kind": "value",
+        "type": "bool"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "not_required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "protocol_admin",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "Address",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    },
+    {
+      "name": "next_campaign_id",
+      "arguments": [],
+      "returns": {
+        "kind": "result",
+        "ok": "u64",
+        "error": "CampaignError"
+      },
+      "authorization": {
+        "required": false,
+        "source": "none",
+        "address_argument": null,
+        "mechanism": "none"
+      },
+      "initialization": "required",
+      "mutability": "read",
+      "emits": []
+    }
+  ],
+  "errors": [
+    {
+      "name": "AlreadyInitialized",
+      "code": 1,
+      "returned_by": [
+        "initialize"
+      ],
+      "description": "The campaign protocol has already been initialized."
+    },
+    {
+      "name": "NotInitialized",
+      "code": 2,
+      "returned_by": [
+        "create_campaign",
+        "fund_campaign",
+        "add_activation_rule",
+        "pause_campaign",
+        "resume_campaign",
+        "close_campaign",
+        "available_unused_funds",
+        "withdraw_unused_funds",
+        "add_verifier",
+        "remove_verifier",
+        "is_verifier",
+        "verify_and_allocate_reward",
+        "claim_reward",
+        "claimable_reward",
+        "agent_total_earned",
+        "get_activation_rule",
+        "get_campaign",
+        "protocol_admin",
+        "next_campaign_id"
+      ],
+      "description": "A method requiring initialized protocol state was called before initialization."
+    },
+    {
+      "name": "InvalidTimeRange",
+      "code": 3,
+      "returned_by": [
+        "create_campaign"
+      ],
+      "description": "The campaign end time is not later than its start time."
+    },
+    {
+      "name": "InvalidCap",
+      "code": 4,
+      "returned_by": [
+        "create_campaign"
+      ],
+      "description": "The per-agent reward cap is negative."
+    },
+    {
+      "name": "CampaignNotFound",
+      "code": 5,
+      "returned_by": [
+        "fund_campaign",
+        "add_activation_rule",
+        "pause_campaign",
+        "resume_campaign",
+        "close_campaign",
+        "available_unused_funds",
+        "withdraw_unused_funds",
+        "add_verifier",
+        "remove_verifier",
+        "is_verifier",
+        "verify_and_allocate_reward",
+        "claim_reward",
+        "claimable_reward",
+        "agent_total_earned",
+        "get_campaign"
+      ],
+      "description": "The requested campaign does not exist in persistent storage."
+    },
+    {
+      "name": "CampaignIdOverflow",
+      "code": 6,
+      "returned_by": [
+        "create_campaign"
+      ],
+      "description": "Incrementing the next campaign identifier would overflow u64."
+    },
+    {
+      "name": "InvalidAmount",
+      "code": 7,
+      "returned_by": [
+        "fund_campaign",
+        "withdraw_unused_funds"
+      ],
+      "description": "The supplied treasury amount is not positive."
+    },
+    {
+      "name": "CampaignNotActive",
+      "code": 8,
+      "returned_by": [
+        "fund_campaign",
+        "add_activation_rule",
+        "pause_campaign",
+        "add_verifier",
+        "remove_verifier",
+        "verify_and_allocate_reward"
+      ],
+      "description": "The requested operation requires an active campaign."
+    },
+    {
+      "name": "ArithmeticOverflow",
+      "code": 9,
+      "returned_by": [
+        "fund_campaign",
+        "withdraw_unused_funds",
+        "verify_and_allocate_reward",
+        "claim_reward"
+      ],
+      "description": "Checked campaign accounting arithmetic failed."
+    },
+    {
+      "name": "InvalidRewardAmount",
+      "code": 10,
+      "returned_by": [
+        "add_activation_rule"
+      ],
+      "description": "The activation rule reward amount is not positive."
+    },
+    {
+      "name": "RuleAlreadyExists",
+      "code": 11,
+      "returned_by": [
+        "add_activation_rule"
+      ],
+      "description": "An activation rule already exists for this campaign and milestone."
+    },
+    {
+      "name": "RuleNotFound",
+      "code": 12,
+      "returned_by": [
+        "verify_and_allocate_reward",
+        "get_activation_rule"
+      ],
+      "description": "The requested activation rule does not exist."
+    },
+    {
+      "name": "VerifierAlreadyExists",
+      "code": 13,
+      "returned_by": [
+        "add_verifier"
+      ],
+      "description": "The verifier is already registered for this campaign."
+    },
+    {
+      "name": "VerifierNotFound",
+      "code": 14,
+      "returned_by": [
+        "remove_verifier"
+      ],
+      "description": "The verifier is not registered for this campaign."
+    },
+    {
+      "name": "UnauthorizedVerifier",
+      "code": 15,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "The authenticated verifier is not authorized for this campaign."
+    },
+    {
+      "name": "RuleDisabled",
+      "code": 16,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "The activation rule exists but is disabled."
+    },
+    {
+      "name": "DuplicateActivation",
+      "code": 17,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "The merchant reference and milestone activation has already been processed."
+    },
+    {
+      "name": "InsufficientCampaignFunds",
+      "code": 18,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "The campaign has insufficient unallocated funds for the reward."
+    },
+    {
+      "name": "AgentCapExceeded",
+      "code": 19,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "Allocating the reward would exceed the campaign's per-agent cap."
+    },
+    {
+      "name": "NothingToClaim",
+      "code": 20,
+      "returned_by": [
+        "claim_reward"
+      ],
+      "description": "The agent has no positive claimable reward."
+    },
+    {
+      "name": "InvalidAccountingState",
+      "code": 21,
+      "returned_by": [
+        "available_unused_funds",
+        "withdraw_unused_funds",
+        "claim_reward"
+      ],
+      "description": "Stored campaign accounting values violate an expected invariant."
+    },
+    {
+      "name": "CampaignNotPaused",
+      "code": 22,
+      "returned_by": [
+        "resume_campaign"
+      ],
+      "description": "The requested operation requires a paused campaign."
+    },
+    {
+      "name": "CampaignAlreadyClosed",
+      "code": 23,
+      "returned_by": [
+        "close_campaign"
+      ],
+      "description": "The campaign has already been permanently closed."
+    },
+    {
+      "name": "CampaignNotClosed",
+      "code": 24,
+      "returned_by": [
+        "withdraw_unused_funds"
+      ],
+      "description": "Unused campaign funds may only be withdrawn after closure."
+    },
+    {
+      "name": "InsufficientUnusedFunds",
+      "code": 25,
+      "returned_by": [
+        "withdraw_unused_funds"
+      ],
+      "description": "The requested withdrawal exceeds the campaign's unused funds."
+    },
+    {
+      "name": "CampaignNotStarted",
+      "code": 26,
+      "returned_by": [
+        "verify_and_allocate_reward"
+      ],
+      "description": "Reward allocation was attempted before the campaign start time."
+    },
+    {
+      "name": "CampaignEnded",
+      "code": 27,
+      "returned_by": [
+        "fund_campaign",
+        "add_activation_rule",
+        "pause_campaign",
+        "resume_campaign",
+        "add_verifier",
+        "remove_verifier",
+        "verify_and_allocate_reward"
+      ],
+      "description": "The requested operation is not permitted at or after the campaign end time."
+    }
+  ],
+  "events": [
+    {
+      "name": "init",
+      "emitted_by": "initialize",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "init"
+        }
+      ],
+      "data": {
+        "kind": "value",
+        "fields": [
+          {
+            "name": "protocol_admin",
+            "position": 0,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "created",
+      "emitted_by": "create_campaign",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "created"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          },
+          {
+            "name": "reward_token",
+            "position": 2,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "funded",
+      "emitted_by": "fund_campaign",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "funded"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          },
+          {
+            "name": "amount",
+            "position": 2,
+            "type": "i128"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "rule_added",
+      "emitted_by": "add_activation_rule",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "rule"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "added"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "milestone",
+            "position": 1,
+            "type": "String"
+          },
+          {
+            "name": "reward_amount",
+            "position": 2,
+            "type": "i128"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "paused",
+      "emitted_by": "pause_campaign",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "paused"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "resumed",
+      "emitted_by": "resume_campaign",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "resumed"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "closed",
+      "emitted_by": "close_campaign",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "closed"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "unused_withdraw",
+      "emitted_by": "withdraw_unused_funds",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "unused"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "withdraw"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "admin",
+            "position": 1,
+            "type": "Address"
+          },
+          {
+            "name": "amount",
+            "position": 2,
+            "type": "i128"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "verifier_added",
+      "emitted_by": "add_verifier",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "verifyr"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "added"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "verifier",
+            "position": 1,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "verifier_removed",
+      "emitted_by": "remove_verifier",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "verifyr"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "removed"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "verifier",
+            "position": 1,
+            "type": "Address"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "reward_allocated",
+      "emitted_by": "verify_and_allocate_reward",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "activate"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "reward"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "verifier",
+            "position": 1,
+            "type": "Address"
+          },
+          {
+            "name": "agent",
+            "position": 2,
+            "type": "Address"
+          },
+          {
+            "name": "merchant_ref",
+            "position": 3,
+            "type": "String"
+          },
+          {
+            "name": "milestone",
+            "position": 4,
+            "type": "String"
+          },
+          {
+            "name": "reward_amount",
+            "position": 5,
+            "type": "i128"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    },
+    {
+      "name": "reward_claimed",
+      "emitted_by": "claim_reward",
+      "type": "contract",
+      "topics": [
+        {
+          "position": 0,
+          "type": "Symbol",
+          "value": "campaign"
+        },
+        {
+          "position": 1,
+          "type": "Symbol",
+          "value": "reward"
+        },
+        {
+          "position": 2,
+          "type": "Symbol",
+          "value": "claim"
+        }
+      ],
+      "data": {
+        "kind": "tuple",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "position": 0,
+            "type": "u64"
+          },
+          {
+            "name": "agent",
+            "position": 1,
+            "type": "Address"
+          },
+          {
+            "name": "claimable",
+            "position": 2,
+            "type": "i128"
+          }
+        ]
+      },
+      "emission": "on_success",
+      "failed_calls_emit": false
+    }
+  ],
+  "event_policy": {
+    "failed_calls_emit": false
+  },
+  "types": {
+    "Address": {
+      "kind": "primitive",
+      "soroban_type": "Address"
+    },
+    "String": {
+      "kind": "primitive",
+      "soroban_type": "String"
+    },
+    "u64": {
+      "kind": "primitive",
+      "soroban_type": "u64"
+    },
+    "i128": {
+      "kind": "primitive",
+      "soroban_type": "i128"
+    },
+    "bool": {
+      "kind": "primitive",
+      "soroban_type": "bool"
+    },
+    "void": {
+      "kind": "primitive",
+      "soroban_type": "()"
+    },
+    "CampaignError": {
+      "kind": "contract_error",
+      "soroban_type": "contracterror(u32)"
+    },
+    "CampaignStatus": {
+      "kind": "union",
+      "cases": [
+        {
+          "position": 0,
+          "name": "Active",
+          "kind": "void"
+        },
+        {
+          "position": 1,
+          "name": "Paused",
+          "kind": "void"
+        },
+        {
+          "position": 2,
+          "name": "Closed",
+          "kind": "void"
+        }
+      ]
+    },
+    "Campaign": {
+      "kind": "struct",
+      "fields": [
+        {
+          "position": 0,
+          "name": "admin",
+          "type": "Address"
+        },
+        {
+          "position": 1,
+          "name": "allocated_amount",
+          "type": "i128"
+        },
+        {
+          "position": 2,
+          "name": "claimed_amount",
+          "type": "i128"
+        },
+        {
+          "position": 3,
+          "name": "end_time",
+          "type": "u64"
+        },
+        {
+          "position": 4,
+          "name": "funded_amount",
+          "type": "i128"
+        },
+        {
+          "position": 5,
+          "name": "id",
+          "type": "u64"
+        },
+        {
+          "position": 6,
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "position": 7,
+          "name": "per_agent_cap",
+          "type": "i128"
+        },
+        {
+          "position": 8,
+          "name": "reward_token",
+          "type": "Address"
+        },
+        {
+          "position": 9,
+          "name": "start_time",
+          "type": "u64"
+        },
+        {
+          "position": 10,
+          "name": "status",
+          "type": "CampaignStatus"
+        },
+        {
+          "position": 11,
+          "name": "withdrawn_amount",
+          "type": "i128"
+        }
+      ]
+    },
+    "ActivationRule": {
+      "kind": "struct",
+      "fields": [
+        {
+          "position": 0,
+          "name": "campaign_id",
+          "type": "u64"
+        },
+        {
+          "position": 1,
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "position": 2,
+          "name": "milestone",
+          "type": "String"
+        },
+        {
+          "position": 3,
+          "name": "reward_amount",
+          "type": "i128"
+        }
+      ]
+    }
+  }
+}

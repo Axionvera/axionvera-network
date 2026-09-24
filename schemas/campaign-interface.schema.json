@@ -1,0 +1,998 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AxionVera campaign contract public interface",
+  "description": "Schema for the versioned, SDK-facing description of the currently implemented campaign contract interface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "interface_version",
+    "contract",
+    "contract_version",
+    "source",
+    "types",
+    "errors",
+    "methods",
+    "events",
+    "event_policy"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "schemas/campaign-interface.schema.json"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1"
+    },
+    "interface_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "contract": {
+      "type": "string",
+      "const": "axionvera-campaign-contract"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "source": {
+      "type": "string",
+      "const": "contracts/campaign-contract/src/lib.rs"
+    },
+    "methods": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/method"
+      },
+      "minItems": 21,
+      "maxItems": 21
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      },
+      "minItems": 27,
+      "maxItems": 27,
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "AlreadyInitialized"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "NotInitialized"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InvalidTimeRange"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InvalidCap"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignNotFound"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignIdOverflow"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InvalidAmount"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignNotActive"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "ArithmeticOverflow"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InvalidRewardAmount"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "RuleAlreadyExists"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "RuleNotFound"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "VerifierAlreadyExists"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "VerifierNotFound"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "UnauthorizedVerifier"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "RuleDisabled"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "DuplicateActivation"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InsufficientCampaignFunds"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "AgentCapExceeded"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "NothingToClaim"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InvalidAccountingState"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignNotPaused"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignAlreadyClosed"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignNotClosed"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "InsufficientUnusedFunds"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignNotStarted"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "CampaignEnded"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        }
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "minItems": 12,
+      "maxItems": 12
+    },
+    "event_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failed_calls_emit"
+      ],
+      "properties": {
+        "failed_calls_emit": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Address",
+        "String",
+        "u64",
+        "i128",
+        "bool",
+        "void",
+        "CampaignError",
+        "CampaignStatus",
+        "Campaign",
+        "ActivationRule"
+      ],
+      "properties": {
+        "Address": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "String": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "u64": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "i128": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "bool": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "void": {
+          "$ref": "#/$defs/primitive_type"
+        },
+        "CampaignError": {
+          "$ref": "#/$defs/contract_error_type"
+        },
+        "CampaignStatus": {
+          "$ref": "#/$defs/union_type"
+        },
+        "Campaign": {
+          "$ref": "#/$defs/struct_type"
+        },
+        "ActivationRule": {
+          "$ref": "#/$defs/struct_type"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "type_name": {
+      "type": "string",
+      "enum": [
+        "Address",
+        "String",
+        "u64",
+        "i128",
+        "bool",
+        "void",
+        "CampaignError",
+        "CampaignStatus",
+        "Campaign",
+        "ActivationRule"
+      ]
+    },
+    "method_name": {
+      "type": "string",
+      "enum": [
+        "initialize",
+        "create_campaign",
+        "fund_campaign",
+        "add_activation_rule",
+        "pause_campaign",
+        "resume_campaign",
+        "close_campaign",
+        "available_unused_funds",
+        "withdraw_unused_funds",
+        "add_verifier",
+        "remove_verifier",
+        "is_verifier",
+        "verify_and_allocate_reward",
+        "claim_reward",
+        "claimable_reward",
+        "agent_total_earned",
+        "get_activation_rule",
+        "get_campaign",
+        "is_initialized",
+        "protocol_admin",
+        "next_campaign_id"
+      ]
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "position",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "$ref": "#/$defs/type_name"
+        }
+      }
+    },
+    "result_return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "ok",
+        "error"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "result"
+        },
+        "ok": {
+          "$ref": "#/$defs/type_name"
+        },
+        "error": {
+          "type": "string",
+          "const": "CampaignError"
+        }
+      }
+    },
+    "value_return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "type"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "value"
+        },
+        "type": {
+          "$ref": "#/$defs/type_name"
+        }
+      }
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "arguments",
+        "returns",
+        "authorization",
+        "initialization",
+        "mutability",
+        "emits"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/method_name"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/argument"
+          }
+        },
+        "returns": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/result_return"
+            },
+            {
+              "$ref": "#/$defs/value_return"
+            }
+          ]
+        },
+        "authorization": {
+          "$ref": "#/$defs/authorization"
+        },
+        "initialization": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "required",
+            "must_be_uninitialized"
+          ]
+        },
+        "mutability": {
+          "type": "string",
+          "enum": [
+            "read",
+            "write"
+          ]
+        },
+        "emits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_name"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "event_name": {
+      "type": "string",
+      "enum": [
+        "init",
+        "created",
+        "funded",
+        "rule_added",
+        "paused",
+        "resumed",
+        "closed",
+        "unused_withdraw",
+        "verifier_added",
+        "verifier_removed",
+        "reward_allocated",
+        "reward_claimed"
+      ]
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "source",
+        "address_argument",
+        "mechanism"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "argument",
+            "stored_campaign_admin",
+            "none"
+          ]
+        },
+        "address_argument": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mechanism": {
+          "type": "string",
+          "enum": [
+            "Address.require_auth",
+            "none"
+          ]
+        }
+      }
+    },
+    "error_name": {
+      "type": "string",
+      "enum": [
+        "AlreadyInitialized",
+        "NotInitialized",
+        "InvalidTimeRange",
+        "InvalidCap",
+        "CampaignNotFound",
+        "CampaignIdOverflow",
+        "InvalidAmount",
+        "CampaignNotActive",
+        "ArithmeticOverflow",
+        "InvalidRewardAmount",
+        "RuleAlreadyExists",
+        "RuleNotFound",
+        "VerifierAlreadyExists",
+        "VerifierNotFound",
+        "UnauthorizedVerifier",
+        "RuleDisabled",
+        "DuplicateActivation",
+        "InsufficientCampaignFunds",
+        "AgentCapExceeded",
+        "NothingToClaim",
+        "InvalidAccountingState",
+        "CampaignNotPaused",
+        "CampaignAlreadyClosed",
+        "CampaignNotClosed",
+        "InsufficientUnusedFunds",
+        "CampaignNotStarted",
+        "CampaignEnded"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "code",
+        "returned_by",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/error_name"
+        },
+        "code": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 27
+        },
+        "returned_by": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/method_name"
+          },
+          "uniqueItems": true
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "topic_value": {
+      "type": "string",
+      "enum": [
+        "campaign",
+        "init",
+        "created",
+        "funded",
+        "rule",
+        "added",
+        "paused",
+        "resumed",
+        "closed",
+        "unused",
+        "withdraw",
+        "verifyr",
+        "removed",
+        "activate",
+        "reward",
+        "claim"
+      ]
+    },
+    "topic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "type",
+        "value"
+      ],
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "type": {
+          "type": "string",
+          "const": "Symbol"
+        },
+        "value": {
+          "$ref": "#/$defs/topic_value"
+        }
+      }
+    },
+    "event_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "position",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "$ref": "#/$defs/type_name"
+        }
+      }
+    },
+    "event_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "value",
+            "tuple"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_field"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "emitted_by",
+        "type",
+        "topics",
+        "data",
+        "emission",
+        "failed_calls_emit"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/event_name"
+        },
+        "emitted_by": {
+          "$ref": "#/$defs/method_name"
+        },
+        "type": {
+          "type": "string",
+          "const": "contract"
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/topic"
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "data": {
+          "$ref": "#/$defs/event_data"
+        },
+        "emission": {
+          "type": "string",
+          "const": "on_success"
+        },
+        "failed_calls_emit": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "primitive_type": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "soroban_type"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "primitive"
+        },
+        "soroban_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contract_error_type": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "soroban_type"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "contract_error"
+        },
+        "soroban_type": {
+          "type": "string",
+          "const": "contracterror(u32)"
+        }
+      }
+    },
+    "udt_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "name",
+        "type"
+      ],
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/type_name"
+        }
+      }
+    },
+    "struct_type": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "struct"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/udt_field"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "udt_void_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "name",
+        "kind"
+      ],
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "const": "void"
+        }
+      }
+    },
+    "union_type": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "cases"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "union"
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/udt_void_case"
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}
