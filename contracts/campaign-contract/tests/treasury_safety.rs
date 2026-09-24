@@ -251,3 +251,57 @@ fn campaign_admin_must_authorize_unused_fund_withdrawal() {
     assert_eq!(token.balance(&s.campaign_admin), 940);
     assert_eq!(token.balance(&s.contract_id), 60);
 }
+
+#[test]
+fn ended_campaign_can_be_closed_and_unused_funds_withdrawn() {
+    use soroban_sdk::testutils::Ledger;
+    use soroban_sdk::token::{Client as TokenClient, StellarAssetClient};
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let issuer = Address::generate(&env);
+    let asset = env.register_stellar_asset_contract_v2(issuer);
+    let reward_token = asset.address();
+
+    StellarAssetClient::new(&env, &reward_token).mint(&campaign_admin, &1_000);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Expired Settlement Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    client.fund_campaign(&campaign_id, &100);
+
+    // Campaign reaches its natural end while still carrying Active status.
+    env.ledger().set_timestamp(200);
+
+    // Expiry must not prevent administrative settlement.
+    client.close_campaign(&campaign_id);
+
+    assert_eq!(
+        client.get_campaign(&campaign_id).status,
+        axionvera_campaign_contract::CampaignStatus::Closed
+    );
+
+    assert_eq!(client.withdraw_unused_funds(&campaign_id, &100), 0);
+
+    let token_client = TokenClient::new(&env, &reward_token);
+
+    assert_eq!(token_client.balance(&contract_id), 0);
+    assert_eq!(token_client.balance(&campaign_admin), 1_000);
+}

@@ -336,3 +336,91 @@ fn campaign_admin_must_authorize_close() {
         CampaignStatus::Closed
     );
 }
+
+#[test]
+fn ended_paused_campaign_cannot_be_resumed() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Ended Paused Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    client.pause_campaign(&campaign_id);
+
+    // Move to the exact end boundary.
+    env.ledger().set_timestamp(200);
+
+    let result = client.try_resume_campaign(&campaign_id);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignEnded
+        ))
+    );
+
+    // The failed resume must not mutate campaign state.
+    assert_eq!(
+        client.get_campaign(&campaign_id).status,
+        axionvera_campaign_contract::CampaignStatus::Paused
+    );
+}
+
+#[test]
+fn ended_active_campaign_cannot_be_paused() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Ended Active Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    env.ledger().set_timestamp(200);
+
+    let result = client.try_pause_campaign(&campaign_id);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignEnded
+        ))
+    );
+
+    assert_eq!(
+        client.get_campaign(&campaign_id).status,
+        axionvera_campaign_contract::CampaignStatus::Active
+    );
+}

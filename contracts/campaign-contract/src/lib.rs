@@ -230,6 +230,10 @@ impl CampaignContract {
 
         campaign.admin.require_auth();
 
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
+        }
+
         let new_funded_amount = campaign
             .funded_amount
             .checked_add(amount)
@@ -279,6 +283,10 @@ impl CampaignContract {
 
         campaign.admin.require_auth();
 
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
+        }
+
         let key = DataKey::ActivationRule(campaign_id, milestone.clone());
 
         if env.storage().persistent().has(&key) {
@@ -319,6 +327,10 @@ impl CampaignContract {
             return Err(CampaignError::CampaignNotActive);
         }
 
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
+        }
+
         campaign.status = CampaignStatus::Paused;
 
         env.storage()
@@ -343,6 +355,10 @@ impl CampaignContract {
 
         if campaign.status != CampaignStatus::Paused {
             return Err(CampaignError::CampaignNotPaused);
+        }
+
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
         }
 
         campaign.status = CampaignStatus::Active;
@@ -471,6 +487,14 @@ impl CampaignContract {
 
         campaign.admin.require_auth();
 
+        if campaign.status == CampaignStatus::Closed {
+            return Err(CampaignError::CampaignNotActive);
+        }
+
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
+        }
+
         let key = DataKey::Verifier(campaign_id, verifier.clone());
 
         if env.storage().persistent().has(&key) {
@@ -500,6 +524,14 @@ impl CampaignContract {
         let campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
+
+        if campaign.status == CampaignStatus::Closed {
+            return Err(CampaignError::CampaignNotActive);
+        }
+
+        if env.ledger().timestamp() >= campaign.end_time {
+            return Err(CampaignError::CampaignEnded);
+        }
 
         let key = DataKey::Verifier(campaign_id, verifier.clone());
 

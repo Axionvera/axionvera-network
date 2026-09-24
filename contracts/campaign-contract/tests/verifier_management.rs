@@ -166,3 +166,207 @@ fn campaign_admin_must_authorize_removing_verifier() {
 
     assert!(!client.is_verifier(&campaign_id, &verifier));
 }
+
+#[test]
+fn closed_campaign_cannot_add_verifier() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Closed Verifier Campaign"),
+        &100,
+        &1_000,
+        &0,
+    );
+
+    client.close_campaign(&campaign_id);
+
+    let result = client.try_add_verifier(&campaign_id, &verifier);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignNotActive
+        ))
+    );
+
+    assert!(!client.is_verifier(&campaign_id, &verifier));
+}
+
+#[test]
+fn closed_campaign_cannot_remove_verifier() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Closed Verifier Removal Campaign"),
+        &100,
+        &1_000,
+        &0,
+    );
+
+    client.add_verifier(&campaign_id, &verifier);
+    client.close_campaign(&campaign_id);
+
+    let result = client.try_remove_verifier(&campaign_id, &verifier);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignNotActive
+        ))
+    );
+
+    assert!(client.is_verifier(&campaign_id, &verifier));
+}
+
+#[test]
+fn ended_campaign_cannot_add_verifier() {
+    use soroban_sdk::testutils::Ledger;
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Ended Verifier Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    env.ledger().set_timestamp(200);
+
+    let result = client.try_add_verifier(&campaign_id, &verifier);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignEnded
+        ))
+    );
+
+    assert!(!client.is_verifier(&campaign_id, &verifier));
+}
+
+#[test]
+fn ended_campaign_cannot_remove_verifier() {
+    use soroban_sdk::testutils::Ledger;
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Ended Verifier Removal Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    client.add_verifier(&campaign_id, &verifier);
+
+    env.ledger().set_timestamp(200);
+
+    let result = client.try_remove_verifier(&campaign_id, &verifier);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignEnded
+        ))
+    );
+
+    assert!(client.is_verifier(&campaign_id, &verifier));
+}
+
+#[test]
+fn paused_campaign_can_manage_verifiers_before_end() {
+    use soroban_sdk::testutils::Ledger;
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier_a = Address::generate(&env);
+    let verifier_b = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Paused Verifier Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    client.add_verifier(&campaign_id, &verifier_a);
+    client.pause_campaign(&campaign_id);
+
+    env.ledger().set_timestamp(150);
+
+    client.remove_verifier(&campaign_id, &verifier_a);
+    client.add_verifier(&campaign_id, &verifier_b);
+
+    assert!(!client.is_verifier(&campaign_id, &verifier_a));
+    assert!(client.is_verifier(&campaign_id, &verifier_b));
+}

@@ -1,4 +1,5 @@
 use axionvera_campaign_contract::{CampaignContract, CampaignContractClient, CampaignError};
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 fn setup_campaign() -> (Env, CampaignContractClient<'static>, u64, Address) {
@@ -174,4 +175,125 @@ fn campaign_admin_must_authorize_adding_activation_rule() {
 
     assert_eq!(rule.reward_amount, 5);
     assert!(rule.enabled);
+}
+
+#[test]
+fn ended_campaign_cannot_add_activation_rule() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Ended Rule Campaign"),
+        &100,
+        &200,
+        &0,
+    );
+
+    env.ledger().set_timestamp(200);
+
+    let milestone = String::from_str(&env, "POST_END_RULE");
+
+    let result = client.try_add_activation_rule(&campaign_id, &milestone, &2);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignEnded
+        ))
+    );
+
+    assert_eq!(
+        client.try_get_activation_rule(&campaign_id, &milestone),
+        Err(Ok(axionvera_campaign_contract::CampaignError::RuleNotFound))
+    );
+}
+
+#[test]
+fn activation_rule_can_be_added_before_start_time() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    env.ledger().set_timestamp(100);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Preconfigured Campaign"),
+        &200,
+        &1_000,
+        &0,
+    );
+
+    let milestone = String::from_str(&env, "PRE_START_RULE");
+
+    client.add_activation_rule(&campaign_id, &milestone, &2);
+
+    let rule = client.get_activation_rule(&campaign_id, &milestone);
+
+    assert_eq!(rule.reward_amount, 2);
+    assert!(rule.enabled);
+}
+
+#[test]
+fn paused_campaign_cannot_add_activation_rule() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Paused Rule Campaign"),
+        &100,
+        &1_000,
+        &0,
+    );
+
+    client.pause_campaign(&campaign_id);
+
+    let milestone = String::from_str(&env, "PAUSED_RULE");
+
+    let result = client.try_add_activation_rule(&campaign_id, &milestone, &2);
+
+    assert_eq!(
+        result,
+        Err(Ok(
+            axionvera_campaign_contract::CampaignError::CampaignNotActive
+        ))
+    );
+
+    assert_eq!(
+        client.try_get_activation_rule(&campaign_id, &milestone),
+        Err(Ok(axionvera_campaign_contract::CampaignError::RuleNotFound))
+    );
 }
