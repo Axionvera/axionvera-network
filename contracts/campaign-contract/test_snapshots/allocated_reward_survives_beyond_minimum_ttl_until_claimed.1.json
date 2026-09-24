@@ -84,7 +84,7 @@
                   "address": "CDS3FDGQ4JA2V3F26Y4BMWWJEC5TT26RJBN7KIQKUMVO2MAOCMDTSZ7A"
                 },
                 {
-                  "string": "Ibadan Merchant Activation"
+                  "string": "Claimable TTL Campaign"
                 },
                 {
                   "u64": 100
@@ -206,44 +206,6 @@
     ],
     [
       [
-        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-        {
-          "function": {
-            "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-              "function_name": "pause_campaign",
-              "args": [
-                {
-                  "u64": 1
-                }
-              ]
-            }
-          },
-          "sub_invocations": []
-        }
-      ]
-    ],
-    [
-      [
-        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-        {
-          "function": {
-            "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-              "function_name": "resume_campaign",
-              "args": [
-                {
-                  "u64": 1
-                }
-              ]
-            }
-          },
-          "sub_invocations": []
-        }
-      ]
-    ],
-    [
-      [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
         {
           "function": {
@@ -261,10 +223,33 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 },
                 {
-                  "string": "merchant-001"
+                  "string": "merchant-ttl-claim"
                 },
                 {
                   "string": "KYC_VERIFIED"
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "function_name": "claim_reward",
+              "args": [
+                {
+                  "u64": 1
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 }
               ]
             }
@@ -276,13 +261,13 @@
   ],
   "ledger": {
     "protocol_version": 22,
-    "sequence_number": 0,
+    "sequence_number": 20,
     "timestamp": 100,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
-    "min_persistent_entry_ttl": 4096,
+    "min_persistent_entry_ttl": 5,
     "min_temp_entry_ttl": 16,
-    "max_entry_ttl": 6312000,
+    "max_entry_ttl": 101,
     "ledger_entries": [
       [
         {
@@ -342,7 +327,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -358,7 +343,7 @@
                   "u64": 1
                 },
                 {
-                  "string": "merchant-001"
+                  "string": "merchant-ttl-claim"
                 },
                 {
                   "string": "KYC_VERIFIED"
@@ -384,7 +369,7 @@
                       "u64": 1
                     },
                     {
-                      "string": "merchant-001"
+                      "string": "merchant-ttl-claim"
                     },
                     {
                       "string": "KYC_VERIFIED"
@@ -399,7 +384,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -486,7 +471,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -540,7 +525,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -606,7 +591,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 0
+                          "lo": 2
                         }
                       }
                     },
@@ -642,7 +627,7 @@
                         "symbol": "name"
                       },
                       "val": {
-                        "string": "Ibadan Merchant Activation"
+                        "string": "Claimable TTL Campaign"
                       }
                     },
                     {
@@ -701,7 +686,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -748,14 +733,14 @@
                 "val": {
                   "i128": {
                     "hi": 0,
-                    "lo": 2
+                    "lo": 0
                   }
                 }
               }
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -806,7 +791,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -875,7 +860,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -908,7 +893,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -941,7 +926,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -974,7 +959,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -1007,73 +992,7 @@
             },
             "ext": "v0"
           },
-          6311999
-        ]
-      ],
-      [
-        {
-          "contract_data": {
-            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-            "key": {
-              "ledger_key_nonce": {
-                "nonce": 5806905060045992000
-              }
-            },
-            "durability": "temporary"
-          }
-        },
-        [
-          {
-            "last_modified_ledger_seq": 0,
-            "data": {
-              "contract_data": {
-                "ext": "v0",
-                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-                "key": {
-                  "ledger_key_nonce": {
-                    "nonce": 5806905060045992000
-                  }
-                },
-                "durability": "temporary",
-                "val": "void"
-              }
-            },
-            "ext": "v0"
-          },
-          6311999
-        ]
-      ],
-      [
-        {
-          "contract_data": {
-            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-            "key": {
-              "ledger_key_nonce": {
-                "nonce": 6277191135259896685
-              }
-            },
-            "durability": "temporary"
-          }
-        },
-        [
-          {
-            "last_modified_ledger_seq": 0,
-            "data": {
-              "contract_data": {
-                "ext": "v0",
-                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
-                "key": {
-                  "ledger_key_nonce": {
-                    "nonce": 6277191135259896685
-                  }
-                },
-                "durability": "temporary",
-                "val": "void"
-              }
-            },
-            "ext": "v0"
-          },
-          6311999
+          101
         ]
       ],
       [
@@ -1106,7 +1025,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -1115,7 +1034,7 @@
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
             "key": {
               "ledger_key_nonce": {
-                "nonce": 1194852393571756375
+                "nonce": 6277191135259896685
               }
             },
             "durability": "temporary"
@@ -1130,7 +1049,7 @@
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
                 "key": {
                   "ledger_key_nonce": {
-                    "nonce": 1194852393571756375
+                    "nonce": 6277191135259896685
                   }
                 },
                 "durability": "temporary",
@@ -1139,7 +1058,40 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 5806905060045992000
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 5806905060045992000
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          120
         ]
       ],
       [
@@ -1172,7 +1124,7 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ],
       [
@@ -1219,7 +1171,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 100
+                          "lo": 98
                         }
                       }
                     },
@@ -1245,7 +1197,7 @@
             },
             "ext": "v0"
           },
-          518400
+          120
         ]
       ],
       [
@@ -1318,7 +1270,80 @@
             },
             "ext": "v0"
           },
-          518400
+          101
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CDS3FDGQ4JA2V3F26Y4BMWWJEC5TT26RJBN7KIQKUMVO2MAOCMDTSZ7A",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "Balance"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CDS3FDGQ4JA2V3F26Y4BMWWJEC5TT26RJBN7KIQKUMVO2MAOCMDTSZ7A",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "Balance"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "amount"
+                      },
+                      "val": {
+                        "i128": {
+                          "hi": 0,
+                          "lo": 2
+                        }
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "authorized"
+                      },
+                      "val": {
+                        "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "clawback"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          120
         ]
       ],
       [
@@ -1430,7 +1455,7 @@
             },
             "ext": "v0"
           },
-          120960
+          120
         ]
       ],
       [
@@ -1451,12 +1476,44 @@
             },
             "ext": "v0"
           },
-          6311999
+          101
         ]
       ]
     ]
   },
   "events": [
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "e5b28cd0e241aaecbaf638165ac920bb39ebd1485bf5220aa32aed300e130739",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "transfer"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPP4V"
+              }
+            ],
+            "data": {
+              "i128": {
+                "hi": 0,
+                "lo": 2
+              }
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
     {
       "event": {
         "ext": "v0",
@@ -1469,10 +1526,10 @@
                 "symbol": "campaign"
               },
               {
-                "symbol": "activate"
+                "symbol": "reward"
               },
               {
-                "symbol": "reward"
+                "symbol": "claim"
               }
             ],
             "data": {
@@ -1481,16 +1538,7 @@
                   "u64": 1
                 },
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
-                },
-                {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
-                },
-                {
-                  "string": "merchant-001"
-                },
-                {
-                  "string": "KYC_VERIFIED"
                 },
                 {
                   "i128": {

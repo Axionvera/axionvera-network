@@ -137,6 +137,8 @@ impl CampaignContract {
         env.events()
             .publish((TOPIC_CAMPAIGN, TOPIC_INIT), protocol_admin.clone());
 
+        Self::extend_instance_ttl(&env);
+
         Ok(())
     }
 
@@ -195,6 +197,8 @@ impl CampaignContract {
             .persistent()
             .set(&DataKey::Campaign(campaign_id), &campaign);
 
+        Self::extend_persistent_ttl(&env, &DataKey::Campaign(campaign_id));
+
         env.storage()
             .instance()
             .set(&DataKey::NextCampaignId, &next_campaign_id);
@@ -218,11 +222,7 @@ impl CampaignContract {
             return Err(CampaignError::InvalidAmount);
         }
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         if campaign.status != CampaignStatus::Active {
             return Err(CampaignError::CampaignNotActive);
@@ -271,11 +271,7 @@ impl CampaignContract {
             return Err(CampaignError::InvalidRewardAmount);
         }
 
-        let campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let campaign = Self::load_campaign(&env, campaign_id)?;
 
         if campaign.status != CampaignStatus::Active {
             return Err(CampaignError::CampaignNotActive);
@@ -298,6 +294,8 @@ impl CampaignContract {
 
         env.storage().persistent().set(&key, &rule);
 
+        Self::extend_persistent_ttl(&env, &key);
+
         env.events().publish(
             (TOPIC_CAMPAIGN, TOPIC_RULE, TOPIC_ADDED),
             (campaign_id, milestone, reward_amount),
@@ -313,11 +311,7 @@ impl CampaignContract {
     pub fn pause_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
         Self::require_initialized(&env)?;
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -343,11 +337,7 @@ impl CampaignContract {
     pub fn resume_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
         Self::require_initialized(&env)?;
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -376,11 +366,7 @@ impl CampaignContract {
     pub fn close_campaign(env: Env, campaign_id: u64) -> Result<(), CampaignError> {
         Self::require_initialized(&env)?;
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -406,11 +392,7 @@ impl CampaignContract {
     pub fn available_unused_funds(env: Env, campaign_id: u64) -> Result<i128, CampaignError> {
         Self::require_initialized(&env)?;
 
-        let campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign
             .funded_amount
@@ -434,11 +416,7 @@ impl CampaignContract {
             return Err(CampaignError::InvalidAmount);
         }
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -489,11 +467,7 @@ impl CampaignContract {
     ) -> Result<(), CampaignError> {
         Self::require_initialized(&env)?;
 
-        let campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -504,6 +478,8 @@ impl CampaignContract {
         }
 
         env.storage().persistent().set(&key, &true);
+
+        Self::extend_persistent_ttl(&env, &key);
 
         env.events().publish(
             (TOPIC_CAMPAIGN, TOPIC_VERIFIER, TOPIC_ADDED),
@@ -521,11 +497,7 @@ impl CampaignContract {
     ) -> Result<(), CampaignError> {
         Self::require_initialized(&env)?;
 
-        let campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let campaign = Self::load_campaign(&env, campaign_id)?;
 
         campaign.admin.require_auth();
 
@@ -554,18 +526,16 @@ impl CampaignContract {
     ) -> Result<bool, CampaignError> {
         Self::require_initialized(&env)?;
 
-        if !env
-            .storage()
-            .persistent()
-            .has(&DataKey::Campaign(campaign_id))
-        {
-            return Err(CampaignError::CampaignNotFound);
+        Self::load_campaign(&env, campaign_id)?;
+
+        let key = DataKey::Verifier(campaign_id, verifier);
+        let exists = env.storage().persistent().has(&key);
+
+        if exists {
+            Self::extend_persistent_ttl(&env, &key);
         }
 
-        Ok(env
-            .storage()
-            .persistent()
-            .has(&DataKey::Verifier(campaign_id, verifier)))
+        Ok(exists)
     }
 
     /// Verifies a merchant activation milestone and allocates
@@ -580,11 +550,7 @@ impl CampaignContract {
     ) -> Result<i128, CampaignError> {
         Self::require_initialized(&env)?;
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         if campaign.status != CampaignStatus::Active {
             return Err(CampaignError::CampaignNotActive);
@@ -606,13 +572,19 @@ impl CampaignContract {
             return Err(CampaignError::UnauthorizedVerifier);
         }
 
+        Self::extend_persistent_ttl(&env, &verifier_key);
+
         verifier.require_auth();
+
+        let rule_key = DataKey::ActivationRule(campaign_id, milestone.clone());
 
         let rule: ActivationRule = env
             .storage()
             .persistent()
-            .get(&DataKey::ActivationRule(campaign_id, milestone.clone()))
+            .get(&rule_key)
             .ok_or(CampaignError::RuleNotFound)?;
+
+        Self::extend_persistent_ttl(&env, &rule_key);
 
         if !rule.enabled {
             return Err(CampaignError::RuleDisabled);
@@ -669,11 +641,17 @@ impl CampaignContract {
             .persistent()
             .set(&claimable_key, &new_claimable);
 
+        Self::extend_persistent_ttl(&env, &claimable_key);
+
         env.storage()
             .persistent()
             .set(&earned_key, &new_total_earned);
 
+        Self::extend_persistent_ttl(&env, &earned_key);
+
         env.storage().persistent().set(&activation_key, &true);
+
+        Self::extend_persistent_ttl(&env, &activation_key);
 
         env.events().publish(
             (TOPIC_CAMPAIGN, TOPIC_ACTIVATION, TOPIC_REWARD),
@@ -698,11 +676,7 @@ impl CampaignContract {
     pub fn claim_reward(env: Env, campaign_id: u64, agent: Address) -> Result<i128, CampaignError> {
         Self::require_initialized(&env)?;
 
-        let mut campaign: Campaign = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)?;
+        let mut campaign = Self::load_campaign(&env, campaign_id)?;
 
         agent.require_auth();
 
@@ -754,19 +728,17 @@ impl CampaignContract {
     ) -> Result<i128, CampaignError> {
         Self::require_initialized(&env)?;
 
-        if !env
-            .storage()
-            .persistent()
-            .has(&DataKey::Campaign(campaign_id))
-        {
-            return Err(CampaignError::CampaignNotFound);
-        }
+        Self::load_campaign(&env, campaign_id)?;
 
-        Ok(env
-            .storage()
-            .persistent()
-            .get(&DataKey::ClaimableReward(campaign_id, agent))
-            .unwrap_or(0))
+        let key = DataKey::ClaimableReward(campaign_id, agent);
+
+        match env.storage().persistent().get(&key) {
+            Some(amount) => {
+                Self::extend_persistent_ttl(&env, &key);
+                Ok(amount)
+            }
+            None => Ok(0),
+        }
     }
 
     /// Returns the total amount an agent has earned in a campaign,
@@ -778,19 +750,17 @@ impl CampaignContract {
     ) -> Result<i128, CampaignError> {
         Self::require_initialized(&env)?;
 
-        if !env
-            .storage()
-            .persistent()
-            .has(&DataKey::Campaign(campaign_id))
-        {
-            return Err(CampaignError::CampaignNotFound);
-        }
+        Self::load_campaign(&env, campaign_id)?;
 
-        Ok(env
-            .storage()
-            .persistent()
-            .get(&DataKey::AgentTotalEarned(campaign_id, agent))
-            .unwrap_or(0))
+        let key = DataKey::AgentTotalEarned(campaign_id, agent);
+
+        match env.storage().persistent().get(&key) {
+            Some(amount) => {
+                Self::extend_persistent_ttl(&env, &key);
+                Ok(amount)
+            }
+            None => Ok(0),
+        }
     }
 
     /// Returns an activation rule for a campaign milestone.
@@ -801,24 +771,34 @@ impl CampaignContract {
     ) -> Result<ActivationRule, CampaignError> {
         Self::require_initialized(&env)?;
 
-        env.storage()
+        let key = DataKey::ActivationRule(campaign_id, milestone);
+
+        let rule = env
+            .storage()
             .persistent()
-            .get(&DataKey::ActivationRule(campaign_id, milestone))
-            .ok_or(CampaignError::RuleNotFound)
+            .get(&key)
+            .ok_or(CampaignError::RuleNotFound)?;
+
+        Self::extend_persistent_ttl(&env, &key);
+
+        Ok(rule)
     }
 
     /// Returns a campaign by ID.
     pub fn get_campaign(env: Env, campaign_id: u64) -> Result<Campaign, CampaignError> {
         Self::require_initialized(&env)?;
 
-        env.storage()
-            .persistent()
-            .get(&DataKey::Campaign(campaign_id))
-            .ok_or(CampaignError::CampaignNotFound)
+        Self::load_campaign(&env, campaign_id)
     }
 
     pub fn is_initialized(env: Env) -> bool {
-        env.storage().instance().has(&DataKey::Initialized)
+        let initialized = env.storage().instance().has(&DataKey::Initialized);
+
+        if initialized {
+            Self::extend_instance_ttl(&env);
+        }
+
+        initialized
     }
 
     pub fn protocol_admin(env: Env) -> Result<Address, CampaignError> {
@@ -839,10 +819,42 @@ impl CampaignContract {
             .ok_or(CampaignError::NotInitialized)
     }
 
+    fn extend_persistent_ttl(env: &Env, key: &DataKey) {
+        let max_ttl = env.storage().max_ttl();
+        let threshold = max_ttl / 2;
+
+        env.storage()
+            .persistent()
+            .extend_ttl(key, threshold, max_ttl);
+    }
+
+    fn load_campaign(env: &Env, campaign_id: u64) -> Result<Campaign, CampaignError> {
+        let key = DataKey::Campaign(campaign_id);
+
+        let campaign = env
+            .storage()
+            .persistent()
+            .get(&key)
+            .ok_or(CampaignError::CampaignNotFound)?;
+
+        Self::extend_persistent_ttl(env, &key);
+
+        Ok(campaign)
+    }
+
+    fn extend_instance_ttl(env: &Env) {
+        let max_ttl = env.storage().max_ttl();
+        let threshold = max_ttl / 2;
+
+        env.storage().instance().extend_ttl(threshold, max_ttl);
+    }
+
     fn require_initialized(env: &Env) -> Result<(), CampaignError> {
         if !env.storage().instance().has(&DataKey::Initialized) {
             return Err(CampaignError::NotInitialized);
         }
+
+        Self::extend_instance_ttl(env);
 
         Ok(())
     }
