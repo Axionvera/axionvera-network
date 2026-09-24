@@ -12,4 +12,5 @@ crate-type = ["cdylib", "rlib"]
 soroban-sdk.workspace = true
 
 [dev-dependencies]
+serde_json.workspace = true
 soroban-sdk = { workspace = true, features = ["testutils"] }

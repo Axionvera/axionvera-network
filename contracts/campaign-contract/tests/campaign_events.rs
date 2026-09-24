@@ -556,3 +556,53 @@ fn verifier_added_emits_stable_event_shape() {
         ]
     );
 }
+
+#[test]
+fn verifier_removed_emits_stable_event_shape() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(CampaignContract, ());
+    let client = CampaignContractClient::new(&env, &contract_id);
+
+    let protocol_admin = Address::generate(&env);
+    let campaign_admin = Address::generate(&env);
+    let reward_token = Address::generate(&env);
+    let verifier = Address::generate(&env);
+
+    client.initialize(&protocol_admin);
+
+    let campaign_id = client.create_campaign(
+        &campaign_admin,
+        &reward_token,
+        &String::from_str(&env, "Verifier Removal Event Campaign"),
+        &100,
+        &1_000,
+        &0,
+    );
+
+    client.add_verifier(&campaign_id, &verifier);
+    client.remove_verifier(&campaign_id, &verifier);
+
+    let events = env.events().all();
+    let campaign_event = events
+        .get(events.len() - 1)
+        .expect("campaign verifier removed event must be emitted");
+
+    let (event_contract, topics, data) = campaign_event;
+
+    assert_eq!(event_contract, contract_id);
+
+    assert_eq!(
+        topics,
+        vec![
+            &env,
+            Symbol::new(&env, "campaign").into_val(&env),
+            Symbol::new(&env, "verifyr").into_val(&env),
+            Symbol::new(&env, "removed").into_val(&env),
+        ]
+    );
+
+    let payload = <(u64, Address)>::from_val(&env, &data);
+    assert_eq!(payload, (campaign_id, verifier));
+}
