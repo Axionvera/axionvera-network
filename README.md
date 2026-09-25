@@ -2,9 +2,9 @@
 
 # Axionvera Network
 
-**The smart contract and network foundation for transparent vaults, rewards, and community payouts.**
+**The on-chain protocol layer for programmable merchant incentives, rewards, vaults, and payouts on Stellar.**
 
-Axionvera Network powers the on-chain layer for Axionvera, including vault initialization, deposits, withdrawals, reward claims, accounting, lifecycle events, and SDK-facing contract methods.
+Axionvera Network contains the Soroban smart contracts, protocol interfaces, deployment tooling, and network configuration that power Axionvera.
 
 </div>
 
@@ -12,27 +12,84 @@ Axionvera Network powers the on-chain layer for Axionvera, including vault initi
 
 ## Overview
 
-Axionvera Network is the blockchain foundation for Axionvera.
+Axionvera Network is the blockchain foundation of the Axionvera protocol.
 
-It is designed to support communities, builders, and project teams that need transparent fund management, contributor rewards, and reliable payout infrastructure.
+The repository currently contains two primary Soroban contract systems:
 
-The current codebase focuses on a clean, tested Soroban foundation before adding more advanced features.
+- **Campaign Contract** — merchant-funded incentive campaigns, reward allocation, verifier authorization, claims, campaign lifecycle management, and treasury safeguards.
+- **Vault Contract** — deposits, withdrawals, reward accounting, claims, and vault lifecycle functionality.
+
+The Network repository defines the protocol behavior that higher-level Axionvera components, including the SDK, integrate with.
+
+The current focus is on keeping this layer:
+
+- deterministic
+- well tested
+- secure by default
+- event-driven
+- SDK-friendly
+- explicitly versioned
+- reproducibly deployable
 
 ---
 
-## Current Focus
+## Current Status
 
-The restarted-codebase campaign is focused on:
+The core Network foundation is implemented and tested.
 
-- clean Soroban vault contracts
-- reliable deposit and withdrawal accounting
-- reward calculation and claim flows
-- owner/admin initialization safety
+### Campaign Contract
+
+The Campaign Contract currently supports:
+
+- campaign creation
+- campaign funding
+- configurable activation rules
+- verifier registration and removal
+- verifier-authorized reward allocation
+- duplicate activation protection
+- per-agent reward caps
+- reward claiming
+- campaign pause and resume
+- campaign closure
+- unused-funds calculation and withdrawal
+- reserved reward accounting
+- persistent-state TTL management
+- stable contract events
+- versioned SDK-facing interface metadata
+
+The Campaign Contract has also been deployed and exercised through a complete live flow on Stellar testnet.
+
+### Vault Contract
+
+The Vault Contract currently supports:
+
+- initialization
+- owner/admin state
+- deposits
+- withdrawals
+- reward accounting
+- claimable reward management
+- reward claims
+- user balance queries
+- total deposit queries
+- authorization controls
 - stable lifecycle events
-- SDK-to-contract interface alignment
-- network-node configuration and health checks
-- local Husky quality checks
-- GitHub Actions pipeline checks
+- SDK-facing interface metadata
+
+### Network Support
+
+The repository also includes:
+
+- network configuration and validation
+- health helpers
+- deployment artifact schemas
+- contract ID registry
+- deployment and recovery runbooks
+- testnet configuration examples
+- release tooling
+- mock deployment flows
+- Husky pre-commit checks
+- GitHub Actions validation
 
 ---
 
@@ -41,17 +98,29 @@ The restarted-codebase campaign is focused on:
 ```text
 axionvera-network/
 ├── contracts/
+│   ├── campaign-contract/
+│   │   └── Merchant-funded campaign and reward protocol
+│   │
 │   ├── vault-contract/
-│   │   └── Soroban vault contract
+│   │   └── Soroban vault and reward contract
 │   │
 │   └── rewards/
-│       └── Reward calculation helpers
+│       └── Shared reward calculation helpers
 │
 ├── network-node/
 │   └── Network configuration and health helpers
 │
+├── schemas/
+│   └── Versioned protocol, deployment, and interface schemas
+│
+├── examples/
+│   └── Deployment artifacts, registries, and integration examples
+│
+├── scripts/
+│   └── Build, validation, deployment, and release tooling
+│
 ├── docs/
-│   └── Contract and SDK integration documentation
+│   └── Contract, deployment, and SDK integration documentation
 │
 ├── .github/
 │   └── GitHub Actions workflows
@@ -62,11 +131,60 @@ axionvera-network/
 
 ---
 
-## Packages
+## Contracts
+
+### `contracts/campaign-contract`
+
+The Campaign Contract provides the core programmable incentive layer.
+
+A campaign contains:
+
+- an administrator
+- a reward token
+- a start and end time
+- campaign lifecycle state
+- funded, allocated, claimed, and withdrawn accounting
+- a per-agent reward cap
+- configurable activation rules
+- authorized verifiers
+
+Campaign lifecycle states are:
+
+```text
+Active
+Paused
+Closed
+```
+
+A typical reward flow is:
+
+```text
+Merchant creates campaign
+        ↓
+Merchant funds campaign
+        ↓
+Merchant configures activation rules
+        ↓
+Merchant authorizes verifier
+        ↓
+Verifier validates off-chain activity
+        ↓
+Verifier allocates reward on-chain
+        ↓
+Agent receives claimable reward
+        ↓
+Agent claims reward
+```
+
+Allocated rewards are reserved for agents and cannot subsequently be withdrawn by the campaign administrator.
+
+After a campaign is closed, only genuinely unused funds may be withdrawn.
+
+---
 
 ### `contracts/vault-contract`
 
-The main Soroban vault contract.
+The Vault Contract provides general-purpose deposit, withdrawal, and reward accounting functionality.
 
 Current capabilities include:
 
@@ -74,17 +192,20 @@ Current capabilities include:
 - owner/admin state
 - deposit accounting
 - withdrawal accounting
-- reward claim flow
+- claimable reward accounting
+- reward claims
 - user balance queries
 - total deposit queries
 - lifecycle events
-- initialization protection
 - authorization checks
-- edge-case tests
+- initialization protection
+- failure-path and edge-case coverage
+
+---
 
 ### `contracts/rewards`
 
-Reward calculation helper crate.
+Shared reward calculation helpers.
 
 Current capabilities include:
 
@@ -92,70 +213,217 @@ Current capabilities include:
 - pending reward calculation
 - zero-value handling
 - overflow-safe behavior
-- large-value edge-case tests
+- large-value edge-case handling
+
+---
 
 ### `network-node`
 
-Network support crate.
+Network configuration and health support.
 
 Current capabilities include:
 
 - default network configuration
 - config validation
 - structured health status
-- environment checks
-- serialization tests
-
-#### Configuration
-
-The repository includes a complete, non-secret Stellar testnet configuration set for both the network node and contract dry-run tooling:
-
-- `.env.example` contains testnet network values and explicit contract placeholders.
-- `examples/testnet-config.json` is loadable through `axionvera_network_node::load_config`.
-- `docs/testnet-configuration.md` explains every value and the maintainer security boundary.
-
-The network-node fields are:
-
-- `AXIONVERA_NETWORK_NAME` - Target network (`local`, `testnet`, `mainnet`, `futurenet`)
-- `AXIONVERA_RPC_URL` - Soroban RPC endpoint URL
-- `AXIONVERA_ENVIRONMENT` - Deployment environment (`development`, `staging`, `production`)
-
-Validate the committed testnet examples without a Stellar identity or network request:
-
-```bash
-./scripts/validate-testnet-config.sh
-```
-
-To prepare a private maintainer configuration, copy the template and replace only the documented placeholders in the ignored file:
-
-```bash
-cp .env.example .env
-```
-
-See the [Testnet Configuration Examples](./docs/testnet-configuration.md) guide for field descriptions, individual validation commands, and safe handling rules.
+- environment validation
+- serialization support
 
 ---
 
-## Quality Standard
+## Stellar Testnet Deployments
 
-Every new function or implementation must include unit tests.
+The repository maintains non-secret deployment information in:
 
-Tests should cover:
+```text
+examples/contract-id-registry.json
+```
 
-- happy path
-- invalid input
-- edge cases
-- expected failure behavior
-- authorization behavior where applicable
-- state consistency where applicable
+### Campaign Contract
 
-This rule applies to contract logic, reward helpers, network-node helpers, and SDK-facing behavior.
+| Field | Value |
+|---|---|
+| Network | Stellar Testnet |
+| Contract ID | `CAAXCSTGNQ6S73XRXYSKAEEWZNVS7XWA4EF67DRWDPS2XFSXXA3AC2C6` |
+| WASM SHA-256 | `cef31e82808155f38afd561bf4aa78290e3083a4251edbf3c709a91530b0ee3e` |
+| Deployment timestamp | `2026-09-25T10:03:42Z` |
+| Source commit | `2c51d8837fc7c303630346d0a9e895f39c4350` |
+
+The complete deployment record is available at:
+
+```text
+examples/campaign-deployment-testnet.json
+```
+
+The recorded WASM hash is reproducible from the deployment source commit.
+
+### Live Campaign Smoke Test
+
+The deployed Campaign Contract has completed a full testnet lifecycle using Stellar native assets:
+
+```text
+Create campaign
+      ↓
+Fund with 10 XLM
+      ↓
+Add 1 XLM activation rule
+      ↓
+Authorize separate verifier
+      ↓
+Allocate 1 XLM reward
+      ↓
+Agent claims 1 XLM
+      ↓
+Pause campaign
+      ↓
+Resume campaign
+      ↓
+Close campaign
+      ↓
+Withdraw remaining 9 XLM
+```
+
+The final campaign contract balance and available unused balance were both verified as zero.
+
+Transaction hashes and smoke-test evidence are recorded in:
+
+```text
+examples/campaign-deployment-testnet.json
+```
+
+---
+
+## Contract Interfaces
+
+Axionvera maintains versioned, machine-readable contract interface definitions so downstream SDKs and applications do not need to infer contract behavior directly from Rust source code.
+
+### Campaign Interface
+
+```text
+schemas/campaign-interface-v0.1.json
+schemas/campaign-interface.schema.json
+docs/campaign-interface-schema.md
+```
+
+The Campaign interface records:
+
+- public method names
+- argument ordering
+- return types
+- initialization requirements
+- authorization requirements
+- logical mutability
+- contract types
+- contract errors
+- emitted events
+- event topics
+
+### Vault Interface
+
+```text
+schemas/vault-interface-v0.1.json
+schemas/vault-interface.schema.json
+docs/vault-interface-schema.md
+```
+
+These interface definitions act as the compatibility boundary between the Network and SDK repositories.
+
+---
+
+## SDK Alignment
+
+Axionvera Network is designed to be consumed through the Axionvera SDK.
+
+The SDK can use the versioned interface definitions to provide typed access to protocol functionality without requiring application developers to construct raw Soroban invocations manually.
+
+Campaign SDK integration is expected to cover:
+
+- campaign reads
+- campaign creation
+- campaign funding
+- activation-rule management
+- verifier management
+- reward allocation
+- reward claims
+- campaign lifecycle operations
+- treasury reads and withdrawals
+- event parsing
+- protocol error mapping
+
+Vault SDK integration covers:
+
+- vault information
+- user balances
+- pending rewards
+- deposits
+- withdrawals
+- reward claims
+- lifecycle events
+
+Public contract interfaces should remain stable once versioned. Breaking changes should require an explicit interface-version update.
+
+See:
+
+```text
+docs/sdk-contract-interface.md
+docs/campaign-interface-schema.md
+docs/vault-interface-schema.md
+```
+
+---
+
+## Building Soroban Contracts
+
+Axionvera contracts target:
+
+```text
+wasm32v1-none
+```
+
+The Stellar CLI should be used for deployment-ready Soroban builds.
+
+### Campaign Contract
+
+```bash
+stellar contract build \
+  --package axionvera-campaign-contract \
+  --locked
+```
+
+Output:
+
+```text
+target/wasm32v1-none/release/axionvera_campaign_contract.wasm
+```
+
+### Vault Contract
+
+A repeatable build helper is provided:
+
+```bash
+./scripts/build-vault-wasm.sh
+```
+
+The script uses `stellar contract build` and generates build metadata containing:
+
+- package name
+- target
+- artifact path
+- SHA-256 hash
+- build timestamp
+- source commit
+
+Output:
+
+```text
+target/wasm32v1-none/release/axionvera_vault_contract.wasm
+```
 
 ---
 
 ## Local Development
 
-Run the full local quality check:
+Run the complete local Rust validation suite before committing:
 
 ```bash
 cargo fmt --all -- --check
@@ -164,23 +432,44 @@ cargo test --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-Or run the checks individually:
+For deployment-target validation:
 
 ```bash
-cargo fmt --all -- --check
+cargo clippy \
+  -p axionvera-campaign-contract \
+  --target wasm32v1-none \
+  --release \
+  -- -D warnings
 ```
 
 ```bash
-cargo check --workspace --all-targets
+cargo clippy \
+  -p axionvera-vault-contract \
+  --target wasm32v1-none \
+  --release \
+  -- -D warnings
 ```
 
-```bash
-cargo test --workspace --all-targets
-```
+---
 
-```bash
-cargo clippy --workspace --all-targets -- -D warnings
-```
+## Quality Standard
+
+New or changed implementation behavior should include appropriate test coverage.
+
+Tests should cover, where applicable:
+
+- happy paths
+- invalid input
+- authorization
+- state transitions
+- accounting invariants
+- failure behavior
+- event behavior
+- boundary conditions
+- arithmetic safety
+- persistent-state lifecycle
+
+Contract changes should not be merged unless the full workspace checks pass.
 
 ---
 
@@ -188,251 +477,165 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 This repository uses Husky pre-commit checks.
 
-Before a commit is accepted locally, the project should pass:
+The pre-commit workflow validates:
 
-```bash
-cargo fmt --all -- --check
-cargo check --workspace --all-targets
-cargo test --workspace --all-targets
-cargo clippy --workspace --all-targets -- -D warnings
-```
+1. formatting
+2. Soroban contract compilation
+3. Soroban target-specific Clippy
+4. workspace compilation
+5. workspace tests
+6. workspace Clippy
 
-This helps keep commits clean before they reach GitHub.
+This provides an additional validation layer before changes reach GitHub.
 
 ---
 
 ## CI Pipeline
 
-GitHub Actions runs on every pull request and every push to `main`.
+GitHub Actions runs validation on pull requests and pushes to `main`.
 
-The pipeline purpose is to make sure that no formatting issues, compilation errors, broken tests, or Clippy warnings are merged into the main branch.
+The core checks are:
 
-The pipeline runs four checks in order:
+| Check | Command |
+|---|---|
+| Formatting | `cargo fmt --all -- --check` |
+| Compilation | `cargo check --workspace --all-targets` |
+| Tests | `cargo test --workspace --all-targets` |
+| Clippy | `cargo clippy --workspace --all-targets -- -D warnings` |
 
-| Check | Command | What fails it |
-|---|---|---|
-| Formatting | `cargo fmt --all -- --check` | Any unformatted Rust file |
-| Workspace | `cargo check --workspace --all-targets` | Compilation errors |
-| Tests | `cargo test --workspace --all-targets` | Failing assertions |
-| Clippy | `cargo clippy --workspace --all-targets -- -D warnings` | Any lint warning |
+All required checks must pass before merge.
 
-All four checks must pass before a PR can be merged.
+See:
 
-Common reasons a PR fails CI:
-
-- Code was not formatted before pushing. Run `cargo fmt --all` and commit the result.
-- A Clippy warning was introduced. Run `cargo clippy --workspace --all-targets -- -D warnings` and address every warning.
-- A test was broken by a change. Run `cargo test --workspace --all-targets` locally and fix all failures.
-- A compilation error was introduced. Run `cargo check --workspace --all-targets` and fix all errors.
-
-For full details on each check, how to reproduce failures locally, and how to fix them, see [docs/ci-and-local-checks.md](./docs/ci-and-local-checks.md).
+```text
+docs/ci-and-local-checks.md
+```
 
 ---
 
-## Building the Vault Contract
+## Testnet Configuration
 
-The vault contract can be built as a WASM binary for deployment using the provided build script.
+The repository contains non-secret Stellar testnet configuration examples.
 
-### Build Script
+Relevant files include:
 
-A repeatable build script is provided at `scripts/build-vault-wasm.sh`.
+```text
+.env.example
+examples/testnet-config.json
+docs/testnet-configuration.md
+```
 
-To build the vault contract WASM:
+Network-node configuration includes:
+
+```text
+AXIONVERA_NETWORK_NAME
+AXIONVERA_RPC_URL
+AXIONVERA_ENVIRONMENT
+```
+
+Validate the committed configuration examples with:
 
 ```bash
-./scripts/build-vault-wasm.sh
+./scripts/validate-testnet-config.sh
 ```
 
-The script will:
-- Check that the wasm32v1-none target is installed (add it if missing)
-- Build the vault contract for the wasm32 target in release mode
-- Output the WASM file location on success
-- Generate a build metadata file containing the build timestamp, target, source commit, and SHA-256 checksum
-
-The built WASM file will be located at:
-```
-target/wasm32v1-none/release/axionvera_vault_contract.wasm
-```
-
-The generated metadata file will be located at:
-```
-target/wasm32v1-none/release/axionvera_vault_contract.metadata.json
-```
-
-If the contract directory is missing or the build fails, the script will exit with a clear error message.
+Private keys and deployment secrets must never be committed.
 
 ---
 
-## Testnet Deployment
+## Deployment Tooling
 
-Before deploying the vault contract to Stellar testnet, review the [Maintainer Handoff Guide](./docs/maintainer-handoff-guide.md), complete the [Pre-Deployment Evidence Checklist](./docs/pre-deployment-evidence-checklist.md), and follow the [Vault Contract Testnet Deployment Checklist](./docs/testnet-deployment-checklist.md).
+The repository includes maintainer-oriented deployment and verification tooling.
 
-The handoff guide establishes the security boundary between contributor preparation and maintainer execution, the pre-deployment evidence checklist ensures all tests, documentation, schemas, scripts, examples, and security checks are complete, and the deployment checklist covers local quality checks, WASM builds, testnet network selection, contract ID recording, initialization, and post-deployment validation.
+Key resources include:
 
-### Pre-Deployment Evidence Checklist
+```text
+docs/testnet-deployment-checklist.md
+docs/pre-deployment-evidence-checklist.md
+docs/maintainer-handoff-guide.md
+docs/deployment-failure-and-recovery-runbook.md
+docs/post-deployment-verification.md
+docs/mock-post-deployment-smoke-test.md
+```
 
-Before approving testnet deployment, maintainers must complete the [Pre-Deployment Evidence Checklist](./docs/pre-deployment-evidence-checklist.md). This structured checklist ensures that:
+Supporting schemas, examples, and validators are stored under:
 
-- All tests (unit, integration, smoke) have passed
-- Required documentation is complete and accurate
-- JSON schemas are validated and version-consistent
-- Build, validation, and verification scripts are functional
-- Example configurations and data files are validated
-- Security review has been completed with documented findings
-- Release packet has been generated and validated
-- Known limitations are documented and risk-assessed
-
-The checklist follows the schema defined in `schemas/pre-deployment-evidence-checklist.schema.json`. An example completed checklist with placeholder values is available at `examples/pre-deployment-evidence-checklist.json`.
-
-**Important:** This checklist is for maintainer decision-making before deployment. Completing this checklist does not make the contract production-ready or production-audited. The current codebase has not completed a formal security audit.
-
-### Maintainer Handoff Guide
-
-For clear separation of responsibilities, non-secret preparation, maintainer deployment steps, and SDK handoff package generation, see [Maintainer Handoff Guide (Testnet Deployment)](./docs/maintainer-handoff-guide.md).
-
-### Deployment Failure and Recovery Runbook
-
-For step-by-step maintainer triage, containment, and recovery across failed builds, RPC submission timeouts, initialization errors, mismatched contract IDs, and smoke test failures, see [Deployment Failure and Recovery Runbook](./docs/deployment-failure-and-recovery-runbook.md) and review mock failure examples at [`examples/deployment-failures/`](./examples/deployment-failures/).
-
-### SDK Handoff Artifact Package
-
-Network-to-SDK handoffs after maintainer deployment are governed by [`schemas/sdk-handoff.schema.json`](./schemas/sdk-handoff.schema.json) with a non-secret placeholder example at [`examples/sdk-handoff.json`](./examples/sdk-handoff.json). Maintainers populate real contract IDs, initialization addresses, and network parameters post-deployment, then validate compliance and secret safety using:
-
-```bash
-python3 scripts/validate-sdk-handoff.py examples/sdk-handoff.json
+```text
+schemas/
+examples/
+scripts/
 ```
 
 ### Contract ID Registry
 
-Multi-environment contract ID records are governed by [`schemas/contract-id-registry.schema.json`](./schemas/contract-id-registry.schema.json) with a non-secret placeholder example at [`examples/contract-id-registry.json`](./examples/contract-id-registry.json). Maintainers record deployed contract IDs, WASM hashes, timestamps, and deployer addresses after deployment, then validate using:
+Deployment identities are maintained in:
 
-```bash
-python3 scripts/validate-contract-id-registry.py examples/contract-id-registry.json
+```text
+examples/contract-id-registry.json
 ```
 
-### Dry-Run Deployment
-
-A dry-run template is provided at `scripts/deploy-vault-template.sh`. Contributors can use this script to validate deployment configuration and view the intended command structure. 
-
-To run the dry-run:
+Validate with:
 
 ```bash
-./scripts/deploy-vault-template.sh
+python3 scripts/validate-contract-id-registry.py \
+  examples/contract-id-registry.json
 ```
 
-**Note:** This script performs a dry-run by default. It will not deploy the contract. Real deployments are only performed by the maintainer using explicitly loaded keys.
+### Deployment Artifacts
 
-### Post-Deployment Verification Template
+Deployment evidence records:
 
-A contributor-safe verification script template is provided at `scripts/verify-vault-deployment.sh` and `scripts/verify-vault-deployment.py`. Maintainers can verify contract ID presence, network configuration, initialization state, and basic read calls post-deployment, while contributors can run safe dry-run / mocked checks without secrets. See [Post-Deployment Verification Guide](./docs/post-deployment-verification.md).
+- contract ID
+- network
+- deployer address
+- WASM hash
+- deployment timestamp
+- initialization status
+- source commit
+- relevant transaction hashes
 
-To run verification in dry-run mode:
+Campaign testnet evidence is currently stored in:
 
-```bash
-python3 scripts/verify-vault-deployment.py examples/post-deployment-verification.json
+```text
+examples/campaign-deployment-testnet.json
 ```
-
-### Mocked Post-Deployment Smoke Flow
-
-A mocked post-deployment smoke test flow is provided to verify contract ID loading, initialization input loading, read verification, and lifecycle expectation checks without calling live testnet RPCs or exposing secrets. See [Mocked Post-Deployment Smoke Test Guide](./docs/mock-post-deployment-smoke-test.md).
-
-To run the mocked smoke test flow:
-
-```bash
-./scripts/run-mocked-smoke-test.sh
-```
-
-### MVP Demo Scenario Fixtures
-
-A complete set of static demo scenario fixtures is provided at `examples/mvp-demo-scenario/` covering vault setup, deposit, reward funding, claim, and withdrawal. See [MVP Demo Scenario Guide](./docs/mvp-demo-scenario.md).
-
-To validate the demo scenario fixtures:
-
-```bash
-python3 scripts/validate-mvp-demo-scenario.py
-```
-
-### Release Packet Generator
-
-The release packet generator collects non-secret Network readiness artifacts into a structured folder for maintainer review before testnet deployment. This ensures maintainers have all necessary documentation, schemas, examples, and scripts in one place for comprehensive review. See [Release Packet Generator Guide](./docs/release-packet-generator.md).
-
-To generate a release packet:
-
-```bash
-python3 scripts/generate-release-packet.py
-```
-
-To generate with a custom output directory:
-
-```bash
-python3 scripts/generate-release-packet.py --output-dir my-release-packet
-```
-
-To validate an existing release packet:
-
-```bash
-python3 scripts/validate-release-packet.py release-packet/manifest.json
-```
-
-To test the release packet generator:
-
-```bash
-python3 scripts/test-release-packet.py
-```
-
-The generator:
-- Collects documentation files (deployment guides, checklists, security reviews)
-- Copies JSON schemas for validation
-- Includes example configurations and data files
-- Bundles build, deployment, and validation scripts
-- Generates a manifest following `schemas/release-packet.schema.json`
-- Excludes secrets and private keys using pattern-based filtering
-- Provides SHA-256 checksums for all copied files
 
 ---
 
-## Contract Design Goals
+## Contract Design Principles
 
-Axionvera Network aims to keep the vault layer:
+Axionvera Network aims to keep protocol behavior:
 
-- simple
+- explicit
+- deterministic
 - testable
 - predictable
-- SDK-friendly
+- authorization-aware
+- accounting-safe
 - event-driven
-- safe by default
-- easy to document
-- easy to extend
+- SDK-friendly
+- easy to audit
+- easy to extend deliberately
 
-The current implementation intentionally prioritizes a strong foundation over unnecessary complexity.
+Protocol complexity should be introduced only when it provides clear product value or strengthens protocol safety.
 
 ---
 
-## SDK Alignment
+## Security
 
-Axionvera Network is designed to work with the Axionvera SDK.
+Axionvera Network is under active development.
 
-The SDK should be able to map cleanly to the vault contract methods for:
+The current contracts have extensive automated test coverage and live testnet validation, but the codebase has **not yet completed a formal independent security audit**.
 
-- reading vault information
-- reading user balances
-- reading pending rewards
-- submitting deposits
-- submitting withdrawals
-- claiming rewards
-- tracking emitted events
+Do not treat the current contracts as production-audited.
 
-Contract method names, argument order, return values, and event behavior should remain stable once documented.
+Private keys, secret seeds, and signing credentials must never be committed to this repository.
 
-For machine-readable compatibility metadata, SDK tests can consume or mirror
-[`schemas/vault-interface-v0.1.json`](./schemas/vault-interface-v0.1.json).
-It is validated by [`schemas/vault-interface.schema.json`](./schemas/vault-interface.schema.json)
-and records every current public method, ordered arguments, returns,
-authorization requirements, errors, event topics, and known non-features.
-See the [Vault Interface Schema Guide](./docs/vault-interface-schema.md) for
-consumption and versioning rules, and the
-[SDK-to-Contract Interface Documentation](./docs/sdk-contract-interface.md) for
-full integration details.
+For security guidance, see:
+
+```text
+SECURITY.md
+```
 
 ---
 
@@ -442,24 +645,21 @@ Contributions are welcome through assigned issues.
 
 Before opening a pull request:
 
-- make sure the issue is assigned to you
+- ensure the issue is assigned to you
 - keep the PR focused
-- add or update unit tests
-- run all local checks
+- add or update tests where behavior changes
+- run all required local checks
+- document public behavior changes
 - include a clear PR summary
-- reference the issue number
+- reference the relevant issue
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for full contribution guidance.
+See:
 
----
+```text
+CONTRIBUTING.md
+```
 
-## Security
-
-Axionvera Network is under active development and has not yet completed a formal security audit.
-
-Do not treat the current codebase as production-audited.
-
-For security guidance, see [SECURITY.md](./SECURITY.md).
+for full contribution guidance.
 
 ---
 
@@ -467,12 +667,16 @@ For security guidance, see [SECURITY.md](./SECURITY.md).
 
 This project is licensed under the MIT License.
 
-See [LICENSE](./LICENSE).
+See:
+
+```text
+LICENSE
+```
 
 ---
 
 <div align="center">
 
-**Axionvera Network: clean contracts, tested logic, transparent rewards.**
+**Axionvera Network — programmable incentives, transparent rewards, and verifiable on-chain accounting.**
 
 </div>
