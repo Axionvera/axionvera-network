@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-CANONICAL_WASM_PATH = "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+CANONICAL_WASM_PATH = "target/wasm32v1-none/release/axionvera_vault_contract.wasm"
 COMMIT_RE = re.compile(r"^(UNCOMMITTED|[0-9a-fA-F]{40})$")
 SHA_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 TS_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
@@ -27,7 +27,7 @@ def validate(data: object) -> list[str]:
         
     if data["schema_version"] != "1": errors.append("schema_version must be '1'")
     if data["package"] != "axionvera-vault-contract": errors.append("package must be 'axionvera-vault-contract'")
-    if data["target"] != "wasm32-unknown-unknown": errors.append("target must be 'wasm32-unknown-unknown'")
+    if data["target"] != "wasm32v1-none": errors.append("target must be 'wasm32v1-none'")
     if data["artifact_path"] != CANONICAL_WASM_PATH: errors.append("artifact_path is not canonical")
     
     if not isinstance(data["sha256"], str) or not SHA_RE.fullmatch(data["sha256"]): 

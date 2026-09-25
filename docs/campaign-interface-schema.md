@@ -297,6 +297,10 @@ withdrawal because those funds were reserved when allocation occurred.
 
 `withdraw_unused_funds` is permitted only after the campaign has been `Closed`.
 
+On success, `withdraw_unused_funds` returns the unused campaign balance remaining
+after the requested withdrawal, not the amount withdrawn. A full withdrawal
+therefore returns `0`.
+
 A withdrawal cannot exceed the calculated unused amount.
 
 The implementation uses checked arithmetic and returns accounting errors rather
@@ -430,8 +434,8 @@ cargo fmt --all -- --check
 cargo check --workspace --all-targets
 cargo test --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
-cargo build -p axionvera-campaign-contract --target wasm32-unknown-unknown --release
-cargo clippy -p axionvera-campaign-contract --target wasm32-unknown-unknown --release -- -D warnings
+stellar contract build --package axionvera-campaign-contract --locked
+cargo clippy -p axionvera-campaign-contract --target wasm32v1-none --release -- -D warnings
 ```
 
 The Campaign-specific interface and event checks can also be run independently:

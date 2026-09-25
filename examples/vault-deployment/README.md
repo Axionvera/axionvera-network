@@ -16,7 +16,7 @@ build output
 The canonical WASM path is:
 
 ```text
-target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+target/wasm32v1-none/release/axionvera_vault_contract.wasm
 ```
 
 The initialization fields mirror the contract exactly:

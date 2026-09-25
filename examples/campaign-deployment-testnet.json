@@ -1,0 +1,39 @@
+{
+  "schema_version": "1",
+  "contract_id": "CAAXCSTGNQ6S73XRXYSKAEEWZNVS7XWA4EF67DRWDPS2XFSXXA3AC2C6",
+  "network": "testnet",
+  "deployer_public_key": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
+  "wasm_hash": "cef31e82808155f38afd561bf4aa78290e3083a4251edbf3c709a91530b0ee3e",
+  "deployment_timestamp": "2026-09-25T10:03:42Z",
+  "initialization_status": "initialized",
+  "metadata": {
+    "contract_name": "axionvera_campaign_contract",
+    "source_commit": "2c51d8837fc7c303630346d0a9e895f39c4350",
+    "contract_alias": "axionvera-campaign-testnet",
+    "protocol_admin": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
+    "wasm_upload_transaction": "f0c22ac6b0cb607afc6515e09a14c0def8c7a9695b2a859d0192026816d041e8",
+    "deployment_transaction": "3a2fae315a4627a146a1526ac70dab46da94493644de88858722b1a1e60eb965",
+    "initialization_transaction": "8aeb25084d9358aad5dd37b44d2a3415498875fbff53e30c227ae8024e508fc2",
+    "smoke_test_campaign_id": 1,
+    "smoke_test_transactions": {
+      "create_campaign": "f110da599dc353c15f9eb9a20812d1956ae5ea520ec0b2b66a97eadb64d2ffcb",
+      "fund_campaign": "20e5e37d55bc45a473c43424550d6504cccb926fe4a0a00c32d451067e1a6d42",
+      "add_activation_rule": "d48b7fbbed8849d8d51770f950bf4dc1ddc6b1455d49e107e45f99d4538dfc70",
+      "add_verifier": "99be1e486edddc31b3d994dea7ec094394be28f678ce6f79240550d98e167f63",
+      "allocate_reward": "2f13417ff8b328c734043c88350a934204e3095dc9806dd921c6e2bd6c4c4b26",
+      "claim_reward": "0ea516e607b95ee77c652e93977f71597b4fd28d2235c9b31a57e002ec795ba7",
+      "pause_campaign": "ee9c0590f4a753a35bb296acae32c3f2efa95f10cd7d5638c3c11a0542965b35",
+      "resume_campaign": "25cffdd8c0300de8f3bcbb0ab9590aed7a5f1376c4660ac85e2cd44eae9a19c8",
+      "close_campaign": "24d81bfa097837193f618f0fc54950b46c08fd2b25a9e073b91f2ed9dc88ece4",
+      "withdraw_unused_funds": "af8f6a4f6e6f2d85e4066b57518ee8c14866bf1b4ad816727402897aaf875e5c"
+    },
+    "smoke_test_summary": {
+      "funded_xlm": "10",
+      "allocated_xlm": "1",
+      "claimed_xlm": "1",
+      "withdrawn_unused_xlm": "9",
+      "final_contract_balance_xlm": "0"
+    },
+    "notes": "Live Stellar testnet deployment and end-to-end Campaign lifecycle verified."
+  }
+}

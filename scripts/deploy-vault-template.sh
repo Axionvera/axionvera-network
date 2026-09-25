@@ -40,7 +40,7 @@ if [ $MISSING_VARS -eq 1 ]; then
     exit 1
 fi
 
-WASM_PATH="target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+WASM_PATH="target/wasm32v1-none/release/axionvera_vault_contract.wasm"
 
 echo "Configuration Validated:"
 echo "  Network:       $AXIONVERA_NETWORK_NAME"

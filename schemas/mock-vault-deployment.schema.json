@@ -20,7 +20,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "const": "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+          "const": "target/wasm32v1-none/release/axionvera_vault_contract.wasm"
         },
         "sha256": {
           "type": "string",

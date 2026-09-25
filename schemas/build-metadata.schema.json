@@ -15,10 +15,10 @@
   "properties": {
     "schema_version": { "type": "string", "const": "1" },
     "package": { "type": "string", "const": "axionvera-vault-contract" },
-    "target": { "type": "string", "const": "wasm32-unknown-unknown" },
+    "target": { "type": "string", "const": "wasm32v1-none" },
     "artifact_path": {
       "type": "string",
-      "const": "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+      "const": "target/wasm32v1-none/release/axionvera_vault_contract.wasm"
     },
     "sha256": {
       "type": "string",

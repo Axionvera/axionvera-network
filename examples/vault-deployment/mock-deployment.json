@@ -5,7 +5,7 @@
   "source_commit": "UNCOMMITTED",
   "network_mode": "testnet",
   "wasm": {
-    "path": "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm",
+    "path": "target/wasm32v1-none/release/axionvera_vault_contract.wasm",
     "sha256": "SHA256_PLACEHOLDER"
   },
   "contract_id": "CONTRACT_ID_PLACEHOLDER",

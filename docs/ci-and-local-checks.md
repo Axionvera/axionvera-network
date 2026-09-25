@@ -219,8 +219,8 @@ This repository uses Husky to run a pre-commit hook automatically when you commi
 The pre-commit hook runs:
 
 1. Formatting check
-2. Soroban contract check targeting `wasm32-unknown-unknown`
-3. Clippy on the Soroban contract targeting `wasm32-unknown-unknown`
+2. Soroban contract check targeting `wasm32v1-none`
+3. Clippy on the Soroban contract targeting `wasm32v1-none`
 4. Workspace check on all native crates
 5. Tests on all native crates
 6. Clippy on all native crates

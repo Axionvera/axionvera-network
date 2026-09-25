@@ -4,20 +4,22 @@
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/deploy-vault-template.sh"
 
 def run(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [str(SCRIPT)],
-        cwd=ROOT,
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False
-    )
+    with tempfile.TemporaryDirectory() as directory:
+        return subprocess.run(
+            [str(SCRIPT)],
+            cwd=directory,
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
 
 def main() -> int:
     base_env = os.environ.copy()

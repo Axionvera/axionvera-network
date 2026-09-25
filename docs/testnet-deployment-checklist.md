@@ -14,11 +14,11 @@ testnet. Run commands from the repository root unless a step says otherwise.
 - [ ] Read the [Testnet Configuration Examples](./testnet-configuration.md),
       then validate the committed examples with
       `./scripts/validate-testnet-config.sh`.
-- [ ] Install the Rust toolchain, the `wasm32-unknown-unknown` Rust target, and
+- [ ] Install the Rust toolchain, the `wasm32v1-none` Rust target, and
       the Stellar CLI:
 
   ```bash
-  rustup target add wasm32-unknown-unknown
+  rustup target add wasm32v1-none
   ```
 - [ ] Confirm the `testnet` network is available:
 
@@ -61,19 +61,19 @@ testnet. Run commands from the repository root unless a step says otherwise.
 - [ ] Build only the vault contract with the locked dependency versions:
 
   ```bash
-  cargo build --locked --release --package axionvera-vault-contract --target wasm32-unknown-unknown --target-dir target
+  ./scripts/build-vault-wasm.sh
   ```
 
 - [ ] Confirm the deployable artifact exists at:
 
   ```text
-  target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+  target/wasm32v1-none/release/axionvera_vault_contract.wasm
   ```
 
 - [ ] The `build-vault-wasm.sh` script automatically generates a build metadata file at:
 
   ```text
-  target/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json
+  target/wasm32v1-none/release/axionvera_vault_contract.metadata.json
   ```
 
   This file includes the SHA-256 checksum, source commit, and build timestamp. Keep this metadata file with the deployment record so the deployed build can be traced back to an artifact and source commit. If building manually, calculate the SHA-256 manually.
@@ -94,7 +94,7 @@ testnet. Run commands from the repository root unless a step says otherwise.
 
   ```bash
   stellar contract deploy \
-    --wasm target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm \
+    --wasm target/wasm32v1-none/release/axionvera_vault_contract.wasm \
     --source deployer \
     --network testnet \
     --alias axionvera-vault-testnet

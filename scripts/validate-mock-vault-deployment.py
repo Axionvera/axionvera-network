@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-CANONICAL_WASM_PATH = "target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
+CANONICAL_WASM_PATH = "target/wasm32v1-none/release/axionvera_vault_contract.wasm"
 ADDRESS_RE = re.compile(r"^(ADDRESS_PLACEHOLDER|G[A-Z2-7]{55}|C[A-Z2-7]{55})$")
 CONTRACT_RE = re.compile(r"^(CONTRACT_ID_PLACEHOLDER|C[A-Z2-7]{55})$")
 COMMIT_RE = re.compile(r"^(UNCOMMITTED|[0-9a-fA-F]{40})$")

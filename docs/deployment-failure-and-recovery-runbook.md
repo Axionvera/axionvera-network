@@ -26,19 +26,19 @@ To protect protocol security, custody of cryptographic credentials, and network 
 ### Scenario A: Build and Compilation Failures
 
 #### Symptoms
-- `cargo build --target wasm32-unknown-unknown --release` fails with missing target, missing core library, or clippy compiler errors.
+- `stellar contract build` fails with missing target, missing core library, or clippy compiler errors.
 - Resulting WASM artifact exceeds Soroban contract size limits or fails bytecode verification.
 - Mock Log: [`examples/deployment-failures/failed-build.log`](../examples/deployment-failures/failed-build.log)
 
 #### Root Causes
-1. The `wasm32-unknown-unknown` target is missing from the local Rust toolchain.
+1. The `wasm32v1-none` target is missing from the local Rust toolchain.
 2. Outdated Rust toolchain or incompatible Soroban SDK dependency pin.
 3. Unused imports, formatting violations, or warnings treated as errors under `-D warnings`.
 
 #### Contributor Actions (Safe)
 1. Verify the compilation target is installed:
    ```bash
-   rustup target add wasm32-unknown-unknown
+   rustup target add wasm32v1-none
    ```
 2. Run the repository's required local quality checks:
    ```bash
@@ -53,7 +53,7 @@ To protect protocol security, custody of cryptographic credentials, and network 
    ```
 
 #### Maintainer Recovery Actions
-- Confirm that the build produces a deterministic WASM binary under `target/wasm32-unknown-unknown/release/vault_contract.wasm`.
+- Confirm that the build produces a deterministic WASM binary under `target/wasm32v1-none/release/axionvera_vault_contract.wasm`.
 - Validate that the SHA-256 hash matches the committed build metadata (`examples/build-metadata.json`).
 
 ---
@@ -93,7 +93,7 @@ To protect protocol security, custody of cryptographic credentials, and network 
 3. **Retry with Increased Gas / Fee Allowance:**
    ```bash
    stellar contract deploy \
-     --wasm target/wasm32-unknown-unknown/release/vault_contract.wasm \
+     --wasm target/wasm32v1-none/release/axionvera_vault_contract.wasm \
      --source deployer \
      --network testnet \
      --fee 100000
@@ -205,7 +205,7 @@ To protect protocol security, custody of cryptographic credentials, and network 
 Deployment Failure Occurred
   │
   ├─► Compilation / Build Error?
-  │     └─► Verify toolchain -> rustup target add wasm32-unknown-unknown -> cargo clippy -> re-build
+  │     └─► Verify toolchain -> rustup target add wasm32v1-none -> cargo clippy -> re-build
   │
   ├─► RPC Timeout / Broadcast Error?
   │     └─► Check https://dashboard.stellar.org -> Verify Friendbot balance -> Increase --fee -> Retry

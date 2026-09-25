@@ -246,7 +246,7 @@ def collect_scripts(project_root: Path) -> List[Dict[str, Any]]:
 
 def collect_build_metadata(project_root: Path) -> Dict[str, Any]:
     """Collect build metadata if available."""
-    target_dir = project_root / "target" / "wasm32-unknown-unknown" / "release"
+    target_dir = project_root / "target" / "wasm32v1-none" / "release"
     metadata = {}
 
     if not target_dir.exists():

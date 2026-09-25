@@ -1,4 +1,4 @@
-$ stellar contract deploy --wasm target/wasm32-unknown-unknown/release/vault_contract.wasm --source deployer --network testnet
+$ stellar contract deploy --wasm target/wasm32v1-none/release/axionvera_vault_contract.wasm --source deployer --network testnet
 ℹ️ Submitting transaction to Soroban RPC: https://soroban-testnet.stellar.org...
 error: transaction submission failed
   caused by: HTTP request timed out after 30000ms
