@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "updated_at": "2026-09-16T13:15:00Z",
+  "updated_at": "2026-09-25T10:41:19Z",
   "environments": {
     "testnet": {
       "network": "testnet",
@@ -29,6 +29,18 @@
           "deployed_at": "2026-09-12T15:05:24Z",
           "deployer_address": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
           "asset": "native"
+        },
+        "axionvera_campaign_contract": {
+          "contract_id": "CAAXCSTGNQ6S73XRXYSKAEEWZNVS7XWA4EF67DRWDPS2XFSXXA3AC2C6",
+          "wasm_sha256": "cef31e82808155f38afd561bf4aa78290e3083a4251edbf3c709a91530b0ee3e",
+          "deployed_at": "2026-09-25T10:03:42Z",
+          "deployer_address": "GDGOJ2KHXL3BSWHDFQYIOTCGBYP5SE4NGPUJY7XUVQX75SYKIMPJG7BO",
+          "source_commit": "2c51d8837fc7c303630346d0a9e895f39c4350",
+          "notes": [
+            "Campaign contract deployed and initialized on Stellar testnet.",
+            "Protocol admin is the maintainer deployer account.",
+            "Live end-to-end flow verified: campaign creation, 10 XLM funding, reward rule, separate verifier authorization, 1 XLM allocation and claim, pause/resume, close, and 9 XLM unused-funds withdrawal."
+          ]
         }
       }
     }

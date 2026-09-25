@@ -2,7 +2,7 @@
 set -e
 
 # Build script for Axionvera Vault Contract WASM target
-# This script builds the vault contract as a wasm32-unknown-unknown target
+# This script builds the vault contract as a wasm32v1-none target
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -22,27 +22,29 @@ if [ ! -d "$CONTRACT_DIR" ]; then
 fi
 
 # Add wasm32 target if not already installed
-echo "Checking for wasm32-unknown-unknown target..."
-if ! rustup target list --installed | grep -q "wasm32-unknown-unknown"; then
-    echo "Adding wasm32-unknown-unknown target..."
-    rustup target add wasm32-unknown-unknown
+echo "Checking for wasm32v1-none target..."
+if ! rustup target list --installed | grep -q "wasm32v1-none"; then
+    echo "Adding wasm32v1-none target..."
+    rustup target add wasm32v1-none
 else
-    echo "wasm32-unknown-unknown target already installed"
+    echo "wasm32v1-none target already installed"
 fi
 echo ""
 
-# Build the contract for wasm32 target
-echo "Building vault contract for wasm32-unknown-unknown..."
-cargo build --locked --release \
-    --manifest-path "$PROJECT_ROOT/Cargo.toml" \
-    --package axionvera-vault-contract \
-    --target wasm32-unknown-unknown \
-    --target-dir "$TARGET_DIR"
+# Build the contract using the Stellar CLI so the supported Soroban
+# target and deployment optimisation settings are applied.
+echo "Building vault contract with stellar contract build..."
+(
+    cd "$PROJECT_ROOT"
+    stellar contract build \
+        --package axionvera-vault-contract \
+        --locked
+)
 
 # Check if build succeeded
 if [ $? -eq 0 ]; then
-    WASM_PATH="target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
-    METADATA_PATH="target/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json"
+    WASM_PATH="target/wasm32v1-none/release/axionvera_vault_contract.wasm"
+    METADATA_PATH="target/wasm32v1-none/release/axionvera_vault_contract.metadata.json"
     
     echo "Generating build metadata..."
     
@@ -73,7 +75,7 @@ if [ $? -eq 0 ]; then
 {
   "schema_version": "1",
   "package": "axionvera-vault-contract",
-  "target": "wasm32-unknown-unknown",
+  "target": "wasm32v1-none",
   "artifact_path": "$WASM_PATH",
   "sha256": "$SHA256",
   "build_timestamp": "$TIMESTAMP",
@@ -83,8 +85,8 @@ EOF
     
     echo ""
     echo "Build successful!"
-    echo "WASM file location: $TARGET_DIR/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm"
-    echo "Metadata file location: $TARGET_DIR/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json"
+    echo "WASM file location: $TARGET_DIR/wasm32v1-none/release/axionvera_vault_contract.wasm"
+    echo "Metadata file location: $TARGET_DIR/wasm32v1-none/release/axionvera_vault_contract.metadata.json"
 else
     echo ""
     echo "Build failed!"

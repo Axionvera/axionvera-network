@@ -9,10 +9,10 @@ echo "1/6 Checking Rust formatting..."
 cargo fmt --all -- --check
 
 echo "2/6 Checking Soroban contract as WASM..."
-cargo check -p axionvera-vault-contract --target wasm32-unknown-unknown
+cargo check -p axionvera-vault-contract --target wasm32v1-none
 
 echo "3/6 Running Clippy on Soroban contract as WASM..."
-cargo clippy -p axionvera-vault-contract --target wasm32-unknown-unknown -- -D warnings
+cargo clippy -p axionvera-vault-contract --target wasm32v1-none -- -D warnings
 
 echo "4/6 Checking native Rust crates..."
 cargo check --workspace --exclude axionvera-vault-contract --all-targets

@@ -110,6 +110,13 @@ def main() -> int:
                     "testnet": {
                         **original["environments"]["testnet"],
                         "status": "deployed",
+                        "contracts": {
+                            "axionvera_vault_contract": {
+                                **original["environments"]["testnet"]["contracts"]["axionvera_vault_contract"],
+                                "contract_id": "CONTRACT_ID_PLACEHOLDER",
+                                "deployer_address": "ADDRESS_PLACEHOLDER",
+                            }
+                        },
                     }
                 },
                 "maintainer_deployment_boundary": {

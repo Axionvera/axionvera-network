@@ -244,19 +244,19 @@ To build the vault contract WASM:
 ```
 
 The script will:
-- Check that the wasm32-unknown-unknown target is installed (add it if missing)
+- Check that the wasm32v1-none target is installed (add it if missing)
 - Build the vault contract for the wasm32 target in release mode
 - Output the WASM file location on success
 - Generate a build metadata file containing the build timestamp, target, source commit, and SHA-256 checksum
 
 The built WASM file will be located at:
 ```
-target/wasm32-unknown-unknown/release/axionvera_vault_contract.wasm
+target/wasm32v1-none/release/axionvera_vault_contract.wasm
 ```
 
 The generated metadata file will be located at:
 ```
-target/wasm32-unknown-unknown/release/axionvera_vault_contract.metadata.json
+target/wasm32v1-none/release/axionvera_vault_contract.metadata.json
 ```
 
 If the contract directory is missing or the build fails, the script will exit with a clear error message.
